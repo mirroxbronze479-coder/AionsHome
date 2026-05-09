@@ -188,8 +188,7 @@ async def tts_synthesize(body: TTSRequest):
     except Exception as e:
         return Response(content=json.dumps({"error": str(e)}), status_code=500, media_type="application/json")
 
-@router.head("/api/tts/audio/{msg_id}")
-@router.get("/api/tts/audio/{msg_id}")
+@router.api_route("/api/tts/audio/{msg_id}", methods=["GET", "HEAD"])
 async def tts_audio(msg_id: str):
     import re
     safe_id = re.sub(r'[^a-zA-Z0-9_\-]', '', msg_id)
