@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>斗地主</title>
+  <link rel="icon" href="/public/icon.png">
+  <link rel="stylesheet" href="/static/doudizhu.css">
+</head>
+<body>
+  <main class="table-shell">
+    <header class="table-top">
+      <button class="icon-btn" id="backBtn" aria-label="返回">‹</button>
+      <div class="title-block">
+        <h1>斗地主</h1>
+        <span id="phaseText">准备发牌</span>
+      </div>
+      <button class="new-game-btn" id="newGameBtn">新局</button>
+    </header>
+
+    <section class="table">
+      <div class="bottom-zone">
+        <span class="zone-label">底牌</span>
+        <div class="bottom-cards" id="bottomCards"></div>
+      </div>
+
+      <article class="seat seat-left" id="seat-left-panel">
+        <img id="leftAvatar" src="/public/gropicon1.png" alt="">
+        <div class="seat-main">
+          <div class="seat-name" id="leftName">Aion</div>
+          <div class="seat-meta"><span id="leftRole">农民</span> · <span id="leftCount">17</span> 张</div>
+          <div class="speech" id="leftSpeech"></div>
+        </div>
+      </article>
+
+      <article class="seat seat-right" id="seat-right-panel">
+        <img id="rightAvatar" src="/public/codexicon.png" alt="">
+        <div class="seat-main">
+          <div class="seat-name" id="rightName">Connor</div>
+          <div class="seat-meta"><span id="rightRole">农民</span> · <span id="rightCount">17</span> 张</div>
+          <div class="speech" id="rightSpeech"></div>
+        </div>
+      </article>
+
+      <section class="center-play">
+        <div class="last-play-title" id="lastPlayTitle">等待叫地主</div>
+        <div class="played-cards" id="playedCards"></div>
+        <div class="turn-hint" id="turnHint"></div>
+      </section>
+
+      <div class="discard-pile" id="discardPile"></div>
+
+      <section class="user-area" id="seat-user">
+        <div class="user-info">
+          <img src="/public/UserIcon.png" alt="">
+          <div>
+            <div class="seat-name">Ithil</div>
+            <div class="seat-meta"><span id="userRole">农民</span> · <span id="userCount">17</span> 张</div>
+          </div>
+        </div>
+        <div class="hand" id="userHand"></div>
+      </section>
+    </section>
+
+    <footer class="action-bar">
+      <div class="preview-actions" id="previewActions">
+        <button id="startGameBtn">开始叫地主</button>
+        <button id="redealBtn" class="secondary">重新发牌</button>
+      </div>
+      <div class="bid-actions" id="bidActions">
+        <button data-bid="0">不叫</button>
+        <button data-bid="1">1 分</button>
+        <button data-bid="2">2 分</button>
+        <button data-bid="3">3 分</button>
+      </div>
+      <div class="play-actions" id="playActions">
+        <button id="hintBtn" class="secondary">提示</button>
+        <button id="passBtn" class="secondary">不出</button>
+        <button id="playBtn">出牌</button>
+      </div>
+      <div class="status-line" id="statusLine"></div>
+    </footer>
+  </main>
+
+  <div class="settlement-modal" id="settlementModal" hidden>
+    <section class="settlement-panel">
+      <div class="settlement-kicker">本局结算</div>
+      <h2 id="settlementTitle"></h2>
+      <p id="settlementMeta"></p>
+      <div class="settlement-actions">
+        <button id="continueBtn">继续玩</button>
+        <button id="announceBtn" class="secondary">昭告天下</button>
+      </div>
+      <div class="settlement-status" id="settlementStatus"></div>
+    </section>
+  </div>
+
+  <script src="/static/doudizhu.js"></script>
+</body>
+</html>

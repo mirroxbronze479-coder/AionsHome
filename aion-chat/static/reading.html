@@ -173,6 +173,9 @@
   box-shadow: 0 2px 6px rgba(255,131,89,0.3);
   transition: transform 0.15s;
 }
+.anno-bubble.connor {
+  box-shadow: 0 2px 6px rgba(89,131,255,0.3);
+}
 .anno-bubble:active { transform: scale(0.9); }
 .anno-bubble img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .anno-bubble::after {
@@ -254,6 +257,80 @@
 .anno-music-card .music-text { font-size: 13px; color: var(--text); flex: 1; }
 .anno-music-card .music-play { font-size: 12px; color: var(--accent); font-weight: 600; white-space: nowrap; }
 
+/* 用户高亮（框选提问持久化） */
+.user-hl {
+  text-decoration: underline;
+  text-decoration-color: #FF8359;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 2px;
+}
+.user-hl:active {
+  background: rgba(255, 131, 89, 0.12);
+}
+
+/* 高亮详情弹窗 */
+.hl-popup {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0,0,0,0.4);
+  align-items: flex-end;
+  justify-content: center;
+}
+.hl-popup.show { display: flex; }
+.hl-popup-card {
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  max-width: 500px;
+  width: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: slideUp 0.25s ease-out;
+}
+.hl-popup-card .hl-quote {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-left: 3px solid #FF8359;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 12px;
+}
+.hl-popup-card .hl-question {
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.hl-popup-card .hl-answer {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+.hl-popup-card .hl-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+.hl-popup-card .hl-delete-btn {
+  background: none; border: none; color: var(--text3);
+  font-size: 12px; cursor: pointer; padding: 4px 8px;
+}
+.hl-popup-card .hl-delete-btn:hover { color: var(--danger, #e53935); }
+.hl-popup-card .hl-close-btn {
+  background: var(--surface2); border: none; border-radius: 8px;
+  padding: 8px 24px; font-size: 13px; color: var(--text2); cursor: pointer;
+}
+
 /* 选中文字浮动工具栏 */
 .sel-toolbar {
   display: none;
@@ -266,13 +343,16 @@
   padding: 4px 6px;
   white-space: nowrap;
   animation: fadeIn 0.15s ease-out;
+  gap: 2px;
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 .sel-toolbar button {
-  background: none; border: none; font-size: 13px; color: var(--accent);
-  font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 14px;
+  background: none; border: none; font-size: 12px; color: var(--accent);
+  font-weight: 600; cursor: pointer; padding: 6px 10px; border-radius: 14px;
 }
 .sel-toolbar button:active { background: var(--surface2); }
+.sel-toolbar button.connor-btn { color: #5b8af7; }
+.sel-toolbar button.group-btn { color: #9c60d4; }
 
 /* 提问弹窗 */
 .ask-popup {
@@ -381,9 +461,12 @@
 .rc-name { font-size: 10px; margin: 0 4px 2px; }
 .rc-row.user .rc-name { color: var(--accent); }
 .rc-row.assistant .rc-name { color: #2f812f; }
+.rc-row.connor .rc-name { color: #5b8af7; }
+.rc-row.connor { align-self: flex-start; }
 .rc-bubble { padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.65; word-break: break-word; color: #1a1a1a; }
 .rc-row.user .rc-bubble { background: linear-gradient(145deg, #e7cece, #e7cece); border-bottom-right-radius: 4px; border: 1px solid rgba(248,187,208,0.5); }
 .rc-row.assistant .rc-bubble { background: linear-gradient(145deg, #bccbbb, #bccbbb); border-bottom-left-radius: 4px; border: 1px solid rgba(165,214,140,0.5); }
+.rc-row.connor .rc-bubble { background: linear-gradient(145deg, #c4d4f0, #c4d4f0); border-bottom-left-radius: 4px; border: 1px solid rgba(140,170,214,0.5); }
 .rc-bubble.thinking { color: var(--text3); font-size: 13px; }
 .rc-divider { text-align: center; font-size: 11px; color: var(--text3); margin: 6px 0; padding: 2px 0; border-top: 1px dashed var(--border); }
 /* 底部输入框 */
@@ -522,6 +605,19 @@
 
 </div>
 
+<!-- 高亮详情弹窗 -->
+<div class="hl-popup" id="hlPopup" onclick="if(event.target===this)closeHlPopup()">
+  <div class="hl-popup-card">
+    <div class="hl-quote" id="hlPopupQuote"></div>
+    <div class="hl-question" id="hlPopupQuestion"></div>
+    <div class="hl-answer" id="hlPopupAnswer"></div>
+    <div class="hl-actions">
+      <button class="hl-delete-btn" id="hlDeleteBtn" onclick="deleteCurrentHighlight()">🗑 删除标注</button>
+      <button class="hl-close-btn" onclick="closeHlPopup()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- 批注弹窗 -->
 <div class="anno-popup" id="annoPopup" onclick="closeAnnoPopup(event)">
   <div class="anno-popup-card" id="annoPopupCard">
@@ -533,7 +629,9 @@
 
 <!-- 选中文字浮动工具栏 -->
 <div class="sel-toolbar" id="selToolbar">
-  <button id="selAskBtn" onclick="askAIAboutSelection()">💬 问问AI</button>
+  <button id="selAskAionBtn" onclick="askAIAboutSelection('aion')">💬 问Aion</button>
+  <button id="selAskConnorBtn" class="connor-btn" onclick="askAIAboutSelection('connor')">💬 问Connor</button>
+  <button id="selAskGroupBtn" class="group-btn" onclick="askAIAboutSelection('group')">💬 群里聊</button>
 </div>
 
 <!-- 提问弹窗 -->
@@ -544,7 +642,7 @@
       <input type="text" id="askInput" placeholder="想问点什么？（可留空）" onkeydown="if(event.key==='Enter')submitAskToChat()">
       <button class="ask-send" onclick="submitAskToChat()">↑</button>
     </div>
-    <div class="ask-hint">消息会保存到聊天记录</div>
+    <div class="ask-hint">消息会发送到对应聊天窗口</div>
   </div>
 </div>
 
@@ -582,6 +680,8 @@ let chapterData = null;     // 当前章节详细数据
 let saveProgressTimer = null;
 let aiName = 'AI';          // AI 名字，从章节 API 获取
 let userName = '你';         // 用户名字
+let connorName = 'Connor';  // Connor 名字
+let askTarget = 'aion';     // 当前提问目标：'aion' | 'connor' | 'group'
 
 // ── 初始化 ──
 connectCommonWS();
@@ -708,6 +808,7 @@ async function loadChapter(chIdx) {
   chapterData = res;
   if (res.ai_name) aiName = res.ai_name;
   if (res.user_name) userName = res.user_name;
+  if (res.connor_name) connorName = res.connor_name;
 
   // 标题 + 字数
   const title = res.chapter.title || `第 ${chIdx + 1} 章`;
@@ -724,6 +825,11 @@ async function loadChapter(chIdx) {
 
   // 渲染内容
   renderChapter(res);
+
+  // 应用用户高亮
+  if (res.highlights && res.highlights.length > 0) {
+    applyHighlights(res.highlights);
+  }
 
   // 滚动到顶部
   $('readerContent').scrollTop = 0;
@@ -751,46 +857,67 @@ function renderChapter(data) {
   const content = $('readerContent');
   const ch = data.chapter;
   const annotations = data.annotations || {};
+  const connorAnnotations = data.connor_annotations || {};
   const summaries = data.summaries || [];
+  const connorSummaries = data.connor_summaries || [];
 
   // 直接使用后端生成的 HTML（已含 data-p 标记和图片）
   let html = ch.html_content || '';
 
-  // 为有批注的段落添加气泡
-  for (const [pIdx, anno] of Object.entries(annotations)) {
+  // 为有批注的段落添加气泡（Aion + Connor）
+  const allAnnotatedPs = new Set([...Object.keys(annotations), ...Object.keys(connorAnnotations)]);
+  for (const pIdx of allAnnotatedPs) {
     const marker = `data-p="${pIdx}"`;
-    const bubble = `<span class="anno-bubble" onclick="showAnnotation(${pIdx})" title="${escHtml(aiName)}的批注"><img src="/public/AIIcon.png" alt=""></span>`;
-    // 在段落闭标签前插入气泡
-    html = html.replace(
-      new RegExp(`(<p\\s+${marker}>)(.*?)(</p>)`, 's'),
-      `$1$2${bubble}$3`
-    );
+    let bubbles = '';
+    if (annotations[pIdx]) {
+      bubbles += `<span class="anno-bubble" onclick="showAnnotation(${pIdx},'aion')" title="${escHtml(aiName)}的批注"><img src="/public/AIIcon.png" alt=""></span>`;
+    }
+    if (connorAnnotations[pIdx]) {
+      bubbles += `<span class="anno-bubble connor" onclick="showAnnotation(${pIdx},'connor')" title="${escHtml(connorName)}的批注"><img src="/public/codexicon.png" alt=""></span>`;
+    }
+    if (bubbles) {
+      html = html.replace(
+        new RegExp(`(<p\\s+${marker}>)(.*?)(</p>)`, 's'),
+        `$1$2${bubbles}$3`
+      );
+    }
   }
 
-  // 在每段（segment）末尾插入该段的读后感按钮
+  // 在每段（segment）末尾插入读后感按钮
   const segmentsMeta = ch.segments_meta || [];
   for (const s of summaries) {
     const segMeta = segmentsMeta[s.segment_index];
     if (!segMeta) continue;
     const endP = segMeta.end_p;
     const endMarker = `data-p="${endP}"`;
-    const summaryBtn = `<div style="text-align:center; margin:16px 0;"><button class="summary-btn" onclick="showSummary(${s.segment_index})">📋 ${escHtml(aiName)}读后感</button></div>`;
-    // 在该段最后一个段落的 </p> 后面插入
+    const summaryBtn = `<div style="text-align:center; margin:16px 0;"><button class="summary-btn" onclick="showSummary(${s.segment_index},'aion')">📋 ${escHtml(aiName)}读后感</button></div>`;
     html = html.replace(
       new RegExp(`(<p\\s+${endMarker}>.*?</p>)`, 's'),
       `$1${summaryBtn}`
     );
+  }
+  for (const s of connorSummaries) {
+    const segMeta = segmentsMeta[s.segment_index];
+    if (!segMeta) continue;
+    const endP = segMeta.end_p;
+    const endMarker = `data-p="${endP}"`;
+    const summaryBtn = `<div style="text-align:center; margin:16px 0;"><button class="summary-btn" style="border-color:#5b8af7;color:#5b8af7;" onclick="showSummary(${s.segment_index},'connor')">📋 ${escHtml(connorName)}读后感</button></div>`;
+    // 插在已有内容后面（data-p 可能已被替换添加了 Aion 的按钮，追加到 p 后）
+    const existingPattern = new RegExp(`(<p\\s+${endMarker}>.*?</p>(?:\\s*<div[^>]*>.*?</div>)*)`, 's');
+    html = html.replace(existingPattern, `$1${summaryBtn}`);
   }
 
   content.innerHTML = html;
 }
 
 // ── 批注弹窗 ──
-function showAnnotation(pIdx) {
+function showAnnotation(pIdx, who) {
   if (!chapterData) return;
-  const anno = chapterData.annotations[pIdx];
+  const annoMap = who === 'connor' ? (chapterData.connor_annotations || {}) : (chapterData.annotations || {});
+  const anno = annoMap[pIdx];
   if (!anno) return;
-  const typeLabel = `【${aiName}】${anno.type || '批注'}`;
+  const name = who === 'connor' ? connorName : aiName;
+  const typeLabel = `【${name}】${anno.type || '批注'}`;
   $('annoPopupType').textContent = typeLabel;
 
   // 解析 [MUSIC:xxx]
@@ -809,7 +936,7 @@ function showAnnotation(pIdx) {
   for (const keyword of musicMatches) {
     const card = document.createElement('div');
     card.className = 'anno-music-card';
-    card.innerHTML = `<span class="music-icon">🎵</span><span class="music-text">${escHtml(aiName)}点播了歌曲：${escHtml(keyword)}</span><span class="music-play">▶ 播放</span>`;
+    card.innerHTML = `<span class="music-icon">🎵</span><span class="music-text">${escHtml(name)}点播了歌曲：${escHtml(keyword)}</span><span class="music-play">▶ 播放</span>`;
     card.onclick = () => playMusicByKeyword(keyword);
     $('annoPopupText').appendChild(card);
   }
@@ -876,11 +1003,13 @@ function playMusicOnline(songId) {
   audio.play().catch(() => {});
 }
 
-function showSummary(segIdx) {
-  if (!chapterData || !chapterData.summaries) return;
-  const entry = chapterData.summaries.find(s => s.segment_index === segIdx);
+function showSummary(segIdx, who) {
+  if (!chapterData) return;
+  const summaryList = who === 'connor' ? (chapterData.connor_summaries || []) : (chapterData.summaries || []);
+  const entry = summaryList.find(s => s.segment_index === segIdx);
   if (!entry) return;
-  $('annoPopupType').textContent = `📋 ${aiName}读后感`;
+  const name = who === 'connor' ? connorName : aiName;
+  $('annoPopupType').textContent = `📋 ${name}读后感`;
   $('annoPopupText').textContent = entry.summary;
   $('annoPopup').classList.add('show');
 }
@@ -1005,15 +1134,22 @@ async function startAnnotateAll(segments) {
         }
         else if (msg.type === 'segment_done') {
           doneCount++;
-          // 合并批注到 chapterData
-          mergeAnnotations(msg.annotations, msg.summary, msg.segment_index);
+          // 合并 Aion 批注
+          mergeAnnotations(msg.aion_annotations, msg.aion_summary, msg.segment_index);
+          // 合并 Connor 批注
+          if (msg.connor_annotations && msg.connor_annotations.length > 0) {
+            mergeConnorAnnotations(msg.connor_annotations, msg.connor_summary, msg.segment_index);
+          }
           updateSegBlockStatus(msg.segment_index, 'done');
           // 实时刷新阅读器内容
           renderChapter(chapterData);
         }
         else if (msg.type === 'segment_error') {
-          showToast(`第 ${msg.segment_index + 1} 段批注失败: ${msg.message}`);
+          showToast(`第 ${msg.segment_index + 1} 段${msg.who ? '(' + msg.who + ')' : ''}批注失败: ${msg.message}`);
           updateSegBlockStatus(msg.segment_index, 'not_sent');
+        }
+        else if (msg.type === 'start' && msg.connor_available === false) {
+          showToast('Connor 未接入，仅 Aion 批注');
         }
         else if (msg.type === 'done') {
           break;
@@ -1058,6 +1194,23 @@ function mergeAnnotations(newAnnos, summary, segIdx) {
   if (seg) seg.status = 'done';
 }
 
+function mergeConnorAnnotations(newAnnos, summary, segIdx) {
+  if (!chapterData) return;
+  if (!chapterData.connor_annotations) chapterData.connor_annotations = {};
+  if (!chapterData.connor_summaries) chapterData.connor_summaries = [];
+  for (const a of (newAnnos || [])) {
+    chapterData.connor_annotations[a.p] = a;
+  }
+  if (summary) {
+    const existing = chapterData.connor_summaries.findIndex(s => s.segment_index === segIdx);
+    if (existing >= 0) {
+      chapterData.connor_summaries[existing].summary = summary;
+    } else {
+      chapterData.connor_summaries.push({ segment_index: segIdx, summary });
+    }
+  }
+}
+
 function updateSegBlockStatus(segIdx, status) {
   const blocks = $('segmentStatus').querySelectorAll('.seg-block');
   if (blocks[segIdx]) {
@@ -1072,6 +1225,7 @@ function updateSegBlockStatus(segIdx, status) {
 
 // ── 选中文字 → 跳转聊天窗口提问 ────────────────────
 let selectedText = '';
+let pendingHighlight = null;  // 待保存的选区信息
 
 // 监听文字选择
 document.addEventListener('selectionchange', () => {
@@ -1103,18 +1257,141 @@ document.addEventListener('selectionchange', () => {
   ) + 'px';
   toolbar.style.top = (rect.top - toolbar.offsetHeight - 8 + window.scrollY) + 'px';
 
-  $('selAskBtn').textContent = `💬 问问${aiName}`;
+  $('selAskAionBtn').textContent = `💬 问${aiName}`;
+  $('selAskConnorBtn').textContent = `💬 问${connorName}`;
   selectedText = text;
+
+  // 捕获选区位置信息，用于后续持久化高亮
+  try {
+    const startNode = range.startContainer;
+    const endNode = range.endContainer;
+    const startPEl = startNode.nodeType === 3
+      ? startNode.parentElement.closest('[data-p]')
+      : startNode.closest('[data-p]');
+    const endPEl = endNode.nodeType === 3
+      ? endNode.parentElement.closest('[data-p]')
+      : endNode.closest('[data-p]');
+    if (startPEl && endPEl) {
+      pendingHighlight = {
+        start_p: parseInt(startPEl.dataset.p),
+        start_offset: calcTextOffset(startPEl, range.startContainer, range.startOffset),
+        end_p: parseInt(endPEl.dataset.p),
+        end_offset: calcTextOffset(endPEl, range.endContainer, range.endOffset),
+        text: text
+      };
+    }
+  } catch(e) { pendingHighlight = null; }
 });
 
-function askAIAboutSelection() {
+// 计算相对于段落元素的纯文本字符偏移
+function calcTextOffset(pEl, container, offset) {
+  const walker = document.createTreeWalker(pEl, NodeFilter.SHOW_TEXT, null);
+  let charCount = 0;
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node === container) {
+      return charCount + offset;
+    }
+    charCount += node.textContent.length;
+  }
+  return charCount + offset;
+}
+
+// 获取段落元素中所有文本节点的拼接内容
+function getParagraphTextFromDOM(pEl) {
+  const walker = document.createTreeWalker(pEl, NodeFilter.SHOW_TEXT, null);
+  let text = '', node;
+  while ((node = walker.nextNode())) text += node.textContent;
+  return text;
+}
+
+// 在 DOM 段落中查找选中文字的位置（兜底方案，偏移量与 applyHighlights 一致）
+function findHighlightInDOM(text) {
+  if (!text) return null;
+  const content = $('readerContent');
+  if (!content) return null;
+  const pEls = [...content.querySelectorAll('[data-p]')];
+  if (!pEls.length) return null;
+
+  // 单段落匹配
+  for (const pEl of pEls) {
+    const pText = getParagraphTextFromDOM(pEl);
+    const idx = pText.indexOf(text);
+    if (idx >= 0) {
+      const pi = parseInt(pEl.dataset.p);
+      return { start_p: pi, start_offset: idx, end_p: pi, end_offset: idx + text.length, text };
+    }
+  }
+
+  // 跨段落匹配：拼接相邻段落文本
+  for (let i = 0; i < pEls.length - 1; i++) {
+    let combined = '';
+    const pTexts = [];
+    for (let j = i; j < Math.min(i + 6, pEls.length); j++) {
+      const t = getParagraphTextFromDOM(pEls[j]);
+      pTexts.push({ pi: parseInt(pEls[j].dataset.p), text: t, start: combined.length });
+      combined += t;
+      const idx = combined.indexOf(text);
+      if (idx >= 0) {
+        const endIdx = idx + text.length;
+        let startP, startOff, endP, endOff;
+        for (const pt of pTexts) {
+          const ptEnd = pt.start + pt.text.length;
+          if (idx >= pt.start && idx < ptEnd) {
+            startP = pt.pi; startOff = idx - pt.start;
+          }
+          if (endIdx > pt.start && endIdx <= ptEnd) {
+            endP = pt.pi; endOff = endIdx - pt.start;
+          }
+        }
+        if (startP !== undefined && endP !== undefined) {
+          return { start_p: startP, start_offset: startOff, end_p: endP, end_offset: endOff, text };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function askAIAboutSelection(target) {
   if (!selectedText || !currentBook) return;
+  askTarget = target || 'aion';
+
+  // 如果 selectionchange 没捕获到位置信息，尝试从当前选区补捕
+  if (!pendingHighlight) {
+    try {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        const sn = range.startContainer, en = range.endContainer;
+        const sp = sn.nodeType === 3 ? sn.parentElement?.closest('[data-p]') : sn.closest?.('[data-p]');
+        const ep = en.nodeType === 3 ? en.parentElement?.closest('[data-p]') : en.closest?.('[data-p]');
+        if (sp && ep) {
+          pendingHighlight = {
+            start_p: parseInt(sp.dataset.p),
+            start_offset: calcTextOffset(sp, range.startContainer, range.startOffset),
+            end_p: parseInt(ep.dataset.p),
+            end_offset: calcTextOffset(ep, range.endContainer, range.endOffset),
+            text: selectedText
+          };
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 兜底：在 DOM 中搜索选中文本
+  if (!pendingHighlight) {
+    pendingHighlight = findHighlightInDOM(selectedText);
+  }
+
   $('selToolbar').style.display = 'none';
   // 显示提问弹窗
   const quote = selectedText.length > 200 ? selectedText.slice(0, 200) + '...' : selectedText;
   $('askQuote').textContent = quote;
   $('askInput').value = '';
+  const targetLabel = askTarget === 'connor' ? connorName : askTarget === 'group' ? '群聊' : aiName;
   $('askPopup').classList.add('show');
+  $('askInput').placeholder = `问${targetLabel}点什么？（可留空）`;
   $('askInput').focus();
 }
 
@@ -1127,19 +1404,33 @@ function closeReplyPanel() {
 }
 
 let replyConvId = null;
+let replyConnorRoomId = null;
+let replyGroupRoomId = null;
 let replySending = false;
 
 // 渲染一条聊天气泡
-function renderChatBubble(role, content) {
+function renderChatBubble(role, content, who) {
   const isUser = role === 'user';
-  const name = isUser ? userName : aiName;
-  const avatar = isUser ? '/public/UserIcon.png' : '/public/AIIcon.png';
+  let name, avatar, rowClass;
+  if (isUser) {
+    name = userName;
+    avatar = '/public/UserIcon.png';
+    rowClass = 'user';
+  } else if (who === 'connor') {
+    name = connorName;
+    avatar = '/public/codexicon.png';
+    rowClass = 'connor';
+  } else {
+    name = aiName;
+    avatar = '/public/AIIcon.png';
+    rowClass = 'assistant';
+  }
   // 把文本按双换行分段，多段各自一个气泡
   const parts = content.split(/\n{2,}/).filter(p => p.trim());
   const bubbles = parts.length > 1
     ? parts.map(p => `<div class="rc-bubble">${escHtml(p).replace(/\n/g, '<br>')}</div>`).join('')
     : `<div class="rc-bubble">${escHtml(content).replace(/\n/g, '<br>')}</div>`;
-  return `<div class="rc-row ${role}">
+  return `<div class="rc-row ${rowClass}">
     <img class="rc-avatar" src="${avatar}" alt="">
     <div class="rc-body">
       <div class="rc-name">${escHtml(name)}</div>
@@ -1150,29 +1441,67 @@ function renderChatBubble(role, content) {
 
 // 加载最近聊天上下文并打开面板
 async function openReplyPanel() {
-  // 获取对话 ID
-  if (!replyConvId) {
+  const targetLabel = askTarget === 'connor' ? connorName : askTarget === 'group' ? '群聊' : aiName;
+  $('replyTitle').textContent = `💬 ${targetLabel}`;
+
+  // 根据目标获取 room/conv ID
+  if (askTarget === 'aion') {
+    if (!replyConvId) {
+      try {
+        const convs = await api('GET', '/api/conversations');
+        if (convs && convs.length > 0) replyConvId = convs[0].id;
+      } catch(e) {}
+    }
+    if (!replyConvId) {
+      showToast('没有可用的对话，请先在聊天页创建一个');
+      return false;
+    }
+  } else {
+    // 获取 chatroom rooms
     try {
-      const convs = await api('GET', '/api/conversations');
-      if (convs && convs.length > 0) replyConvId = convs[0].id;
+      const rooms = await api('GET', '/api/chatroom/rooms');
+      if (rooms) {
+        for (const r of rooms) {
+          if (r.type === 'connor_1v1' && !replyConnorRoomId) replyConnorRoomId = r.id;
+          if (r.type === 'group' && !replyGroupRoomId) replyGroupRoomId = r.id;
+        }
+      }
     } catch(e) {}
-  }
-  if (!replyConvId) {
-    showToast('没有可用的对话，请先在聊天页创建一个');
-    return false;
+
+    if (askTarget === 'connor' && !replyConnorRoomId) {
+      showToast('Connor 未接入，无法使用此功能');
+      return false;
+    }
+    if (askTarget === 'group' && !replyGroupRoomId) {
+      showToast('群聊房间不存在，请先在聊天室创建');
+      return false;
+    }
   }
 
-  // 加载最近 6 条消息作为上下文
+  // 加载最近消息作为上下文
   const msgs = $('replyMsgs');
   msgs.innerHTML = '';
   try {
-    const history = await api('GET', `/api/conversations/${replyConvId}/messages?limit=6`);
-    if (history && history.length > 0) {
-      const contextHtml = history
-        .filter(m => m.role === 'user' || m.role === 'assistant')
-        .map(m => renderChatBubble(m.role, m.role === 'assistant' ? cleanAiDisplay(m.content) : m.content))
-        .join('');
-      msgs.innerHTML = contextHtml + '<div class="rc-divider">── 以上为最近聊天 ──</div>';
+    let history = [];
+    if (askTarget === 'aion') {
+      history = await api('GET', `/api/conversations/${replyConvId}/messages?limit=6`);
+      if (history && history.length > 0) {
+        const contextHtml = history
+          .filter(m => m.role === 'user' || m.role === 'assistant')
+          .map(m => renderChatBubble(m.role, m.role === 'assistant' ? cleanAiDisplay(m.content) : m.content))
+          .join('');
+        msgs.innerHTML = contextHtml + '<div class="rc-divider">── 以上为最近聊天 ──</div>';
+      }
+    } else {
+      const roomId = askTarget === 'connor' ? replyConnorRoomId : replyGroupRoomId;
+      const roomMsgs = await api('GET', `/api/chatroom/rooms/${roomId}/messages?limit=6`);
+      if (roomMsgs && roomMsgs.length > 0) {
+        const contextHtml = roomMsgs.map(m => {
+          const role = m.sender === 'user' ? 'user' : m.sender;
+          return renderChatBubble(role === 'user' ? 'user' : 'assistant', cleanAiDisplay(m.content), m.sender === 'connor' ? 'connor' : undefined);
+        }).join('');
+        msgs.innerHTML = contextHtml + '<div class="rc-divider">── 以上为最近聊天 ──</div>';
+      }
     }
   } catch(e) {}
 
@@ -1191,6 +1520,14 @@ async function submitAskToChat() {
   const bookTitle = currentBook.title || '未知';
   const chTitle = chapterData?.chapter?.title || `第 ${currentChIdx + 1} 章`;
   const sel = selectedText.length > 500 ? selectedText.slice(0, 500) + '...' : selectedText;
+
+  // 保存当前提问信息，用于AI回复后保存高亮
+  const askQuestion = question || '你觉得这段怎么样？';
+  // 三重保险获取高亮位置信息
+  let askHighlightInfo = pendingHighlight ? { ...pendingHighlight } : findHighlightInDOM(selectedText);
+  if (!askHighlightInfo) {
+    console.warn('[highlight] 无法定位选中文字位置, selectedText:', selectedText?.slice(0, 50));
+  }
 
   let msgContent = `我在读《${bookTitle}》「${chTitle}」，看到这段话：\n「${sel}」`;
   if (question) {
@@ -1211,15 +1548,19 @@ async function submitAskToChat() {
   // 弹出面板让用户先看上下文 + 自己的消息
   await new Promise(r => setTimeout(r, 100));
 
-  // 发送消息（不再重复添加用户气泡）
-  await doSendInPanel(msgContent, true);
+  // 发送消息
+  await doSendInPanel(msgContent, true, { highlightInfo: askHighlightInfo, question: askQuestion, selectedText: sel });
 }
 
 // 面板内继续追问
 async function sendReplyMsg() {
   const input = $('replyInput');
   const text = input.value.trim();
-  if (!text || replySending || !replyConvId) return;
+  if (!text || replySending) return;
+  // 检查目标是否有效
+  if (askTarget === 'aion' && !replyConvId) return;
+  if (askTarget === 'connor' && !replyConnorRoomId) return;
+  if (askTarget === 'group' && !replyGroupRoomId) return;
   input.value = '';
   await doSendInPanel(text);
 }
@@ -1251,7 +1592,7 @@ function renderAiBubbles(aiBody, displayText) {
 
 // 实际调用 send API 并流式渲染
 // skipUserBubble: 若为 true 则不再重复添加用户气泡（已由调用方添加）
-async function doSendInPanel(msgContent, skipUserBubble) {
+async function doSendInPanel(msgContent, skipUserBubble, highlightMeta) {
   replySending = true;
   $('replySendBtn').disabled = true;
 
@@ -1262,84 +1603,348 @@ async function doSendInPanel(msgContent, skipUserBubble) {
     msgs.insertAdjacentHTML('beforeend', renderChatBubble('user', msgContent));
   }
 
-  // 添加 AI 气泡（待填充）
-  const aiRow = document.createElement('div');
-  aiRow.className = 'rc-row assistant';
-  aiRow.innerHTML = `
-    <img class="rc-avatar" src="/public/AIIcon.png" alt="">
-    <div class="rc-body">
-      <div class="rc-name">${escHtml(aiName)}</div>
-      <div class="rc-bubble thinking">正在思考...</div>
-    </div>`;
-  msgs.appendChild(aiRow);
-  msgs.scrollTop = msgs.scrollHeight;
+  let fullReply = '';
+  let connorReply = '';
 
-  const aiBody = aiRow.querySelector('.rc-body');
+  if (askTarget === 'aion') {
+    // ── Aion 私聊模式 ──
+    const aiRow = document.createElement('div');
+    aiRow.className = 'rc-row assistant';
+    aiRow.innerHTML = `
+      <img class="rc-avatar" src="/public/AIIcon.png" alt="">
+      <div class="rc-body">
+        <div class="rc-name">${escHtml(aiName)}</div>
+        <div class="rc-bubble thinking">正在思考...</div>
+      </div>`;
+    msgs.appendChild(aiRow);
+    msgs.scrollTop = msgs.scrollHeight;
+    const aiBody = aiRow.querySelector('.rc-body');
+
+    try {
+      const resp = await fetch(`/api/conversations/${replyConvId}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: msgContent, context_limit: 30 })
+      });
+      fullReply = await _streamToBody(resp, aiBody, msgs);
+    } catch(e) {
+      _showError(aiBody, e.message);
+    }
+
+  } else if (askTarget === 'connor') {
+    // ── Connor 1v1 模式 ──
+    const cRow = document.createElement('div');
+    cRow.className = 'rc-row connor';
+    cRow.innerHTML = `
+      <img class="rc-avatar" src="/public/codexicon.png" alt="">
+      <div class="rc-body">
+        <div class="rc-name">${escHtml(connorName)}</div>
+        <div class="rc-bubble thinking">正在思考...</div>
+      </div>`;
+    msgs.appendChild(cRow);
+    msgs.scrollTop = msgs.scrollHeight;
+    const cBody = cRow.querySelector('.rc-body');
+
+    try {
+      const resp = await fetch(`/api/chatroom/rooms/${replyConnorRoomId}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: msgContent })
+      });
+      fullReply = await _streamChatroomToBody(resp, null, cBody, msgs);
+    } catch(e) {
+      _showError(cBody, e.message);
+    }
+
+  } else {
+    // ── 群聊模式：两个 AI 都会回复 ──
+    const aRow = document.createElement('div');
+    aRow.className = 'rc-row assistant';
+    aRow.innerHTML = `
+      <img class="rc-avatar" src="/public/AIIcon.png" alt="">
+      <div class="rc-body">
+        <div class="rc-name">${escHtml(aiName)}</div>
+        <div class="rc-bubble thinking">正在思考...</div>
+      </div>`;
+    msgs.appendChild(aRow);
+    const aBody = aRow.querySelector('.rc-body');
+
+    const cRow = document.createElement('div');
+    cRow.className = 'rc-row connor';
+    cRow.innerHTML = `
+      <img class="rc-avatar" src="/public/codexicon.png" alt="">
+      <div class="rc-body">
+        <div class="rc-name">${escHtml(connorName)}</div>
+        <div class="rc-bubble thinking">等待中...</div>
+      </div>`;
+    msgs.appendChild(cRow);
+    const cBody = cRow.querySelector('.rc-body');
+    msgs.scrollTop = msgs.scrollHeight;
+
+    try {
+      const resp = await fetch(`/api/chatroom/rooms/${replyGroupRoomId}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: msgContent })
+      });
+      const results = await _streamChatroomToBody(resp, aBody, cBody, msgs);
+      fullReply = results.aion || '';
+      connorReply = results.connor || '';
+    } catch(e) {
+      _showError(aBody, e.message);
+    }
+  }
+
+  replySending = false;
+  $('replySendBtn').disabled = false;
+  $('replyInput').focus();
+
+  // AI 回复完成后，保存高亮
+  if (highlightMeta && highlightMeta.highlightInfo && (fullReply || connorReply) && currentBook) {
+    try {
+      const hl = highlightMeta.highlightInfo;
+      const res = await api('POST', `/api/books/${currentBook.book_id}/chapters/${currentChIdx}/highlights`, {
+        selected_text: highlightMeta.selectedText,
+        start_p: hl.start_p,
+        start_offset: hl.start_offset,
+        end_p: hl.end_p,
+        end_offset: hl.end_offset,
+        question: highlightMeta.question,
+        answer: fullReply,
+        annotator: askTarget,
+        connor_answer: connorReply
+      });
+      if (res && res.id) {
+        // 将新高亮加入当前数据并立即应用
+        const newHl = {
+          id: res.id,
+          selected_text: highlightMeta.selectedText,
+          start_p: hl.start_p, start_offset: hl.start_offset,
+          end_p: hl.end_p, end_offset: hl.end_offset,
+          question: highlightMeta.question,
+          answer: fullReply,
+          annotator: askTarget,
+          connor_answer: connorReply,
+          created_at: Date.now() / 1000
+        };
+        if (!chapterData.highlights) chapterData.highlights = [];
+        chapterData.highlights.push(newHl);
+        applyHighlights([newHl]);
+      }
+    } catch(e) { showToast('保存标注失败: ' + e.message); }
+    pendingHighlight = null;
+  }
+}
+
+// 流式读取 Aion 私聊 SSE 并渲染到 body
+async function _streamToBody(resp, body, msgs) {
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
   let fullReply = '';
 
-  try {
-    const resp = await fetch(`/api/conversations/${replyConvId}/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: msgContent, context_limit: 30 })
-    });
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (!raw) continue;
+      let msg;
+      try { msg = JSON.parse(raw); } catch { continue; }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (!raw) continue;
-        let msg;
-        try { msg = JSON.parse(raw); } catch { continue; }
-
-        if (msg.type === 'chunk') {
-          fullReply += msg.content;
-          const display = cleanAiDisplay(fullReply);
-          renderAiBubbles(aiBody, display);
-          msgs.scrollTop = msgs.scrollHeight;
-        } else if (msg.type === 'music') {
-          // AI 点歌 → 直接播放
-          if (msg.cards && msg.cards.length) {
-            playMusicOnline(msg.cards[0].id);
-            // 在气泡下方追加音乐卡片
-            for (const song of msg.cards) {
-              const card = document.createElement('div');
-              card.className = 'anno-music-card';
-              card.innerHTML = `<span class="music-icon">🎵</span><span class="music-text">${escHtml(song.name)} - ${escHtml(song.artist)}</span><span class="music-play">▶ 播放</span>`;
-              card.onclick = () => playMusicOnline(song.id);
-              aiBody.appendChild(card);
-            }
-            msgs.scrollTop = msgs.scrollHeight;
-          }
-        } else if (msg.type === 'error') {
-          const errB = document.createElement('div');
-          errB.className = 'rc-bubble';
-          errB.textContent = '出错了: ' + msg.message;
-          aiBody.querySelectorAll('.rc-bubble').forEach(e => e.remove());
-          aiBody.appendChild(errB);
+      if (msg.type === 'chunk') {
+        fullReply += msg.content;
+        const display = cleanAiDisplay(fullReply);
+        renderAiBubbles(body, display);
+        msgs.scrollTop = msgs.scrollHeight;
+      } else if (msg.type === 'music') {
+        if (msg.cards && msg.cards.length) {
+          playMusicOnline(msg.cards[0].id);
         }
+      } else if (msg.type === 'error') {
+        _showError(body, msg.message);
       }
     }
+  }
+  return fullReply;
+}
+
+// 流式读取 chatroom SSE 并渲染到对应 body
+// aionBody 可为 null（Connor 1v1 时）
+async function _streamChatroomToBody(resp, aionBody, connorBody, msgs) {
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let aionReply = '';
+  let connorReply = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (!raw) continue;
+      let msg;
+      try { msg = JSON.parse(raw); } catch { continue; }
+
+      if (msg.type === 'aion_chunk' && aionBody) {
+        aionReply += msg.content;
+        renderAiBubbles(aionBody, cleanAiDisplay(aionReply));
+        msgs.scrollTop = msgs.scrollHeight;
+      } else if (msg.type === 'connor_chunk' && connorBody) {
+        connorReply += msg.content;
+        renderAiBubbles(connorBody, cleanAiDisplay(connorReply));
+        msgs.scrollTop = msgs.scrollHeight;
+      } else if (msg.type === 'connor_start' && connorBody) {
+        // Connor 开始回复，更新提示
+        const thinkBubble = connorBody.querySelector('.rc-bubble.thinking');
+        if (thinkBubble) thinkBubble.textContent = '正在思考...';
+      } else if (msg.type === 'aion_start' && aionBody) {
+        const thinkBubble = aionBody.querySelector('.rc-bubble.thinking');
+        if (thinkBubble) thinkBubble.textContent = '正在思考...';
+      } else if (msg.type === 'error') {
+        if (aionBody) _showError(aionBody, msg.message);
+        else if (connorBody) _showError(connorBody, msg.message);
+      }
+    }
+  }
+
+  // Connor 1v1 模式只返回 connorReply
+  if (!aionBody) return connorReply;
+  // 群聊返回两个
+  return { aion: aionReply, connor: connorReply };
+}
+
+function _showError(body, message) {
+  body.querySelectorAll('.rc-bubble').forEach(e => e.remove());
+  const errB = document.createElement('div');
+  errB.className = 'rc-bubble';
+  errB.textContent = '出错了: ' + message;
+  body.appendChild(errB);
+}
+
+// ── 高亮持久化：应用橙色下划线 + 点击查看 ──────────────
+function applyHighlights(highlights) {
+  for (const hl of highlights) {
+    try {
+      const content = $('readerContent');
+      // 找到所有涉及的段落
+      for (let pi = hl.start_p; pi <= hl.end_p; pi++) {
+        const pEl = content.querySelector(`[data-p="${pi}"]`);
+        if (!pEl) continue;
+
+        const walker = document.createTreeWalker(pEl, NodeFilter.SHOW_TEXT, null);
+        let node, charPos = 0, ranges = [];
+
+        // 确定本段落内的起止偏移
+        const localStart = (pi === hl.start_p) ? hl.start_offset : 0;
+        const localEnd = (pi === hl.end_p) ? hl.end_offset : Infinity;
+
+        while ((node = walker.nextNode())) {
+          const nodeLen = node.textContent.length;
+          const nodeStart = charPos;
+          const nodeEnd = charPos + nodeLen;
+
+          // 检查是否与目标区间重叠
+          if (nodeEnd > localStart && nodeStart < localEnd) {
+            const rangeStart = Math.max(0, localStart - nodeStart);
+            const rangeEnd = Math.min(nodeLen, localEnd - nodeStart);
+            ranges.push({ node, start: rangeStart, end: rangeEnd });
+          }
+          charPos += nodeLen;
+        }
+
+        // 包裹文本节点（从后往前以避免偏移变化）
+        for (let i = ranges.length - 1; i >= 0; i--) {
+          const r = ranges[i];
+          const range = document.createRange();
+          range.setStart(r.node, r.start);
+          range.setEnd(r.node, r.end);
+
+          // surroundContents 在跨元素边界时会失败，用手动方式替代
+          const span = document.createElement('span');
+          span.className = 'user-hl';
+          span.dataset.hlId = hl.id;
+          span.onclick = function(e) {
+            e.stopPropagation();
+            showHighlightDetail(hl.id);
+          };
+          try {
+            range.surroundContents(span);
+          } catch(_) {
+            // 降级：提取内容再包裹
+            span.appendChild(range.extractContents());
+            range.insertNode(span);
+          }
+        }
+      }
+    } catch(e) {
+      console.warn('应用高亮失败', hl.id, e);
+    }
+  }
+}
+
+let currentHlId = null;
+function showHighlightDetail(hlId) {
+  if (!chapterData || !chapterData.highlights) return;
+  const hl = chapterData.highlights.find(h => h.id === hlId);
+  if (!hl) return;
+  currentHlId = hlId;
+  $('hlPopupQuote').textContent = hl.selected_text.length > 200
+    ? hl.selected_text.slice(0, 200) + '...'
+    : hl.selected_text;
+  $('hlPopupQuestion').textContent = '💬 ' + hl.question;
+
+  // 根据 annotator 类型显示回复
+  let answerHtml = '';
+  const annotator = hl.annotator || 'aion';
+  if (annotator === 'group') {
+    if (hl.answer) answerHtml += `<b>${escHtml(aiName)}：</b>\n${hl.answer}\n\n`;
+    if (hl.connor_answer) answerHtml += `<b>${escHtml(connorName)}：</b>\n${hl.connor_answer}`;
+  } else if (annotator === 'connor') {
+    answerHtml = hl.answer || hl.connor_answer || '';
+  } else {
+    answerHtml = hl.answer || '';
+  }
+  $('hlPopupAnswer').innerHTML = escHtml(answerHtml).replace(/\n/g, '<br>');
+  $('hlPopup').classList.add('show');
+}
+
+function closeHlPopup() {
+  $('hlPopup').classList.remove('show');
+  currentHlId = null;
+}
+
+async function deleteCurrentHighlight() {
+  if (!currentHlId || !currentBook) return;
+  if (!confirm('确认删除这条标注？')) return;
+  try {
+    await api('DELETE', `/api/books/${currentBook.book_id}/highlights/${currentHlId}`);
+    // 从数据中移除
+    if (chapterData.highlights) {
+      chapterData.highlights = chapterData.highlights.filter(h => h.id !== currentHlId);
+    }
+    // 移除DOM中的高亮标记
+    document.querySelectorAll(`[data-hl-id="${currentHlId}"]`).forEach(el => {
+      const parent = el.parentNode;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+      parent.normalize();
+    });
+    closeHlPopup();
+    showToast('已删除');
   } catch(e) {
-    aiBody.querySelectorAll('.rc-bubble').forEach(e => e.remove());
-    const errB = document.createElement('div');
-    errB.className = 'rc-bubble';
-    errB.textContent = '请求失败: ' + e.message;
-    aiBody.appendChild(errB);
-  } finally {
-    replySending = false;
-    $('replySendBtn').disabled = false;
-    $('replyInput').focus();
+    showToast('删除失败');
   }
 }
 </script>

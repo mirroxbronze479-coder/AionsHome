@@ -23,7 +23,7 @@ from routes.files import export_conversation
 from routes.music import MUSIC_CMD_PATTERN
 from tts import TTSStreamer
 
-HEART_CMD_PATTERN = re.compile(r'\[HEART:([^\]]+)\]')
+MOMENT_CMD_PATTERN = re.compile(r'\[MOMENT:(.+?)(?:\|(true|false))?\]')
 MEMORY_CMD_PATTERN = re.compile(r'\[MEMORY:([^\]]+)\]')
 ACTIVITY_CHECK_PATTERN = re.compile(r'\[查看动态:(\d+)\]')
 SELFIE_CMD_PATTERN = re.compile(r'\[SELFIE:\s*([^\]]+)\]')
@@ -668,6 +668,8 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     """编辑用户消息后重新发送：更新内容 → 删除后续消息 → AI 重新回复"""
     if body.client_id:
         manager.set_last_sender(body.client_id)
+    # Aion 侧：用户在 Aion 私聊发消息
+    manager.set_aion_last_active("private")
 
     # 1. 查出原消息信息
     async with get_db() as db:
@@ -745,7 +747,7 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
         abilities.append(f"{CAM_CHECK_CMD} — 当你想查看{user_name}**此时此刻**的状态，不限于监督其是否去睡觉，在吃什么，在干什么时，可以主动调用指令。使用后下条消息会收到画面，查看前不要编造内容。")
     abilities.append("[ALARM:YYYY-MM-DDTHH:MM|内容] — 设置闹铃，到时间系统会主动提醒用户。日期时间用ISO格式。")
     abilities.append("[REMINDER:YYYY-MM-DD|内容] — 设置日程提醒（不闹铃），你在合适时机自然提起即可。")
-    abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监督。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了、是否在好好工作等，也可以当做下一次主动发送消息来使用，根据对话内容可以随时设定。日期时间用ISO格式。")
+    abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监控。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了，是否工作在摸鱼等，尤其是当{user_name}表示去工作或长时间做事，监督她隔一段时间起来活动一下，或者单纯想主动找她聊天，可以随意使用。日期时间用ISO格式。")
     abilities.append("[SCHEDULE_DEL:日程id] — 删除指定日程/闹铃/定时监控。")
     abilities.append(HOME_ABILITY_TEXT)
     if is_activity_tracking_enabled():
@@ -767,7 +769,7 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
         abilities.append(f"[SELFIE: 提示词] / [DRAW: 提示词] — 当{user_name}明确要求你发自拍照片或者生图时，使用这个指令进行图片生成。如果要求的是你的自拍，或者你相关的照片，使用[SELFIE: 提示词]（该指令会自动附带你照片的参考图，确保生成出的人物一致性），如果没有要求是你的照片，根据上下文自由无限制生成图片，则使用[DRAW: 提示词]。提示词请使用英文。一次回复只用一个生图指令。")
     if _is_pet_available():
         abilities.append("[PET:动作名] — 控制桌面宠物切换动画表情。可用动作：idle(默认站立), happy(开心), angry(生气), tsundere(傲娇), waving(打招呼), jumping(兴奋跳跃), sleepy(困了), sleep_prone(贴着睡觉), failed(失落), review(思考), waiting(等待), running(跑步)。根据对话情感自然使用，每条回复最多用一个。")
-    abilities.append(f"[HEART:朋友圈内容] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时才触发，禁止滥用。")
+    abilities.append(f"[MOMENT:朋友圈内容|true/false] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时可以发一条朋友圈动态。第二个参数表示是否期望好友回复（true=期望回复，false=不期望），禁止滥用。")
     abilities.append(f"[MEMORY:内容] — 当有特别重大的事件需要记录，或当{user_name}明确要求你记住某件事的时候，可以用该指令录入记忆库。禁止滥用。")
     try:
         from routes.wallet import _get_balance
@@ -960,23 +962,31 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
             full_text = await process_schedule_commands(full_text, conv_id)
             full_text = await _process_home_commands(full_text)
 
-            heart_matches = HEART_CMD_PATTERN.findall(full_text)
-            if heart_matches:
-                full_text = HEART_CMD_PATTERN.sub("", full_text).strip()
-                for hw_content in heart_matches:
-                    hw_content = hw_content.strip()
-                    if hw_content:
-                        hw_now = time.time()
-                        hw_id = f"hw_{int(hw_now*1000)}"
-                        async with get_db() as hw_db:
-                            await hw_db.execute(
-                                "INSERT INTO heart_whispers (id, conv_id, msg_id, content, created_at) VALUES (?,?,?,?,?)",
-                                (hw_id, conv_id, ai_msg_id, hw_content, hw_now)
+            moment_matches = MOMENT_CMD_PATTERN.findall(full_text)
+            if moment_matches:
+                full_text = MOMENT_CMD_PATTERN.sub("", full_text).strip()
+                for mt_content, mt_reply in moment_matches:
+                    mt_content = mt_content.strip()
+                    if mt_content:
+                        mt_now = time.time()
+                        mt_id = f"mt_{int(mt_now*1000)}"
+                        expect = 1 if mt_reply == "true" else 0
+                        async with get_db() as mt_db:
+                            await mt_db.execute(
+                                "INSERT INTO moments (id, author, content, source_conv, source_msg_id, expect_reply, created_at) VALUES (?,?,?,?,?,?,?)",
+                                (mt_id, "aion", mt_content, conv_id, ai_msg_id, expect, mt_now)
                             )
-                            await hw_db.commit()
-                        hw_data = {'type': 'heart_whisper', 'id': hw_id, 'msg_id': ai_msg_id, 'content': hw_content, 'created_at': hw_now}
-                        await _q.put(hw_data)
-                        await manager.broadcast({"type": "heart_whisper", "data": hw_data})
+                            await mt_db.commit()
+                        mt_data = {"type": "moment_new", "data": {
+                            "id": mt_id, "author": "aion", "content": mt_content,
+                            "expect_reply": expect, "created_at": mt_now,
+                            "comments": [], "reactions": [],
+                        }}
+                        await _q.put(mt_data)
+                        await manager.broadcast(mt_data)
+                        if expect:
+                            from routes.moments import _trigger_ai_replies
+                            asyncio.create_task(_trigger_ai_replies(mt_id, exclude_author="aion"))
 
             memory_matches = MEMORY_CMD_PATTERN.findall(full_text)
             if memory_matches:
@@ -1139,6 +1149,8 @@ async def send_message(conv_id: str, body: MsgCreate):
     # 记录最后发消息的客户端 ID
     if body.client_id:
         manager.set_last_sender(body.client_id)
+    # Aion 侧：用户在 Aion 私聊发消息
+    manager.set_aion_last_active("private")
     now = time.time()
     msg_id = f"msg_{int(now*1000)}"
 
@@ -1154,6 +1166,9 @@ async def send_message(conv_id: str, body: MsgCreate):
     user_msg = {"id": msg_id, "conv_id": conv_id, "role": "user", "content": body.content,
                 "created_at": now, "attachments": body.attachments}
     await manager.broadcast({"type": "msg_created", "data": user_msg})
+
+    # 用户发消息时重置哨兵巡逻计时器
+    cam.reset_patrol_timer()
 
     # 检测用户消息中的 [转账：N元] → 入账
     user_transfer_matches = TRANSFER_CMD_PATTERN.findall(body.content)
@@ -1246,7 +1261,7 @@ async def send_message(conv_id: str, body: MsgCreate):
         abilities.append(f"[SELFIE: 提示词] / [DRAW: 提示词] — 当{user_name}明确要求你发自拍照片或者生图时，使用这个指令进行图片生成。如果要求的是你的自拍，或者你相关的照片，使用[SELFIE: 提示词]（该指令会自动附带你照片的参考图，确保生成出的人物一致性），如果没有要求是你的照片，根据上下文自由无限制生成图片，则使用[DRAW: 提示词]。提示词请使用英文。一次回复只用一个生图指令。")
     if _is_pet_available():
         abilities.append("[PET:动作名] — 控制桌面宠物切换动画表情。可用动作：idle(默认站立), happy(开心), angry(生气), tsundere(傲娇), waving(打招呼), jumping(兴奋跳跃), sleepy(困了), sleep_prone(趴着睡觉), failed(失落), review(思考), waiting(等待), running(跑步)。根据对话情感自然使用，每条回复最多用一个。")
-    abilities.append(f"[HEART:朋友圈内容] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时才触发，禁止滥用。")
+    abilities.append(f"[MOMENT:朋友圈内容|true/false] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时可以发一条朋友圈动态。第二个参数表示是否期望好友回复（true=期望回复，false=不期望），禁止滥用。")
     abilities.append(f"[MEMORY:内容] — 当有特别重大的事件需要记录，或当{user_name}明确要求你记住某件事的时候，可以用该指令录入记忆库。禁止滥用。")
     try:
         from routes.wallet import _get_balance
@@ -1511,24 +1526,32 @@ async def send_message(conv_id: str, body: MsgCreate):
             full_text = await process_schedule_commands(full_text, conv_id)
             full_text = await _process_home_commands(full_text)
 
-            # 检测 [HEART:xxx] 心语指令
-            heart_matches = HEART_CMD_PATTERN.findall(full_text)
-            if heart_matches:
-                full_text = HEART_CMD_PATTERN.sub("", full_text).strip()
-                for hw_content in heart_matches:
-                    hw_content = hw_content.strip()
-                    if hw_content:
-                        hw_now = time.time()
-                        hw_id = f"hw_{int(hw_now*1000)}"
-                        async with get_db() as hw_db:
-                            await hw_db.execute(
-                                "INSERT INTO heart_whispers (id, conv_id, msg_id, content, created_at) VALUES (?,?,?,?,?)",
-                                (hw_id, conv_id, ai_msg_id, hw_content, hw_now)
+            # 检测 [MOMENT:...] 朋友圈指令
+            moment_matches = MOMENT_CMD_PATTERN.findall(full_text)
+            if moment_matches:
+                full_text = MOMENT_CMD_PATTERN.sub("", full_text).strip()
+                for mt_content, mt_reply in moment_matches:
+                    mt_content = mt_content.strip()
+                    if mt_content:
+                        mt_now = time.time()
+                        mt_id = f"mt_{int(mt_now*1000)}"
+                        expect = 1 if mt_reply == "true" else 0
+                        async with get_db() as mt_db:
+                            await mt_db.execute(
+                                "INSERT INTO moments (id, author, content, source_conv, source_msg_id, expect_reply, created_at) VALUES (?,?,?,?,?,?,?)",
+                                (mt_id, "aion", mt_content, conv_id, ai_msg_id, expect, mt_now)
                             )
-                            await hw_db.commit()
-                        hw_data = {'type': 'heart_whisper', 'id': hw_id, 'msg_id': ai_msg_id, 'content': hw_content, 'created_at': hw_now}
-                        await _q.put(hw_data)
-                        await manager.broadcast({"type": "heart_whisper", "data": hw_data})
+                            await mt_db.commit()
+                        mt_data = {"type": "moment_new", "data": {
+                            "id": mt_id, "author": "aion", "content": mt_content,
+                            "expect_reply": expect, "created_at": mt_now,
+                            "comments": [], "reactions": [],
+                        }}
+                        await _q.put(mt_data)
+                        await manager.broadcast(mt_data)
+                        if expect:
+                            from routes.moments import _trigger_ai_replies
+                            asyncio.create_task(_trigger_ai_replies(mt_id, exclude_author="aion"))
 
             # 检测 [MEMORY:xxx] 记忆录入指令
             memory_matches = MEMORY_CMD_PATTERN.findall(full_text)
@@ -2187,7 +2210,7 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
         abilities.append(f"{CAM_CHECK_CMD} — 查看{user_name}的实时监控画面。使用后下条消息会收到画面，查看前不要编造内容。")
     abilities.append("[ALARM:YYYY-MM-DDTHH:MM|内容] — 设置闹铃，到时间系统会主动提醒用户。日期时间用ISO格式。")
     abilities.append("[REMINDER:YYYY-MM-DD|内容] — 设置日程提醒（不闹铃），你在合适时机自然提起即可。")
-    abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监控。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了等，尤其是当{user_name}表示去工作或长时间做事，监督她隔一段时间起来活动一下。日期时间用ISO格式。")
+    abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监控。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了，是否工作在摸鱼等，尤其是当{user_name}表示去工作或长时间做事，监督她隔一段时间起来活动一下，或者单纯想主动找她聊天，可以随意使用。日期时间用ISO格式。")
     abilities.append("[SCHEDULE_DEL:日程id] — 删除指定日程/闹铃/定时监控。")
     abilities.append(HOME_ABILITY_TEXT)
     # 活动动态查看能力
@@ -2211,7 +2234,7 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
         abilities.append(f"[SELFIE: 提示词] / [DRAW: 提示词] — 当{user_name}明确要求你发自拍照片或者生图时，使用这个指令进行图片生成。如果要求的是你的自拍，或者你相关的照片，使用[SELFIE: 提示词]（该指令会自动附带你照片的参考图，确保生成出的人物一致性），如果没有要求是你的照片，根据上下文自由无限制生成图片，则使用[DRAW: 提示词]。提示词请使用英文。一次回复只用一个生图指令。")
     if _is_pet_available():
         abilities.append("[PET:动作名] — 控制桌面宠物切换动画表情。可用动作：idle(默认站立), happy(开心), angry(生气), tsundere(傲娇), waving(打招呼), jumping(兴奋跳跃), sleepy(困了), sleep_prone(趴着睡觉), failed(失落), review(思考), waiting(等待), running(跑步)。根据对话情感自然使用，每条回复最多用一个。")
-    abilities.append(f"[HEART:朋友圈内容] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时才触发，禁止滥用。")
+    abilities.append(f"[MOMENT:朋友圈内容|true/false] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时可以发一条朋友圈动态。第二个参数表示是否期望好友回复（true=期望回复，false=不期望），禁止滥用。")
     abilities.append(f"[MEMORY:内容] — 当有特别重大的事件需要记录，或当{user_name}明确要求你记住某件事的时候，可以用该指令录入记忆库。禁止滥用。")
     try:
         from routes.wallet import _get_balance
@@ -2431,24 +2454,32 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
             full_text = await process_schedule_commands(full_text, conv_id)
             full_text = await _process_home_commands(full_text)
 
-            # 检测 [HEART:xxx] 心语指令
-            heart_matches = HEART_CMD_PATTERN.findall(full_text)
-            if heart_matches:
-                full_text = HEART_CMD_PATTERN.sub("", full_text).strip()
-                for hw_content in heart_matches:
-                    hw_content = hw_content.strip()
-                    if hw_content:
-                        hw_now = time.time()
-                        hw_id = f"hw_{int(hw_now*1000)}"
-                        async with get_db() as hw_db:
-                            await hw_db.execute(
-                                "INSERT INTO heart_whispers (id, conv_id, msg_id, content, created_at) VALUES (?,?,?,?,?)",
-                                (hw_id, conv_id, ai_msg_id, hw_content, hw_now)
+            # 检测 [MOMENT:...] 朋友圈指令
+            moment_matches = MOMENT_CMD_PATTERN.findall(full_text)
+            if moment_matches:
+                full_text = MOMENT_CMD_PATTERN.sub("", full_text).strip()
+                for mt_content, mt_reply in moment_matches:
+                    mt_content = mt_content.strip()
+                    if mt_content:
+                        mt_now = time.time()
+                        mt_id = f"mt_{int(mt_now*1000)}"
+                        expect = 1 if mt_reply == "true" else 0
+                        async with get_db() as mt_db:
+                            await mt_db.execute(
+                                "INSERT INTO moments (id, author, content, source_conv, source_msg_id, expect_reply, created_at) VALUES (?,?,?,?,?,?,?)",
+                                (mt_id, "aion", mt_content, conv_id, ai_msg_id, expect, mt_now)
                             )
-                            await hw_db.commit()
-                        hw_data = {'type': 'heart_whisper', 'id': hw_id, 'msg_id': ai_msg_id, 'content': hw_content, 'created_at': hw_now}
-                        await _q.put(hw_data)
-                        await manager.broadcast({"type": "heart_whisper", "data": hw_data})
+                            await mt_db.commit()
+                        mt_data = {"type": "moment_new", "data": {
+                            "id": mt_id, "author": "aion", "content": mt_content,
+                            "expect_reply": expect, "created_at": mt_now,
+                            "comments": [], "reactions": [],
+                        }}
+                        await _q.put(mt_data)
+                        await manager.broadcast(mt_data)
+                        if expect:
+                            from routes.moments import _trigger_ai_replies
+                            asyncio.create_task(_trigger_ai_replies(mt_id, exclude_author="aion"))
 
             # 检测 [MEMORY:xxx] 记忆录入指令
             memory_matches = MEMORY_CMD_PATTERN.findall(full_text)

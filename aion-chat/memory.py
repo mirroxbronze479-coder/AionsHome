@@ -157,13 +157,30 @@ async def fetch_source_details(memories: list[dict], keywords: list[str]) -> str
             continue
         async with get_db() as db:
             db.row_factory = aiosqlite.Row
+            # 私聊消息
             cur = await db.execute(
                 "SELECT role, content, created_at FROM messages "
                 "WHERE role IN ('user','assistant') AND created_at >= ? AND created_at <= ? "
                 "ORDER BY created_at ASC",
                 (start_ts, end_ts)
             )
-            rows = await cur.fetchall()
+            rows = list(await cur.fetchall())
+            # 群聊消息
+            cur = await db.execute(
+                "SELECT id FROM chatroom_rooms WHERE type = 'group' ORDER BY updated_at DESC LIMIT 1"
+            )
+            group_room = await cur.fetchone()
+            if group_room:
+                cur = await db.execute(
+                    "SELECT sender, content, created_at FROM chatroom_messages "
+                    "WHERE room_id = ? AND created_at >= ? AND created_at <= ? AND sender != 'system' "
+                    "ORDER BY created_at ASC",
+                    (group_room["id"], start_ts, end_ts),
+                )
+                for gr in await cur.fetchall():
+                    rows.append({"role": "assistant" if gr["sender"] == "aion" else "user",
+                                 "content": gr["content"], "created_at": gr["created_at"],
+                                 "_sender": gr["sender"]})
         print(f"[source_detail] 记忆 {mem.get('id','?')[:12]} 范围 {start_ts}-{end_ts}: 取到 {len(rows)} 条消息")
         hit_count = 0
         for row in rows:
@@ -179,7 +196,11 @@ async def fetch_source_details(memories: list[dict], keywords: list[str]) -> str
     matched_rows.sort(key=lambda r: r["created_at"])
     detail_lines = []
     for row in matched_rows:
-        name = user_name if row["role"] == "user" else ai_name
+        sender = row.get("_sender", "")
+        if sender:
+            name = {"user": user_name, "aion": ai_name, "connor": "Connor"}.get(sender, sender)
+        else:
+            name = user_name if row["role"] == "user" else ai_name
         detail_lines.append(f"{name}: {row['content'][:500]}")
 
     print(f"[source_detail] 最终返回 {len(detail_lines)} 条原文")

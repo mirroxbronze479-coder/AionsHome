@@ -20,9 +20,19 @@
         <button onclick="createRoom('group')">+ 群聊</button>
         <button class="connor-btn" onclick="createRoom('connor_1v1')">+ 私聊</button>
       </div>
+      <div class="room-tabs">
+        <button class="room-tab active" data-tab="group" onclick="switchTab('group')">群聊</button>
+        <button class="room-tab" data-tab="connor_1v1" onclick="switchTab('connor_1v1')">私聊</button>
+      </div>
       <div class="room-list" id="roomList"></div>
       <div class="sidebar-mem-btn">
         <button onclick="openMemory()">📚 记忆库</button>
+      </div>
+      <div class="sidebar-mem-btn">
+        <button onclick="crOpenWhisper()">💗 密语时刻</button>
+      </div>
+      <div class="sidebar-mem-btn">
+        <button onclick="crOpenWalletPanel()">💰 钱包</button>
       </div>
       <div class="sidebar-footer">
         <span class="connor-dot" id="connorDot"></span>
@@ -51,11 +61,24 @@
 
       <div class="preview-area" id="previewArea"></div>
       <form class="composer" id="composer" style="display:none">
-        <input type="file" id="fileInput" accept="image/*" multiple hidden>
-        <button type="button" class="img-btn" onclick="document.getElementById('fileInput').click()" title="发送图片">🖼</button>
+        <input type="file" id="fileInput" accept="image/*,audio/*" multiple hidden>
+        <div class="plus-menu-wrap">
+          <button type="button" class="plus-btn" onclick="crTogglePlusMenu()" title="更多功能">＋</button>
+          <div class="plus-menu" id="crPlusMenu">
+            <div class="plus-menu-item" onclick="crClosePlusMenu();document.getElementById('fileInput').click()"><span class="pm-icon">🖼</span>上传图片</div>
+            <div class="plus-menu-item" onclick="crClosePlusMenu();crOpenCamera()"><span class="pm-icon">📷</span>拍照</div>
+            <div class="plus-menu-item" onclick="crClosePlusMenu();crToggleVoiceMode()"><span class="pm-icon">🎤</span>语音消息</div>
+            <div class="plus-menu-item" onclick="crClosePlusMenu();crOpenWhisper()"><span class="pm-icon">💗</span>密语时刻</div>
+            <div class="plus-menu-item" onclick="crClosePlusMenu();crOpenTransferDialog()"><span class="pm-icon">💰</span>转账</div>
+          </div>
+        </div>
         <textarea id="input" rows="1" maxlength="4000" placeholder="发消息..."></textarea>
         <button type="submit" class="send-btn" id="sendBtn">➤</button>
       </form>
+      <div class="voice-mode-row" id="crVoiceModeRow">
+        <button type="button" class="voice-kbd-btn" onclick="crToggleVoiceMode()" title="切换键盘">⌨</button>
+        <div class="voice-hold-btn" id="crVoiceHoldBtn">按住 说话</div>
+      </div>
     </div>
   </div>
 
@@ -87,9 +110,17 @@
           <label>AI 互聊回合上限</label>
           <input id="setAiRounds" type="number" min="1" max="10" value="3">
         </div>
+        <div class="field" id="fieldReplyOrder">
+          <label>群聊回复顺序</label>
+          <select id="setReplyOrder">
+            <option value="random">随机</option>
+            <option value="aion" id="optAion">Aion 优先</option>
+            <option value="connor" id="optConnor">Connor 优先</option>
+          </select>
+        </div>
         <div class="field">
-          <label>Connor 服务地址</label>
-          <input id="setConnorUrl" type="text" placeholder="http://127.0.0.1:8787">
+          <label>Connor 名字</label>
+          <input id="setConnorName" type="text" placeholder="Connor">
         </div>
         <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
           <div class="field tts-toggle-row">
@@ -107,6 +138,16 @@
             <label>Connor 音色</label>
             <select id="setTtsConnorVoice"></select>
           </div>
+        </div>
+        <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+          <div class="field tts-toggle-row">
+            <span>🔮 密语模式</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="setWhisperMode" onchange="onWhisperToggleChange()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="font-size:11px; color:var(--text3); margin-top:2px;">开启后 AI 可使用 [TOY:x] 指令控制已连接的 BLE 设备</div>
         </div>
         <button class="save-btn" onclick="saveSettings()">保存</button>
         <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
@@ -154,6 +195,14 @@
         <div id="memList"></div>
       </div>
     </div>
+    <!-- 原文追溯浮层 -->
+    <div id="memSourceOverlay" style="display:none; position:absolute; inset:0; background:var(--bg); z-index:20; overflow-y:auto; padding:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-weight:600;">📜 原文记录</span>
+        <button class="close-btn" onclick="closeMemSource()">✕</button>
+      </div>
+      <div id="memSourceList"></div>
+    </div>
   </div>
 
   <!-- 图片查看器 -->
@@ -162,6 +211,74 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- 密语时刻面板 -->
+  <div class="modal-overlay" id="crWhisperModal">
+    <div class="modal whisper-modal">
+      <h3>💗 密语时刻</h3>
+      <div class="whisper-conn-bar">
+        <div class="whisper-conn-left">
+          <div class="whisper-dot off" id="crToyDot"></div>
+          <span class="whisper-conn-label" id="crToyConnLabel">未连接</span>
+        </div>
+        <button class="whisper-btn-conn" id="crToyConnBtn" onclick="crToyToggleConnect()">连接</button>
+      </div>
+      <div class="whisper-toggle-row">
+        <span class="whisper-toggle-label">🔮 密语模式（开启后AI可控制玩具）</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="crWhisperModeToggle" onchange="crOnWhisperModeChange()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="whisper-preset-grid" id="crToyPresetGrid"></div>
+      <div class="whisper-stop-row">
+        <button class="whisper-btn-stop" onclick="crToyStopAll()">⏹ 停止</button>
+      </div>
+      <div class="whisper-log">
+        <div class="whisper-log-area" id="crToyLogArea"></div>
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn-cancel" onclick="crCloseWhisper()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 预设编辑器弹窗 -->
+  <div class="toy-overlay" id="crToyEditorOverlay" onclick="if(event.target===this)crToyCloseEditor()">
+    <div class="toy-edit-sheet">
+      <div class="toy-sheet-handle"></div>
+      <div id="crToyEditContent"></div>
+    </div>
+  </div>
+
+  <!-- Connor 转账弹窗 -->
+  <div class="cr-transfer-dialog-overlay" id="crTransferDialogOverlay" onclick="crCloseTransferDialog()">
+    <div class="cr-transfer-dialog" onclick="event.stopPropagation()">
+      <div class="cr-transfer-dialog-title" id="crTransferDialogTitle">给【Connor】转账</div>
+      <input type="number" id="crTransferAmountInput" class="transfer-amount-input" placeholder="输入金额" step="1">
+      <div class="cr-transfer-dialog-hint">正数=转账，负数=扣除</div>
+      <div class="cr-transfer-dialog-btns">
+        <button class="transfer-btn-cancel" onclick="crCloseTransferDialog()">取消</button>
+        <button class="transfer-btn-confirm" onclick="crConfirmTransfer()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connor 钱包悬浮面板 -->
+  <div class="cr-wallet-panel-overlay" id="crWalletPanelOverlay" onclick="crCloseWalletPanel()">
+    <div class="cr-wallet-panel" onclick="event.stopPropagation()">
+      <div class="wallet-panel-header">
+        <span>💰 Connor 的钱包</span>
+        <button class="wallet-close-btn" onclick="crCloseWalletPanel()">✕</button>
+      </div>
+      <div class="wallet-balance-section connor-wallet-gradient">
+        <div class="wallet-balance-label">当前余额</div>
+        <div class="wallet-balance-value" id="crWalletBalanceValue">¥0.00</div>
+      </div>
+      <div class="wallet-tx-header">转账记录</div>
+      <div class="wallet-tx-list" id="crWalletTxList"></div>
+    </div>
+  </div>
 
   <script src="/static/chatroom.js"></script>
 </body>

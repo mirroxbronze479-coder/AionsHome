@@ -168,6 +168,19 @@ body[data-theme="dark"] .dock::before {
 }
 .dock .app-icon .icon-label { display: none; }
 
+/* ── 红点徽章 ── */
+.badge-dot {
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 10px; height: 10px;
+  background: #ff4757;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  z-index: 5;
+  display: none;
+}
+.badge-dot.show { display: block; }
+
 /* ── Toast 提示 ── */
 .toast {
   position: absolute;
@@ -226,10 +239,11 @@ body[data-theme="dark"] .dock::before {
 /* ── 应用注册表 ─────────────────────────────────── */
 const APPS = [
   { id: 'chat',     name: '聊天',     icon: '/public/funIcon_0005_聊天.png',   url: '/chat',  dock: true },
-  { id: 'memory',   name: '记忆库',   icon: '/public/funIcon_0004_记忆库.png',  url: '/memory' ,  dock: true },
+  { id: 'chatroom', name: '聊天室', icon: '/public/funIcon_0020_聊天室.png', url: '/chatroom' ,  dock: true  },
+  { id: 'memory',   name: '记忆库',   icon: '/public/funIcon_0006_日记本.png',  url: '/memory' ,  dock: true },
+  { id: 'moments',  name: '朋友圈',   icon: '/public/funIcon_0010_朋友圈.png',  url: '/moments' ,  dock: true },
   { id: 'worldbook',name: '世界书',   icon: '/public/funIcon_0007_世界书.png',  url: '/worldbook' },
   { id: 'theater',  name: '小剧场',   icon: '/public/funIcon_0009_小剧场.png',  url: '/theater' },
-  { id: 'moments',  name: '心语',   icon: '/public/funIcon_0006_日记本.png',  url: '/heart-whispers' ,  dock: true },
   { id: 'whisper',  name: '密语时刻', icon: '/public/funIcon_0011_密语时刻.png', url: '/chat?whisper=1' },
   { id: 'alarm',    name: '闹钟',     icon: '/public/funIcon_0012_闹钟.png',    url: '/schedule' },
   { id: 'settings', name: '设置',     icon: '/public/funIcon_0008_设置.png',    url: '/settings' },
@@ -242,7 +256,7 @@ const APPS = [
   { id: 'gift', name: '爱的印记', icon: '/public/funIcon_0018_爱的印记.png', url: '/gift' },
   { id: 'fund', name: '奥罗斯财团', icon: '/public/funIcon_0019_奥罗斯财团.png', url: '/fund' },
   { id: 'playground', name: '娱乐室', icon: '/public/funIcon_0019_娱乐室.png', url: '/playground' },
-  { id: 'chatroom', name: '聊天室', icon: '/public/funIcon_0020_聊天室.png', url: '/chatroom' ,  dock: true  },
+  { id: 'doudizhu', name: '斗地主', icon: '/public/funIcon_0021_斗地主.png', url: '/doudizhu' },
 ];
 
 function applyAionTheme(theme) {
@@ -278,11 +292,12 @@ function renderApps() {
 
 function appHTML(app) {
   const disabled = !app.url;
+  const badgeId = app.id === 'moments' ? 'id="momentsBadge"' : '';
   return `
     <a class="app-icon ${disabled ? 'disabled' : ''}"
        ${app.url ? `onclick="openApp('${app.url}')"` : `onclick="showToast('${app.name} — 还在做哦！😏')"`}
        role="button" tabindex="0">
-      <div class="icon-img"><img src="${app.icon}" alt="${app.name}" draggable="false"></div>
+      <div class="icon-img"><img src="${app.icon}" alt="${app.name}" draggable="false"><div class="badge-dot" ${badgeId}></div></div>
       <span class="icon-label">${app.name}</span>
     </a>`;
 }
@@ -336,6 +351,18 @@ renderApps();
 updateClock();
 setInterval(updateClock, 15000);
 document.getElementById('clockWidget').addEventListener('click', toggleAionTheme);
+
+/* ── 朋友圈未读红点检查 ── */
+async function checkMomentsUnread() {
+  try {
+    const res = await fetch('/api/moments/unread');
+    const data = await res.json();
+    const badge = document.getElementById('momentsBadge');
+    if (badge) badge.classList.toggle('show', data.has_unread);
+  } catch(e) {}
+}
+checkMomentsUnread();
+setInterval(checkMomentsUnread, 60000);
 </script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>

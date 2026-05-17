@@ -16,6 +16,10 @@ class ConnectionManager:
         self.client_ids: dict[WebSocket, str] = {}     # {ws: client_id} — 客户端唯一标识
         self._last_sender_client_id: str | None = None  # 最后发消息的客户端 ID
         self.pet_clients: dict[WebSocket, bool] = {}    # {ws: enabled} — 在线桌宠客户端
+        # ── 各侧用户最后活跃窗口追踪 ──
+        # "private" = Aion 私聊, "chatroom:<room_id>" = 群聊/Connor 私聊
+        self._aion_last_active: str = "private"        # Aion 侧：用户最后在 Aion 私聊 or 群聊
+        self._connor_last_active: str | None = None    # Connor 侧：用户最后在 Connor 私聊 or 群聊的 room_id
 
     async def connect(self, ws: WebSocket):
         await ws.accept()
@@ -35,6 +39,20 @@ class ConnectionManager:
 
     def set_last_sender(self, client_id: str):
         self._last_sender_client_id = client_id
+
+    def set_aion_last_active(self, target: str):
+        """设置 Aion 侧用户最后活跃窗口。target: 'private' 或 'chatroom:<room_id>'"""
+        self._aion_last_active = target
+
+    def set_connor_last_active(self, room_id: str):
+        """设置 Connor 侧用户最后活跃窗口（群聊或 Connor 私聊的 room_id）"""
+        self._connor_last_active = room_id
+
+    def get_aion_last_active(self) -> str:
+        return self._aion_last_active
+
+    def get_connor_last_active(self) -> str | None:
+        return self._connor_last_active
 
     def set_pet_state(self, ws: WebSocket, enabled: bool):
         if enabled:

@@ -8,6 +8,9 @@ let isAiChatting = false;
 let chatroomModel = '';
 let pendingAttachments = [];  // [{url, type, name}]
 
+// ── 密语模式 ──
+let crWhisperMode = false;
+
 const AVATARS = {
   user: '/public/UserIcon.png',
   aion: '/public/gropicon1.png',
@@ -20,14 +23,152 @@ const sndRecv = new Audio('/public/收到消息.mp3');
 function playSend() { sndSend.currentTime = 0; sndSend.play().catch(() => {}); }
 function playRecv() { sndRecv.currentTime = 0; sndRecv.play().catch(() => {}); }
 
-// ── TTS 语音合成 ──
-let crTtsEnabled = localStorage.getItem('chatroom_tts_enabled') === 'true';
-let crTtsAionVoice = localStorage.getItem('chatroom_tts_aion_voice') || '';
-let crTtsConnorVoice = localStorage.getItem('chatroom_tts_connor_voice') || '';
+// ── TTS 语音合成（统一从服务端加载配置，init 时拉取）──
+let crTtsEnabled = false;
+let crTtsAionVoice = '';
+let crTtsConnorVoice = '';
 let crTtsAudio = new Audio();
 let crTtsPlaying = false;
 let crTtsChunkQueues = {}; // { msgId: { nextPlay: 0, chunks: {seq: url}, finished: bool } }
 let crTtsPlayOrder = [];   // msgId 按到达顺序排列
+
+// ── 音乐卡片 ──
+let crMusicCards = {}; // { msgId: [{ id, name, artist, album, cover, audio_url, candidates }] }
+
+// ── 密语胶囊 ──
+function crShowToyCapsule(msgId, commands) {
+  if (!msgId || !commands || !commands.length) return;
+  const row = document.querySelector(`[data-msg-id="${msgId}"]`) || document.getElementById(`streaming-${msgId}`);
+  if (!row) return;
+  const msgContent = row.querySelector('.msg-content');
+  if (!msgContent) return;
+  commands.forEach(cmd => {
+    const c = cmd.trim().toUpperCase();
+    let label;
+    if (c === 'STOP' || c === '0') label = '❤️ 停止';
+    else { const n = parseInt(c); label = (n >= 1 && n <= 9) ? `❤️ ${CR_TOY_PNAMES[n-1]}` : `❤️ ${cmd}`; }
+    const pill = document.createElement('div');
+    pill.className = 'toy-capsule';
+    pill.textContent = label;
+    msgContent.appendChild(pill);
+  });
+  scrollToBottom();
+}
+
+function crRenderMusicCards(msgId) {
+  const cards = crMusicCards[msgId];
+  if (!cards || !cards.length) return;
+  const row = document.querySelector(`[data-msg-id="${msgId}"]`) || document.getElementById(`streaming-${msgId}`);
+  if (!row) return;
+  row.querySelectorAll('.music-capsule').forEach(e => e.style.display = 'none');
+  row.querySelectorAll('.music-cards-container').forEach(e => e.remove());
+  const container = document.createElement('div');
+  container.className = 'music-cards-container';
+  cards.forEach(song => { container.innerHTML += crBuildMusicCardHtml(song); });
+  const msgContent = row.querySelector('.msg-content');
+  if (msgContent) msgContent.appendChild(container);
+}
+
+function crBuildMusicCardHtml(song) {
+  const cover = song.cover ? esc(song.cover) : '';
+  const coverImg = cover
+    ? `<img class="music-cover" src="${cover}" alt="">`
+    : `<div class="music-cover" style="display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text3)">🎵</div>`;
+  const name = esc(song.name || '未知歌曲');
+  const artist = esc(song.artist || '未知歌手');
+  const album = song.album ? `<div class="music-album">💿 ${esc(song.album)}</div>` : '';
+  const songId = song.id;
+  const onlineBtn = `<button class="music-btn secondary" onclick="crPlayMusicOnline(${songId})">▶ 在线播放</button>`;
+  let candidatesHtml = '';
+  if (song.candidates && song.candidates.length) {
+    const items = song.candidates.map(c =>
+      `<div class="cand-item" onclick="crOpenInNetease(${c.id})">🎵 ${esc(c.name)} - ${esc(c.artist)}</div>`
+    ).join('');
+    candidatesHtml = `<details class="music-candidates"><summary>不是这首？看看其他结果</summary>${items}</details>`;
+  }
+  return `
+    <div class="music-card">
+      ${coverImg}
+      <div class="music-info">
+        <div class="music-name">${name}</div>
+        <div class="music-artist">${artist}</div>
+        ${album}
+        <div class="music-btns">
+          <button class="music-btn primary" onclick="crOpenInNetease(${songId})">🎶 网易云播放</button>
+          ${onlineBtn}
+        </div>
+        ${candidatesHtml}
+      </div>
+    </div>`;
+}
+
+function crOpenInNetease(songId) {
+  window.open('https://music.163.com/song?id=' + songId, '_blank');
+}
+
+function crPlayMusicOnline(songId) {
+  let wrap = document.getElementById('crGlobalMusicWrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'crGlobalMusicWrap';
+    wrap.style.cssText = 'position:fixed;top:calc(max(34px, env(safe-area-inset-top, 0px)) + 48px);left:0;right:0;z-index:999;display:none;align-items:center;gap:8px;background:var(--surface,#1e1e1e);padding:0 12px;height:36px;box-shadow:0 2px 8px rgba(0,0,0,0.25);border-bottom:1px solid var(--border,#333);';
+
+    const playBtn = document.createElement('button');
+    playBtn.id = 'crMusicPlayBtn';
+    playBtn.textContent = '⏸';
+    playBtn.style.cssText = 'background:none;border:none;font-size:16px;cursor:pointer;color:var(--text,#eee);padding:0 4px;line-height:1;flex-shrink:0;';
+
+    const bar = document.createElement('input');
+    bar.id = 'crMusicBar';
+    bar.type = 'range'; bar.min = 0; bar.max = 1000; bar.value = 0;
+    bar.style.cssText = 'flex:1;height:4px;accent-color:#e53935;cursor:pointer;';
+
+    const volWrap = document.createElement('span');
+    volWrap.style.cssText = 'display:flex;align-items:center;gap:2px;flex-shrink:0;';
+    const volIcon = document.createElement('span');
+    volIcon.textContent = '🔉';
+    volIcon.style.cssText = 'font-size:13px;cursor:pointer;user-select:none;';
+    const volBar = document.createElement('input');
+    volBar.id = 'crMusicVol';
+    volBar.type = 'range'; volBar.min = 0; volBar.max = 100;
+    volBar.value = localStorage.getItem('musicVolume') ?? 50;
+    volBar.style.cssText = 'width:52px;height:4px;accent-color:#ff9800;cursor:pointer;';
+
+    const audio = document.createElement('audio');
+    audio.id = 'crMusicAudio';
+    audio.volume = (localStorage.getItem('musicVolume') ?? 50) / 100;
+
+    volBar.oninput = () => { audio.volume = volBar.value / 100; localStorage.setItem('musicVolume', volBar.value); volIcon.textContent = volBar.value == 0 ? '🔇' : volBar.value < 50 ? '🔉' : '🔊'; };
+    volIcon.onclick = () => { if (audio.volume > 0) { volIcon.dataset.prev = volBar.value; volBar.value = 0; audio.volume = 0; volIcon.textContent = '🔇'; } else { volBar.value = volIcon.dataset.prev || 50; audio.volume = volBar.value / 100; volIcon.textContent = volBar.value < 50 ? '🔉' : '🔊'; } localStorage.setItem('musicVolume', volBar.value); };
+    volWrap.appendChild(volIcon);
+    volWrap.appendChild(volBar);
+
+    playBtn.onclick = () => { if (audio.paused) { audio.play(); playBtn.textContent = '⏸'; } else { audio.pause(); playBtn.textContent = '▶'; } };
+    audio.ontimeupdate = () => { if (audio.duration) bar.value = (audio.currentTime / audio.duration) * 1000; };
+    bar.oninput = () => { if (audio.duration) audio.currentTime = (bar.value / 1000) * audio.duration; };
+    audio.onended = () => { wrap.style.display = 'none'; playBtn.textContent = '▶'; };
+    audio.onplay = () => { playBtn.textContent = '⏸'; };
+    audio.onpause = () => { if (!audio.ended) playBtn.textContent = '▶'; };
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'background:none;border:none;font-size:14px;cursor:pointer;color:var(--text2,#888);padding:0 4px;line-height:1;flex-shrink:0;';
+    closeBtn.onclick = () => { audio.pause(); audio.currentTime = 0; audio.src = ''; wrap.style.display = 'none'; bar.value = 0; };
+
+    wrap.appendChild(playBtn);
+    wrap.appendChild(bar);
+    wrap.appendChild(volWrap);
+    wrap.appendChild(audio);
+    wrap.appendChild(closeBtn);
+    document.body.appendChild(wrap);
+  }
+  const audio = document.getElementById('crMusicAudio');
+  audio.src = '/api/music/stream/' + songId;
+  wrap.style.display = 'flex';
+  document.getElementById('crMusicBar').value = 0;
+  document.getElementById('crMusicPlayBtn').textContent = '⏸';
+  audio.play().catch(() => {});
+}
 
 function crEnqueueTTSChunk(msgId, seq, url) {
   if (!crTtsEnabled) return;
@@ -100,10 +241,66 @@ function crStopTTS() {
   crTtsPlaying = false;
 }
 
+// ── TTS 重听 ──
+let crReplayAudio = new Audio();
+let crReplayChunks = [];
+let crReplayIdx = 0;
+
+async function crReplayTTS(msgId) {
+  const btn = document.querySelector(`[data-msg-id="${msgId}"] .tts-replay-btn`);
+  // 正在播放则停止
+  if (btn && btn.classList.contains('playing')) {
+    crReplayAudio.pause(); crReplayAudio.src = ''; crReplayChunks = [];
+    btn.classList.remove('playing'); return;
+  }
+  crReplayAudio.pause(); crReplayChunks = [];
+  document.querySelectorAll('.tts-replay-btn.playing').forEach(b => b.classList.remove('playing'));
+
+  // 先尝试分段音频
+  let chunks = [];
+  for (let i = 0; i < 50; i++) {
+    const resp = await fetch(`/api/tts/audio/${msgId}_s${i}`, { method: 'HEAD' });
+    if (!resp.ok) break;
+    chunks.push(`/api/tts/audio/${msgId}_s${i}`);
+  }
+
+  // 降级：单文件
+  if (chunks.length === 0) {
+    const resp = await fetch(`/api/tts/audio/${msgId}`);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    crReplayAudio.src = url;
+    if (btn) btn.classList.add('playing');
+    crReplayAudio.onended = () => { URL.revokeObjectURL(url); if (btn) btn.classList.remove('playing'); };
+    crReplayAudio.onerror = () => { URL.revokeObjectURL(url); if (btn) btn.classList.remove('playing'); };
+    await crReplayAudio.play().catch(() => { if (btn) btn.classList.remove('playing'); });
+    return;
+  }
+
+  // 顺序播放分段
+  crReplayChunks = chunks; crReplayIdx = 0;
+  if (btn) btn.classList.add('playing');
+  _crPlayReplayChunk(btn);
+}
+
+function _crPlayReplayChunk(btn) {
+  if (crReplayIdx >= crReplayChunks.length) { if (btn) btn.classList.remove('playing'); return; }
+  crReplayAudio.src = crReplayChunks[crReplayIdx];
+  crReplayAudio.onended = () => { crReplayIdx++; _crPlayReplayChunk(btn); };
+  crReplayAudio.onerror = () => { crReplayIdx++; _crPlayReplayChunk(btn); };
+  crReplayAudio.play().catch(() => { if (btn) btn.classList.remove('playing'); });
+}
+
 function onTtsToggleChange() {
   crTtsEnabled = document.getElementById('setTtsEnabled').checked;
-  localStorage.setItem('chatroom_tts_enabled', crTtsEnabled);
   if (!crTtsEnabled) crStopTTS();
+  // 持久化到服务端，所有窗口共享
+  api('/config', { method: 'PUT', body: JSON.stringify({ tts_enabled: crTtsEnabled }) }).catch(() => {});
+}
+
+function onWhisperToggleChange() {
+  crWhisperMode = document.getElementById('setWhisperMode').checked;
 }
 
 async function crLoadTTSVoices() {
@@ -206,8 +403,19 @@ async function loadRooms() {
   renderRoomList();
 }
 
+let activeTab = 'group';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.room-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  renderRoomList();
+}
+
 function renderRoomList() {
-  roomListEl.innerHTML = rooms.map(r => {
+  const filtered = rooms.filter(r => r.type === activeTab);
+  roomListEl.innerHTML = filtered.map(r => {
     const active = currentRoom && currentRoom.id === r.id ? 'active' : '';
     const typeBadge = r.type === 'connor_1v1'
       ? '<span class="type-badge connor">私聊</span>'
@@ -220,10 +428,16 @@ function renderRoomList() {
         <button class="del-btn" onclick="event.stopPropagation(); deleteRoom('${r.id}')" title="删除">✕</button>
       </div>`;
   }).join('');
+  if (!filtered.length) {
+    roomListEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">暂无' + (activeTab === 'group' ? '群聊' : '私聊') + '</div>';
+  }
 }
 
 async function createRoom(type) {
-  const title = type === 'connor_1v1' ? '私聊 ' + (rooms.filter(r => r.type === 'connor_1v1').length + 1) : '群聊 ' + (rooms.filter(r => r.type === 'group').length + 1);
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  const label = type === 'connor_1v1' ? '私聊' : '群聊';
+  const title = `${label} ${dateStr}`;
   const result = await api('/rooms', {
     method: 'POST',
     body: JSON.stringify({ title, type }),
@@ -231,6 +445,7 @@ async function createRoom(type) {
   if (result.error) {
     // connor_1v1 已存在，直接切过去
     if (result.existing_id) {
+      switchTab(type);
       selectRoom(result.existing_id);
       closeSidebar();
     } else {
@@ -238,6 +453,7 @@ async function createRoom(type) {
     }
     return;
   }
+  switchTab(type);
   await loadRooms();
   selectRoom(result.id);
   closeSidebar();
@@ -257,8 +473,15 @@ async function selectRoom(roomId) {
   const room = rooms.find(r => r.id === roomId);
   if (!room) return;
   currentRoom = room;
-  renderRoomList();
+  // 自动切换到对应 tab
+  if (activeTab !== room.type) switchTab(room.type);
+  else renderRoomList();
   roomTitleEl.textContent = room.title;
+  // 退出语音模式（如果在语音模式中切换房间）
+  if (_crVoiceMode) {
+    _crVoiceMode = false;
+    document.getElementById('crVoiceModeRow').classList.remove('active');
+  }
   composer.style.display = 'flex';
   aiChatBtn.style.display = room.type === 'group' ? '' : 'none';
   await loadMessages();
@@ -304,14 +527,23 @@ function msgHTML(m) {
   // 用户消息按单换行拆，AI消息按双换行拆
   const isUser = sender === 'user';
   const raw = m.content || '';
-  // AI 消息使用 escWithImages 解析 [[image:...]]，用户消息纯转义
-  const fmt = isUser ? esc : escWithImages;
-  const parts = raw.split(isUser ? /\n+/ : /\n{2,}/).filter(p => p.trim());
-  let bubblesHtml;
-  if (parts.length > 1) {
-    bubblesHtml = '<div class="bubbles">' + parts.map(p => `<div class="bubble">${fmt(p)}</div>`).join('') + '</div>';
-  } else {
-    bubblesHtml = `<div class="bubble">${fmt(raw)}</div>`;
+
+  // 判断是否为纯语音消息（只有语音附件，content 是转写文本或为空）
+  const hasVoiceAtt = Array.isArray(m.attachments) && m.attachments.some(a => typeof a === 'object' && a.type === 'voice');
+  const isVoiceOnly = hasVoiceAtt && (!raw || m.attachments.some(a => typeof a === 'object' && a.type === 'voice' && a.transcript === raw));
+
+  // AI 消息使用 escWithImages 解析 [[image:...]] 和转账卡片，用户消息也渲染转账卡片
+  const fmt = isUser ? escWithTransfer : escWithImages;
+  let bubblesHtml = '';
+  if (!isVoiceOnly) {
+    // 转账标签前后强制换行，确保卡片独占一个气泡
+    const splitRaw = raw.replace(/(\[转账[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n$1\n');
+    const parts = splitRaw.split(isUser ? /\n+/ : /\n{2,}/).filter(p => p.trim());
+    if (parts.length > 1) {
+      bubblesHtml = '<div class="bubbles">' + parts.map(p => `<div class="bubble">${fmt(p)}</div>`).join('') + '</div>';
+    } else if (raw.trim()) {
+      bubblesHtml = `<div class="bubble">${fmt(raw)}</div>`;
+    }
   }
 
   // 渲染附件图片
@@ -330,10 +562,15 @@ function msgHTML(m) {
     ? `<div class="sender-line"><span class="sender-label ${sender}">${esc(name)}</span>${menuHtml}</div>`
     : (menuHtml ? `<div class="sender-line user-line">${menuHtml}</div>` : '');
 
+  const ttsBtn = !isUser && msgId ? `<button class="tts-replay-btn" onclick="crReplayTTS('${msgId}')" title="重听语音">🔊</button>` : '';
+
   return `
     <div class="message-row ${sender}" data-msg-id="${msgId}">
       <div class="msg-body">
-        <img class="avatar" src="${avatar}" alt="${name}">
+        <div class="msg-avatar-col">
+          <img class="avatar" src="${avatar}" alt="${name}">
+          ${ttsBtn}
+        </div>
         <div class="msg-content">
           ${senderLine}
           ${bubblesHtml}
@@ -377,7 +614,7 @@ function appendMessage(m) {
   const div = document.createElement('div');
   div.innerHTML = msgHTML(m);
   messagesEl.appendChild(div.firstElementChild);
-  scrollToBottom();
+  scrollToBottom(m.sender === 'user');
 }
 
 function appendTyping(who) {
@@ -437,7 +674,9 @@ function startStreamingBubble(sender, id) {
   row.id = `streaming-${id}`;
   row.innerHTML = `
     <div class="msg-body">
-      <img class="avatar" src="${avatar}" alt="${name}">
+      <div class="msg-avatar-col">
+        <img class="avatar" src="${avatar}" alt="${name}">
+      </div>
       <div class="msg-content">
         <div class="sender-label ${sender}">${esc(name)}</div>
         <div class="bubble"></div>
@@ -457,9 +696,14 @@ function feedStreamingChunk(text) {
 }
 
 function endStreamingBubble(attachments) {
-  // 流结束后，按双换行拆分成多个气泡，并解析 [[image:...]]
+  // 先获取流式行的引用（后面 replaceChild 可能破坏 streamingBubble 的 DOM 位置）
+  const streamRow = streamingBubble ? streamingBubble.closest('.message-row') : null;
+
+  // 流结束后，按双换行拆分成多个气泡，并解析 [[image:...]] 和转账卡片
   if (streamingBubble && streamingText) {
-    const parts = streamingText.split(/\n{2,}/).filter(p => p.trim());
+    // 转账标签前后强制换行，确保卡片独占一个气泡
+    const splitText = streamingText.replace(/(\[转账[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n\n$1\n\n');
+    const parts = splitText.split(/\n{2,}/).filter(p => p.trim());
     if (parts.length > 1) {
       const parent = streamingBubble.parentElement;
       const container = document.createElement('div');
@@ -480,6 +724,15 @@ function endStreamingBubble(attachments) {
       // 附件图片追加到气泡后面
       const attHtml = renderAttachments(attachments);
       if (attHtml) streamingBubble.insertAdjacentHTML('afterend', attHtml);
+    }
+  }
+  // 为流式气泡添加 TTS 重听按钮 + data-msg-id
+  if (streamRow && streamRow.id && streamRow.id.startsWith('streaming-')) {
+    const msgId = streamRow.id.replace('streaming-', '');
+    streamRow.setAttribute('data-msg-id', msgId);
+    const avatarCol = streamRow.querySelector('.msg-avatar-col');
+    if (avatarCol && !avatarCol.querySelector('.tts-replay-btn')) {
+      avatarCol.insertAdjacentHTML('beforeend', `<button class="tts-replay-btn" onclick="crReplayTTS('${msgId}')" title="重听语音">🔊</button>`);
     }
   }
   streamingBubble = null;
@@ -512,7 +765,7 @@ composer.addEventListener('submit', async (e) => {
     const resp = await fetch(`${API}/rooms/${currentRoom.id}/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text, model: chatroomModel, attachments, tts_enabled: crTtsEnabled, tts_aion_voice: crTtsAionVoice, tts_connor_voice: crTtsConnorVoice }),
+      body: JSON.stringify({ content: text, model: chatroomModel, attachments, tts_enabled: crTtsEnabled, tts_aion_voice: crTtsAionVoice, tts_connor_voice: crTtsConnorVoice, whisper_mode: crWhisperMode }),
     });
 
     const reader = resp.body.getReader();
@@ -622,13 +875,31 @@ function handleSSE(data) {
       if (data.message) { appendMessage(data.message); }
       break;
     case 'music':
-      // 音乐播放由 WS broadcast 触发主聊天页面的播放器，这里无需处理
-      break;
-    case 'heart_whisper':
-      // 群聊心语：复用主聊天的心语通知
-      if (window.parent && window.parent.postMessage) {
-        window.parent.postMessage({type: 'chatroom_heart_whisper', data: data}, '*');
+      if (data.msg_id && data.cards) {
+        crMusicCards[data.msg_id] = data.cards;
+        crRenderMusicCards(data.msg_id);
+        scrollToBottom();
+        if (data.autoplay && data.cards.length) crPlayMusicOnline(data.cards[0].id);
       }
+      break;
+    case 'toy_command':
+      if (data.commands && data.commands.length) {
+        // 转发到主聊天页面的 BLE 执行器（如果在同一浏览器中打开）
+        try {
+          if (window.opener && window.opener.toyExecCmd) {
+            data.commands.forEach(c => window.opener.toyExecCmd(c));
+          } else if (window.parent && window.parent !== window && window.parent.toyExecCmd) {
+            data.commands.forEach(c => window.parent.toyExecCmd(c));
+          }
+        } catch(e) {}
+        // 本页如果有 BLE 连接也直接执行
+        if (typeof toyExecCmd === 'function') data.commands.forEach(c => toyExecCmd(c));
+        // 显示胶囊气泡
+        crShowToyCapsule(data.msg_id, data.commands);
+      }
+      break;
+    case 'moment_new':
+      // 朋友圈动态已移至独立页面
       break;
   }
 }
@@ -715,11 +986,20 @@ async function openSettings() {
   document.getElementById('setConnorPersona').value = room.connor_persona || '';
   document.getElementById('setContextMin').value = room.context_minutes || 30;
   document.getElementById('setAiRounds').value = room.ai_chat_rounds || 3;
-  document.getElementById('setConnorUrl').value = cfg.connor_url || 'http://127.0.0.1:8787';
+  document.getElementById('setConnorName').value = cfg.connor_name || 'Connor';
 
-  // connor_1v1 隐藏 Aion 人设和互聊回合
-  document.getElementById('fieldAionPersona').style.display = room.type === 'connor_1v1' ? 'none' : '';
-  document.getElementById('fieldAiRounds').style.display = room.type === 'connor_1v1' ? 'none' : '';
+  // 回复顺序选项：用世界书和配置中的名字
+  const aionName = cfg.ai_name || 'Aion';
+  const connorName = cfg.connor_name || 'Connor';
+  document.getElementById('optAion').textContent = `${aionName} 优先`;
+  document.getElementById('optConnor').textContent = `${connorName} 优先`;
+  document.getElementById('setReplyOrder').value = cfg.reply_order || 'random';
+
+  // connor_1v1 隐藏群聊专属设置
+  const isConnor1v1 = room.type === 'connor_1v1';
+  document.getElementById('fieldAionPersona').style.display = isConnor1v1 ? 'none' : '';
+  document.getElementById('fieldAiRounds').style.display = isConnor1v1 ? 'none' : '';
+  document.getElementById('fieldReplyOrder').style.display = isConnor1v1 ? 'none' : '';
 }
 
 function closeSettings() {
@@ -745,15 +1025,16 @@ async function saveSettings() {
   await api('/config', {
     method: 'PUT',
     body: JSON.stringify({
-      connor_url: document.getElementById('setConnorUrl').value,
+      connor_name: document.getElementById('setConnorName')?.value || undefined,
+      tts_aion_voice: document.getElementById('setTtsAionVoice').value,
+      tts_connor_voice: document.getElementById('setTtsConnorVoice').value,
+      reply_order: document.getElementById('setReplyOrder').value,
     }),
   });
 
-  // 保存 TTS 音色配置到 localStorage（开关已由 toggle 实时保存）
+  // 同步本地变量
   crTtsAionVoice = document.getElementById('setTtsAionVoice').value;
   crTtsConnorVoice = document.getElementById('setTtsConnorVoice').value;
-  localStorage.setItem('chatroom_tts_aion_voice', crTtsAionVoice);
-  localStorage.setItem('chatroom_tts_connor_voice', crTtsConnorVoice);
 
   // 刷新
   currentRoom.title = document.getElementById('setTitle').value;
@@ -804,6 +1085,7 @@ async function loadMemories() {
     memListEl.innerHTML = mems.map(m => {
       const date = new Date(m.created_at * 1000).toLocaleDateString();
       const kw = m.keywords ? `关键词: ${esc(m.keywords)}` : '';
+      const hasSource = m.source_start_ts && m.source_end_ts;
       return `
         <div class="mem-item" data-id="${m.id}">
           <div class="mem-content">${esc(m.content)}</div>
@@ -812,6 +1094,7 @@ async function loadMemories() {
             <span>重要度: ${m.importance}</span>
             ${kw ? `<span>${kw}</span>` : ''}
             <div class="mem-actions">
+              ${hasSource ? `<button onclick="viewMemSource('${m.id}')" title="查看原文">📜</button>` : ''}
               <button onclick="editMemory('${m.id}')" title="编辑">✏️</button>
               <button class="del" onclick="deleteMemory('${m.id}')" title="删除">✕</button>
             </div>
@@ -885,6 +1168,35 @@ async function deleteMemory(memId) {
   await api(`/memories/${memId}`, { method: 'DELETE' });
   toast('已删除');
   loadMemories();
+}
+
+async function viewMemSource(memId) {
+  const overlay = document.getElementById('memSourceOverlay');
+  const listEl = document.getElementById('memSourceList');
+  overlay.style.display = 'block';
+  listEl.innerHTML = '<div class="mem-empty">加载中...</div>';
+  try {
+    const result = await api(`/memories/${memId}/source`);
+    if (!result.ok || !result.messages || !result.messages.length) {
+      listEl.innerHTML = `<div class="mem-empty">${result.message || '没有找到原文记录'}</div>`;
+      return;
+    }
+    listEl.innerHTML = result.messages.map(m => {
+      const t = m.created_at ? new Date(m.created_at * 1000).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div style="margin-bottom:10px; padding:8px; background:var(--bubble-other); border-radius:8px;">
+        <div style="font-size:12px; color:var(--text2); margin-bottom:4px;">
+          <strong>${esc(m.name)}</strong> <span style="margin-left:6px;">${esc(t)}</span>
+        </div>
+        <div style="white-space:pre-wrap; word-break:break-word; font-size:13px;">${esc(m.content)}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div class="mem-empty">加载失败</div>';
+  }
+}
+
+function closeMemSource() {
+  document.getElementById('memSourceOverlay').style.display = 'none';
 }
 
 // 点击遮罩关闭设置
@@ -979,6 +1291,37 @@ function connectWS() {
       if (data.type === 'chatroom_room_created' || data.type === 'chatroom_room_deleted' || data.type === 'chatroom_room_updated') {
         loadRooms();
       }
+
+      // 音乐广播（来自 WS broadcast）— 仅在非发送状态下处理（发送时 SSE 已处理）
+      if (data.type === 'music' && data.data && !isSending && !isAiChatting) {
+        const d = data.data;
+        if (d.msg_id && d.cards) {
+          crMusicCards[d.msg_id] = d.cards;
+          crRenderMusicCards(d.msg_id);
+          scrollToBottom();
+          if (d.autoplay && d.cards.length) crPlayMusicOnline(d.cards[0].id);
+        }
+      }
+
+      // 玩具指令广播
+      if (data.type === 'toy_command' && data.data) {
+        const d = data.data;
+        if (d.commands && d.commands.length) {
+          try {
+            if (window.opener && window.opener.toyExecCmd) d.commands.forEach(c => window.opener.toyExecCmd(c));
+            else if (window.parent && window.parent !== window && window.parent.toyExecCmd) d.commands.forEach(c => window.parent.toyExecCmd(c));
+          } catch(e) {}
+          if (typeof toyExecCmd === 'function') d.commands.forEach(c => toyExecCmd(c));
+          crShowToyCapsule(d.msg_id, d.commands);
+        }
+      }
+
+      // Connor 钱包余额变动 → 自动刷新钱包面板
+      if (data.type === 'connor_wallet_update') {
+        if (document.getElementById('crWalletPanelOverlay').classList.contains('show')) {
+          crOpenWalletPanel();
+        }
+      }
     } catch {}
   };
 
@@ -995,7 +1338,20 @@ function renderAttachments(atts) {
   let html = '';
   atts.forEach(item => {
     const url = typeof item === 'string' ? item : (item.url || '');
-    if (url) html += `<img src="${esc(url)}" onclick="openImageViewer(this.src)">`;
+    const type = (typeof item === 'object' && item.type) || '';
+    if (type === 'voice') {
+      const dur = item.duration || 0;
+      const durStr = dur < 60 ? `${Math.round(dur)}"` : `${Math.floor(dur/60)}'${Math.round(dur%60)}"`;
+      const waveBars = Array.from({length: 6}, () => `<span style="height:${4 + Math.random()*14}px"></span>`).join('');
+      html += `<div class="voice-bubble" onclick="crPlayVoice(this,'${esc(url)}')">
+        <span class="vb-play">▶</span>
+        <span class="vb-wave">${waveBars}</span>
+        <span class="vb-dur">${durStr}</span>
+      </div>`;
+      if (item.transcript) html += `<div class="vb-transcript">${esc(item.transcript)}</div>`;
+    } else if (url) {
+      html += `<img src="${esc(url)}" onclick="openImageViewer(this.src)">`;
+    }
   });
   return html ? '<div class="msg-media">' + html + '</div>' : '';
 }
@@ -1085,7 +1441,28 @@ function esc(str) {
   return div.innerHTML;
 }
 
-/** 将文本中的 [[image:...]] 标记渲染为 <img>，其余部分转义 */
+/** 渲染 [转账：N元] 为微信风格转账卡片 */
+function renderTransferCards(html) {
+  const transferRe = /\[\u8f6c\u8d26[\uff1a:]\s*(-?\d+(?:\.\d+)?)\s*\u5143\]/g;
+  return html.replace(transferRe, (match, amount) => {
+    const val = parseFloat(amount);
+    const isNeg = val < 0;
+    const absVal = Math.abs(val);
+    if (isNeg) {
+      return `<div class="transfer-card deduct"><div class="transfer-card-icon-wrap"><svg viewBox="0 0 40 40" width="28" height="28"><circle cx="20" cy="20" r="18" fill="none" stroke="#fff" stroke-width="2.5"/><line x1="14" y1="14" x2="26" y2="26" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><line x1="26" y1="14" x2="14" y2="26" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="transfer-card-body"><div class="transfer-card-amount">¥${absVal}</div><div class="transfer-card-desc">钱包扣除</div></div><div class="transfer-card-footer">扣除</div></div>`;
+    } else {
+      return `<div class="transfer-card"><div class="transfer-card-icon-wrap"><svg viewBox="0 0 40 40" width="28" height="28"><circle cx="20" cy="20" r="18" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M12 17h12M24 17l-3-3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M28 23H16M16 23l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><div class="transfer-card-body"><div class="transfer-card-amount">¥${absVal}</div><div class="transfer-card-desc">发起了一笔转账</div></div><div class="transfer-card-footer">转账</div></div>`;
+    }
+  });
+}
+
+/** 转义文本并渲染转账卡片（用户消息） */
+function escWithTransfer(str) {
+  if (!str) return '';
+  return renderTransferCards(esc(str));
+}
+
+/** 将文本中的 [[image:...]] 标记渲染为 <img>，[转账：N元] 渲染为卡片，其余部分转义 */
 function escWithImages(str) {
   if (!str) return '';
   const imgRe = /\[\[image:(\S+?)\]\]/g;
@@ -1104,14 +1481,740 @@ function escWithImages(str) {
   }
   const tail = str.slice(lastIdx);
   if (tail) result += esc(tail);
-  return result;
+  return renderTransferCards(result);
 }
+
+// ══════════════════════════════════════════════════
+//  ＋ 展开菜单
+// ══════════════════════════════════════════════════
+
+function crTogglePlusMenu() {
+  const m = document.getElementById('crPlusMenu');
+  m.classList.toggle('show');
+}
+function crClosePlusMenu() {
+  document.getElementById('crPlusMenu').classList.remove('show');
+}
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.plus-menu-wrap');
+  const menu = document.getElementById('crPlusMenu');
+  if (menu && (wrap?.contains(e.target) || menu.contains(e.target))) return;
+  crClosePlusMenu();
+});
+
+// ══════════════════════════════════════════════════
+//  Android 原生桥接（iframe 穿透）
+// ══════════════════════════════════════════════════
+// 聊天室可能在 iframe 中加载，原生桥注入在顶层 WebView，需要穿透访问
+function _getNativeBridge(name) {
+  try { if (window[name]) return window[name]; } catch(e) {}
+  try { if (window.parent && window.parent[name]) return window.parent[name]; } catch(e) {}
+  try { if (window.top && window.top[name]) return window.top[name]; } catch(e) {}
+  return null;
+}
+
+// ══════════════════════════════════════════════════
+//  拍照功能
+// ══════════════════════════════════════════════════
+
+let _crCamOverlay = null;
+let _crCamStream = null;
+let _crCamUseNative = false;
+let _crCamNativeTimer = null;
+let _crCamFacing = 'environment';
+
+function crOpenCamera() {
+  if (_crCamOverlay) _crCamOverlay.remove();
+  _crCamFacing = 'environment';
+  _crCamOverlay = document.createElement('div');
+  _crCamOverlay.className = 'camera-overlay show';
+  _crCamOverlay.innerHTML = `
+    <div class="camera-preview">
+      <video id="crCamVideo" autoplay playsinline muted></video>
+      <img id="crCamImg" style="display:none">
+    </div>
+    <div class="camera-bar">
+      <button class="cam-close-btn" onclick="crCloseCamera()">✕</button>
+      <button class="cam-shutter-btn" onclick="crCapturePhoto()">📷</button>
+      <button class="cam-flip-btn" onclick="crFlipCam()">🔄</button>
+    </div>
+  `;
+  document.body.appendChild(_crCamOverlay);
+  _crStartCam();
+}
+
+async function _crStartCam() {
+  try {
+    _crCamStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _crCamFacing, width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    const vid = document.getElementById('crCamVideo');
+    if (vid) { vid.srcObject = _crCamStream; vid.style.transform = _crCamFacing === 'user' ? 'scaleX(-1)' : 'none'; vid.style.display = 'block'; vid.play().catch(()=>{}); }
+    const img = document.getElementById('crCamImg');
+    if (img) img.style.display = 'none';
+    _crCamUseNative = false;
+    return;
+  } catch (e) { console.warn('[CR-Camera] getUserMedia failed:', e); }
+  const _cam = _getNativeBridge('AionCamera');
+  if (_cam) {
+    const ok = _cam.start(_crCamFacing === 'user' ? 'user' : 'environment');
+    if (ok) {
+      _crCamUseNative = true;
+      const vid = document.getElementById('crCamVideo');
+      const img = document.getElementById('crCamImg');
+      if (vid) vid.style.display = 'none';
+      if (img) { img.style.display = 'block'; img.style.transform = _crCamFacing === 'user' ? 'scaleX(-1)' : 'none'; }
+      _crPollCamFrame();
+      return;
+    }
+  }
+  alert('无法打开摄像头');
+  crCloseCamera();
+}
+
+function _crPollCamFrame() {
+  const _cam = _getNativeBridge('AionCamera');
+  if (!_crCamUseNative || !_cam) return;
+  const frame = _cam.getFrame();
+  if (frame) { const img = document.getElementById('crCamImg'); if (img) img.src = 'data:image/jpeg;base64,' + frame; }
+  _crCamNativeTimer = requestAnimationFrame(_crPollCamFrame);
+}
+
+function _crStopCam() {
+  if (_crCamNativeTimer) { cancelAnimationFrame(_crCamNativeTimer); _crCamNativeTimer = null; }
+  if (_crCamUseNative) { const _cam = _getNativeBridge('AionCamera'); if (_cam) _cam.stop(); _crCamUseNative = false; }
+  if (_crCamStream) { _crCamStream.getTracks().forEach(t => t.stop()); _crCamStream = null; }
+}
+
+function crCloseCamera() {
+  _crStopCam();
+  if (_crCamOverlay) { _crCamOverlay.remove(); _crCamOverlay = null; }
+}
+
+async function crFlipCam() {
+  _crCamFacing = _crCamFacing === 'environment' ? 'user' : 'environment';
+  if (_crCamUseNative) {
+    const _cam = _getNativeBridge('AionCamera');
+    if (_cam) _cam.flip();
+    const img = document.getElementById('crCamImg');
+    if (img) img.style.transform = _crCamFacing === 'user' ? 'scaleX(-1)' : 'none';
+  } else {
+    _crStopCam();
+    await _crStartCam();
+  }
+}
+
+async function crCapturePhoto() {
+  let dataUrl = null;
+  if (_crCamUseNative) {
+    const _cam = _getNativeBridge('AionCamera');
+    if (_cam) { const b64 = _cam.capture(); if (b64) dataUrl = 'data:image/jpeg;base64,' + b64; }
+  } else if (_crCamStream) {
+    const videoEl = document.getElementById('crCamVideo');
+    if (videoEl) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoEl.videoWidth || 640;
+      canvas.height = videoEl.videoHeight || 480;
+      canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    }
+  }
+  if (!dataUrl) { alert('拍照失败'); return; }
+  crCloseCamera();
+  const resp = await fetch(dataUrl);
+  const blob = await resp.blob();
+  const fd = new FormData();
+  fd.append('file', blob, 'photo_' + Date.now() + '.jpg');
+  try {
+    const res = await fetch(`${API}/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { toast(data.error); return; }
+    pendingAttachments.push(data);
+    renderPreview();
+  } catch (err) { toast('上传失败: ' + err.message); }
+}
+
+// ══════════════════════════════════════════════════
+//  语音消息
+// ══════════════════════════════════════════════════
+
+let _crVoiceMode = false;
+let _crVoiceRecording = false;
+let _crVoiceMediaRecorder = null;
+let _crVoiceStream = null;
+let _crVoiceChunks = [];
+let _crVoiceStartTime = 0;
+let _crVoiceTimerInterval = null;
+let _crVoiceOverlay = null;
+let _crVoiceCancelled = false;
+let _crVoiceNativeChunks = [];
+let _crVoiceUseNative = false;
+
+// 语音消息播放
+let _crVoiceAudio = null;
+function crPlayVoice(el, url) {
+  if (_crVoiceAudio && el.classList.contains('playing')) {
+    _crVoiceAudio.pause(); _crVoiceAudio = null;
+    el.classList.remove('playing'); el.querySelector('.vb-play').textContent = '▶';
+    return;
+  }
+  document.querySelectorAll('.voice-bubble.playing').forEach(b => {
+    b.classList.remove('playing'); b.querySelector('.vb-play').textContent = '▶';
+  });
+  if (_crVoiceAudio) { _crVoiceAudio.pause(); _crVoiceAudio = null; }
+  _crVoiceAudio = new Audio(url);
+  el.classList.add('playing'); el.querySelector('.vb-play').textContent = '⏸';
+  _crVoiceAudio.play().catch(()=>{});
+  _crVoiceAudio.onended = () => { el.classList.remove('playing'); el.querySelector('.vb-play').textContent = '▶'; _crVoiceAudio = null; };
+}
+
+function crToggleVoiceMode() {
+  _crVoiceMode = !_crVoiceMode;
+  const composerEl = document.getElementById('composer');
+  const voiceRow = document.getElementById('crVoiceModeRow');
+  if (_crVoiceMode) {
+    composerEl.style.display = 'none';
+    voiceRow.classList.add('active');
+    _crInitVoiceHoldBtn();
+  } else {
+    if (currentRoom) composerEl.style.display = 'flex';
+    voiceRow.classList.remove('active');
+  }
+}
+
+function _crInitVoiceHoldBtn() {
+  const btn = document.getElementById('crVoiceHoldBtn');
+  if (btn._inited) return;
+  btn._inited = true;
+  btn.addEventListener('mousedown', e => { e.preventDefault(); _crVoiceStartRecord(e); });
+  document.addEventListener('mousemove', e => { if (_crVoiceRecording) _crVoiceTrackPointer(e); });
+  document.addEventListener('mouseup', e => { if (_crVoiceRecording) _crVoiceStopRecord(e); });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); _crVoiceStartRecord(e.touches[0]); }, {passive:false});
+  document.addEventListener('touchmove', e => { if (_crVoiceRecording) _crVoiceTrackPointer(e.touches[0]); }, {passive:false});
+  document.addEventListener('touchend', e => { if (_crVoiceRecording) _crVoiceStopRecord(e.changedTouches[0]); });
+  document.addEventListener('touchcancel', e => { if (_crVoiceRecording) { _crVoiceCancelled = true; _crVoiceStopRecord(e.changedTouches?.[0]); } });
+}
+
+async function _crVoiceStartRecord(evt) {
+  if (_crVoiceRecording || isSending) return;
+  _crVoiceRecording = true;
+  _crVoiceCancelled = false;
+  _crVoiceChunks = [];
+  _crVoiceNativeChunks = [];
+  _crVoiceStartTime = Date.now();
+
+  _crVoiceOverlay = document.createElement('div');
+  _crVoiceOverlay.className = 'voice-record-overlay active';
+  _crVoiceOverlay.innerHTML = `
+    <div class="vr-bg"></div>
+    <div class="vr-trash-zone" id="crVrTrash">🗑️</div>
+    <div class="vr-timer" id="crVrTimer">0:00</div>
+    <div class="vr-hint" id="crVrHint">↑ 上滑取消</div>
+  `;
+  document.body.appendChild(_crVoiceOverlay);
+
+  _crVoiceTimerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - _crVoiceStartTime) / 1000);
+    const m = Math.floor(sec / 60), s = sec % 60;
+    const timer = document.getElementById('crVrTimer');
+    if (timer) timer.textContent = `${m}:${String(s).padStart(2, '0')}`;
+  }, 200);
+
+  const btn = document.getElementById('crVoiceHoldBtn');
+  btn.classList.add('recording'); btn.textContent = '松开 发送';
+
+  _crVoiceUseNative = false;
+
+  // Android WebView：直接用原生录音桥（绕过 HTTPS 限制）
+  // 注意：聊天室可能在 iframe 中加载，AionAudio 注入在顶层 WebView
+  const _AionAudio = _getNativeBridge('AionAudio');
+  if (_AionAudio) {
+    _crVoiceUseNative = true; _crVoiceNativeChunks = [];
+    window._voiceNativeOnChunk = (b64) => { _crVoiceNativeChunks.push(b64); };
+    // 同时在顶层窗口注册回调（AudioBridge 的 evaluateJavascript 在顶层执行）
+    try { if (window.top !== window) window.top._voiceNativeOnChunk = window._voiceNativeOnChunk; } catch(e) {}
+    try { if (window.parent !== window) window.parent._voiceNativeOnChunk = window._voiceNativeOnChunk; } catch(e) {}
+    const ok = _AionAudio.start();
+    if (!ok) { toast('麦克风启动失败'); _crVoiceCleanup(); return; }
+    return;
+  }
+
+  // 浏览器：使用 getUserMedia + MediaRecorder
+  try {
+    _crVoiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mime = _crGetVoiceMime();
+    _crVoiceMediaRecorder = new MediaRecorder(_crVoiceStream, mime ? { mimeType: mime } : undefined);
+    _crVoiceMediaRecorder.ondataavailable = e => { if (e.data.size > 0) _crVoiceChunks.push(e.data); };
+    _crVoiceMediaRecorder.start();
+  } catch (e) {
+    console.warn('[CR-Voice] getUserMedia failed:', e);
+    alert('无法访问麦克风');
+    _crVoiceCleanup();
+  }
+}
+
+function _crGetVoiceMime() {
+  if (typeof MediaRecorder !== 'undefined') {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+    if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+  }
+  return '';
+}
+
+function _crVoiceTrackPointer(evt) {
+  const trash = document.getElementById('crVrTrash');
+  const hint = document.getElementById('crVrHint');
+  if (!trash) return;
+  const r = trash.getBoundingClientRect();
+  const dist = Math.sqrt((evt.clientX - r.left - r.width/2)**2 + (evt.clientY - r.top - r.height/2)**2);
+  if (dist < 60) {
+    trash.classList.add('hover'); if (hint) hint.textContent = '松开 取消'; _crVoiceCancelled = true;
+  } else {
+    trash.classList.remove('hover'); if (hint) hint.textContent = '↑ 上滑取消'; _crVoiceCancelled = false;
+  }
+}
+
+async function _crVoiceStopRecord(evt) {
+  if (!_crVoiceRecording) return;
+  _crVoiceRecording = false;
+  const duration = (Date.now() - _crVoiceStartTime) / 1000;
+
+  if (evt) {
+    const trash = document.getElementById('crVrTrash');
+    if (trash) {
+      const r = trash.getBoundingClientRect();
+      const dist = Math.sqrt((evt.clientX - r.left - r.width/2)**2 + (evt.clientY - r.top - r.height/2)**2);
+      if (dist < 60) _crVoiceCancelled = true;
+    }
+  }
+
+  if (_crVoiceCancelled || duration < 0.5) { _crVoiceCleanup(); return; }
+
+  let audioBlob;
+  if (_crVoiceUseNative) {
+    const _aa = _getNativeBridge('AionAudio');
+    if (_aa) try { _aa.stop(); } catch(e) {}
+    audioBlob = _crBuildWav(_crVoiceNativeChunks);
+  } else {
+    if (_crVoiceMediaRecorder && _crVoiceMediaRecorder.state !== 'inactive') {
+      audioBlob = await new Promise(resolve => {
+        _crVoiceMediaRecorder.onstop = () => { resolve(new Blob(_crVoiceChunks, { type: _crVoiceMediaRecorder.mimeType || 'audio/webm' })); };
+        _crVoiceMediaRecorder.stop();
+      });
+    }
+  }
+
+  _crVoiceCleanup();
+  if (!audioBlob || audioBlob.size < 100) { toast('录音数据为空，请重试'); return; }
+  await _crVoiceSend(audioBlob, duration);
+}
+
+function _crVoiceCleanup() {
+  if (_crVoiceTimerInterval) { clearInterval(_crVoiceTimerInterval); _crVoiceTimerInterval = null; }
+  if (_crVoiceOverlay) { _crVoiceOverlay.remove(); _crVoiceOverlay = null; }
+  if (_crVoiceStream) { _crVoiceStream.getTracks().forEach(t => t.stop()); _crVoiceStream = null; }
+  if (_crVoiceMediaRecorder) { try { _crVoiceMediaRecorder.stop(); } catch {} _crVoiceMediaRecorder = null; }
+  if (_crVoiceUseNative) { const _aa = _getNativeBridge('AionAudio'); if (_aa) try { _aa.stop(); } catch {} }
+  _crVoiceRecording = false; _crVoiceChunks = []; _crVoiceNativeChunks = [];
+  const btn = document.getElementById('crVoiceHoldBtn');
+  if (btn) { btn.classList.remove('recording'); btn.textContent = '按住 说话'; }
+}
+
+function _crBuildWav(chunks) {
+  let totalLen = 0;
+  const bufs = chunks.map(b64 => {
+    const bin = atob(b64); const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    totalLen += buf.length; return buf;
+  });
+  const sampleRate = 16000, numCh = 1, bps = 16;
+  const header = new ArrayBuffer(44), v = new DataView(header);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); v.setUint32(4, 36+totalLen, true); ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,numCh,true);
+  v.setUint32(24,sampleRate,true); v.setUint32(28,sampleRate*numCh*bps/8,true);
+  v.setUint16(32,numCh*bps/8,true); v.setUint16(34,bps,true); ws(36,'data'); v.setUint32(40,totalLen,true);
+  const wav = new Uint8Array(44+totalLen); wav.set(new Uint8Array(header), 0);
+  let off = 44; for (const buf of bufs) { wav.set(buf, off); off += buf.length; }
+  return new Blob([wav], { type: 'audio/wav' });
+}
+
+async function _crVoiceSend(audioBlob, duration) {
+  if (!currentRoom || isSending) return;
+
+  // 1. 上传音频
+  const ext = audioBlob.type.includes('wav') ? 'wav' : (audioBlob.type.includes('mp4') ? 'mp4' : 'webm');
+  const fd = new FormData();
+  fd.append('file', audioBlob, `voice_${Date.now()}.${ext}`);
+  let uploadRes;
+  try {
+    const res = await fetch(`${API}/upload`, { method: 'POST', body: fd });
+    uploadRes = await res.json();
+    if (uploadRes.error) { toast(uploadRes.error); return; }
+  } catch (e) { toast('语音上传失败'); return; }
+
+  // 2. 转写
+  const fd2 = new FormData();
+  fd2.append('file', audioBlob, `voice.${ext}`);
+  let transcript = '';
+  for (let _try = 0; _try < 2; _try++) {
+    try {
+      const body = _try === 0 ? fd2 : (() => { const f = new FormData(); f.append('file', audioBlob, `voice.${ext}`); return f; })();
+      const res = await fetch('/api/voice/transcribe', { method: 'POST', body });
+      const r = await res.json();
+      transcript = r.text || '';
+      if (transcript) break;
+    } catch (e) { console.warn(`[CR-Voice] Transcribe attempt ${_try+1} failed:`, e); }
+  }
+
+  // 3. 构建语音附件并发送
+  const voiceAtt = { type: 'voice', url: uploadRes.url, duration: Math.round(duration * 10) / 10, transcript };
+
+  isSending = true;
+  sendBtn.disabled = true;
+
+  const attachments = [voiceAtt.url];
+  const voiceAttachmentsFull = [voiceAtt];
+  playSend();
+  appendMessage({ sender: 'user', content: '', created_at: Date.now()/1000, attachments: voiceAttachmentsFull });
+
+  try {
+    const resp = await fetch(`${API}/rooms/${currentRoom.id}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: transcript || '',
+        model: chatroomModel,
+        attachments,
+        voice_attachments: voiceAttachmentsFull,
+        tts_enabled: crTtsEnabled,
+        tts_aion_voice: crTtsAionVoice,
+        tts_connor_voice: crTtsConnorVoice
+      }),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try { handleSSE(JSON.parse(line.slice(6))); } catch {}
+      }
+    }
+  } catch (err) { toast('发送失败: ' + err.message); }
+  finally {
+    isSending = false;
+    sendBtn.disabled = false;
+    endStreamingBubble();
+    inputEl.focus();
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  密语时刻（BLE 玩具控制）
+// ══════════════════════════════════════════════════
+
+const CR_TOY_SERVICE_UUID = 0xEE01, CR_TOY_WRITE_UUID = 0xEE03, CR_TOY_NOTIFY_UUID = 0xEE02;
+let crToyDevice = null, crToyServer = null, crToyWriteChar = null, crToyConnected = false;
+let crToyActivePreset = -1;
+let crToyPresets = [];
+
+// BLE 状态跨页面同步（BroadcastChannel）
+const crBleCh = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('toy_ble_state') : null;
+function crBleNotify(connected) { if (crBleCh) crBleCh.postMessage({ connected }); }
+if (crBleCh) crBleCh.onmessage = function(ev) {
+  crToyConnected = !!ev.data.connected;
+  crToyUpdateUI();
+  if (crToyConnected) crToyLog('已连接（来自其他页面）', 'wl-sys');
+  else crToyLog('已断开（来自其他页面）', 'wl-err');
+};
+
+// 原生 BLE 回调（Android APK）
+window.toyNativeBle = window.toyNativeBle || {};
+const _origOnConn = window.toyNativeBle.onConnected;
+const _origOnDisc = window.toyNativeBle.onDisconnected;
+window.toyNativeBle.onConnected = function() { crToyConnected = true; crToyUpdateUI(); crToyLog('已连接 ♡', 'wl-sys'); crBleNotify(true); if (_origOnConn) _origOnConn(); };
+window.toyNativeBle.onDisconnected = function() { crToyConnected = false; crToyUpdateUI(); crToyLog('断开', 'wl-err'); crBleNotify(false); if (_origOnDisc) _origOnDisc(); };
+
+const CR_TOY_MOTORS = [
+  { label:'震动', gearsSpec:'0001', modeSpec:'0002',
+    modes:[{id:1,name:'全身酥麻'},{id:2,name:'渐入佳境'},{id:3,name:'循序渐进'},{id:4,name:'欢呼雀跃'}] },
+  { label:'电流', gearsSpec:'0003', modeSpec:'0004',
+    modes:[{id:1,name:'温柔涟漪'},{id:2,name:'娇舌搅动'},{id:3,name:'风驰快感'},{id:4,name:'浪潮不断'}] },
+  { label:'吮吸', gearsSpec:'0007', modeSpec:'0008',
+    modes:[{id:1,name:'连绵不绝'},{id:2,name:'深海暗涌'},{id:3,name:'爆裂冲刺'},{id:4,name:'浪潮不断'}] },
+];
+const CR_TOY_PNAMES = ['微风轻拂','春水初生','暗流涌动','如梦似幻','情潮渐涨','烈焰焚身','极乐之巅','魂飞魄散','失控'];
+const CR_TOY_PICONS = ['🌸','💧','🌊','✨','🔥','💥','⚡','💀','🌀'];
+const CR_TOY_DEF_PRESETS = [
+  { motors:[{on:0,mode:1,speed:10},{on:0,mode:1,speed:0},{on:1,mode:1,speed:10}] },
+  { motors:[{on:0,mode:1,speed:20},{on:0,mode:1,speed:10},{on:1,mode:3,speed:20}] },
+  { motors:[{on:0,mode:2,speed:30},{on:0,mode:1,speed:20},{on:1,mode:2,speed:30}] },
+  { motors:[{on:0,mode:2,speed:45},{on:0,mode:2,speed:25},{on:1,mode:4,speed:40}] },
+  { motors:[{on:0,mode:3,speed:60},{on:1,mode:2,speed:20},{on:1,mode:2,speed:50}] },
+  { motors:[{on:1,mode:3,speed:10},{on:1,mode:3,speed:30},{on:1,mode:4,speed:60}] },
+  { motors:[{on:1,mode:2,speed:20},{on:1,mode:4,speed:40},{on:1,mode:4,speed:80}] },
+  { motors:[{on:1,mode:1,speed:30},{on:1,mode:3,speed:80},{on:1,mode:3,speed:100}] },
+  { motors:[{on:1,mode:4,speed:40},{on:1,mode:3,speed:90},{on:1,mode:3,speed:100}] },
+];
+
+function crToyLoadPresets() {
+  try { const s = localStorage.getItem('sosexy_presets_v3'); if (s) { crToyPresets = JSON.parse(s); return; } } catch(e) {}
+  crToyPresets = JSON.parse(JSON.stringify(CR_TOY_DEF_PRESETS));
+}
+function crToySavePresets() { localStorage.setItem('sosexy_presets_v3', JSON.stringify(crToyPresets)); }
+
+function crToyLog(msg, cls='') {
+  const a = document.getElementById('crToyLogArea'); if (!a) return;
+  const d = document.createElement('div'); d.className = cls;
+  d.textContent = `[${new Date().toLocaleTimeString('zh-CN',{hour12:false})}] ${msg}`;
+  a.appendChild(d); a.scrollTop = a.scrollHeight;
+}
+
+function crToyHexToBytes(h) { const b=[]; for(let i=0;i<h.length;i+=2) b.push(parseInt(h.substr(i,2),16)); return b; }
+function crToyToHex2(n) { return n.toString(16).padStart(2,'0'); }
+function crToyBuildDualCmd(s1,v1,s2,v2) { return '02'+s1+'11'+crToyToHex2(v1)+s2+'11'+crToyToHex2(v2); }
+function crToyBuildStopCmd() { return '03000111000003110000071100'; }
+function crToySleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function crToySendData2(hexCmd) {
+  if (window.AionBle && window.AionBle.isConnected()) {
+    crToyLog('→ ' + hexCmd, 'wl-send');
+    window.AionBle.sendData(hexCmd);
+    return;
+  }
+  if (!crToyWriteChar) { crToyLog('未连接','wl-err'); return; }
+  const full = '00' + hexCmd;
+  crToyLog('→ ' + hexCmd, 'wl-send');
+  const data = crToyHexToBytes(full), chunks = [];
+  for (let i = 0; i < data.length; i += 18) chunks.push(data.slice(i, i+18));
+  const rnd = Math.floor(Math.random() * 255), pkts = [];
+  for (let i = 0; i < chunks.length; i++) pkts.push([rnd, i+1, ...chunks[i]]);
+  if (chunks.length > 0 && chunks[chunks.length-1].length === 18) pkts.push([rnd, chunks.length+1]);
+  for (let i = 0; i < pkts.length; i++) {
+    const p = new Uint8Array(pkts[i]);
+    try {
+      if (crToyWriteChar.properties.write) await crToyWriteChar.writeValueWithResponse(p);
+      else await crToyWriteChar.writeValueWithoutResponse(p);
+    } catch(e) { crToyLog('写入失败:'+e.message,'wl-err'); return; }
+    if (pkts.length > 1 && i < pkts.length-1) await crToySleep(30);
+  }
+}
+
+async function crToyApplyPreset(p) {
+  for (let i = 0; i < 3; i++) {
+    const m = p.motors[i], mo = CR_TOY_MOTORS[i];
+    await crToySendData2(crToyBuildDualCmd(mo.modeSpec, m.mode||1, mo.gearsSpec, m.on ? m.speed : 0));
+    await crToySleep(80);
+  }
+}
+
+async function crToyActivatePreset(idx) {
+  crToyActivePreset = idx; crToyRenderGrid();
+  const p = crToyPresets[idx];
+  crToyLog('⚡ ' + CR_TOY_PNAMES[idx], 'wl-sys');
+  await crToyApplyPreset(p);
+}
+
+function crToyStopAll() {
+  crToyActivePreset = -1;
+  crToySendData2(crToyBuildStopCmd());
+  crToyLog('⏹ 停止', 'wl-sys');
+  crToyRenderGrid();
+}
+
+// AI 指令处理器（供 WS/SSE toy_command 事件调用）
+function toyExecCmd(cmd) {
+  cmd = cmd.trim().toUpperCase();
+  if (cmd === 'STOP' || cmd === '0') { crToyStopAll(); return; }
+  const n = parseInt(cmd);
+  if (n >= 1 && n <= 9) { crToyActivatePreset(n - 1); return; }
+  crToyLog('无效指令:' + cmd, 'wl-err');
+}
+
+function crToyRenderGrid() {
+  const g = document.getElementById('crToyPresetGrid'); if (!g) return;
+  g.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const d = document.createElement('div');
+    d.className = 'whisper-p-btn' + (i === crToyActivePreset ? ' active' : '');
+    d.innerHTML = `<span class="wp-icon">${CR_TOY_PICONS[i]}</span><span class="wp-name">${CR_TOY_PNAMES[i]}</span><button class="wp-edit" onclick="event.stopPropagation();crToyOpenEditor(${i})">⚙</button>`;
+    d.onclick = () => { if (crToyConnected || (window.AionBle && window.AionBle.isConnected())) crToyActivatePreset(i); else crToyLog('请先连接','wl-err'); };
+    g.appendChild(d);
+  }
+}
+
+function crToyUpdateUI() {
+  const dot = document.getElementById('crToyDot'), label = document.getElementById('crToyConnLabel'), btn = document.getElementById('crToyConnBtn');
+  if (dot) dot.className = 'whisper-dot ' + (crToyConnected ? 'on' : 'off');
+  if (label) label.textContent = crToyConnected ? (crToyDevice?.name || '已连接') : '未连接';
+  if (btn) btn.textContent = crToyConnected ? '断开' : '连接';
+}
+
+async function crToyToggleConnect() {
+  if (crToyConnected) { crToyDisconnect(); return; }
+  if (window.AionBle) { window.AionBle.connect(); return; }
+  if (!navigator.bluetooth) { crToyLog('此浏览器不支持 Web Bluetooth','wl-err'); return; }
+  try {
+    crToyLog('搜索中...', 'wl-sys');
+    crToyDevice = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SOSEXY' }], optionalServices: [CR_TOY_SERVICE_UUID] });
+    crToyLog(crToyDevice.name || '已找到设备', 'wl-sys');
+    crToyDevice.addEventListener('gattserverdisconnected', () => { crToyConnected = false; crToyWriteChar = null; crToyUpdateUI(); crToyLog('断开','wl-err'); });
+    crToyServer = await crToyDevice.gatt.connect();
+    const svc = await crToyServer.getPrimaryService(CR_TOY_SERVICE_UUID);
+    crToyWriteChar = await svc.getCharacteristic(CR_TOY_WRITE_UUID);
+    try { const nc = await svc.getCharacteristic(CR_TOY_NOTIFY_UUID); await nc.startNotifications(); } catch(e) {}
+    crToyConnected = true;
+    crToyUpdateUI();
+    crToyLog('已连接 ♡', 'wl-sys');
+    crBleNotify(true);
+  } catch(e) { crToyLog('连接失败:'+e.message, 'wl-err'); }
+}
+
+function crToyDisconnect() {
+  crToyStopAll();
+  if (window.AionBle) { window.AionBle.disconnect(); }
+  else if (crToyDevice && crToyDevice.gatt.connected) { crToyDevice.gatt.disconnect(); }
+  crToyConnected = false; crToyWriteChar = null;
+  crToyUpdateUI(); crToyLog('已断开', 'wl-sys');
+  crBleNotify(false);
+}
+
+function crOpenWhisper() {
+  crToyLoadPresets();
+  // 检查原生 BLE 桥接的实际连接状态（从 Aion 页面连接的也能用）
+  if (window.AionBle && typeof window.AionBle.isConnected === 'function') {
+    crToyConnected = window.AionBle.isConnected();
+  }
+  crToyRenderGrid();
+  crToyUpdateUI();
+  document.getElementById('crWhisperModeToggle').checked = crWhisperMode;
+  document.getElementById('crWhisperModal').classList.add('show');
+}
+function crCloseWhisper() { document.getElementById('crWhisperModal').classList.remove('show'); }
+
+// ══════════════════════════════════════════════════
+//  Connor 钱包
+// ══════════════════════════════════════════════════
+
+function crOpenTransferDialog() {
+  document.getElementById('crTransferDialogTitle').textContent = '给【Connor】转账';
+  document.getElementById('crTransferAmountInput').value = '';
+  document.getElementById('crTransferDialogOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('crTransferAmountInput').focus(), 100);
+}
+
+function crCloseTransferDialog() {
+  document.getElementById('crTransferDialogOverlay').classList.remove('show');
+}
+
+function crConfirmTransfer() {
+  const val = document.getElementById('crTransferAmountInput').value.trim();
+  if (!val || isNaN(Number(val)) || Number(val) === 0) return;
+  const n = Number(val);
+  const tag = `[转账：${n}元]`;
+  const cur = inputEl.value;
+  inputEl.value = cur ? cur + ' ' + tag : tag;
+  resizeInput();
+  crCloseTransferDialog();
+  inputEl.focus();
+}
+
+async function crOpenWalletPanel() {
+  document.getElementById('crWalletPanelOverlay').classList.add('show');
+  closeSidebar();
+  try {
+    const [balRes, txRes] = await Promise.all([
+      fetch('/api/connor-wallet/balance').then(r => r.json()),
+      fetch('/api/connor-wallet/transactions?limit=50').then(r => r.json())
+    ]);
+    document.getElementById('crWalletBalanceValue').textContent = `¥${(balRes.balance || 0).toFixed(2)}`;
+    const list = document.getElementById('crWalletTxList');
+    if (!txRes || txRes.length === 0) {
+      list.innerHTML = '<div class="wallet-tx-empty">暂无转账记录</div>';
+    } else {
+      list.innerHTML = txRes.map(tx => {
+        const isAi = tx.record_type === 'connor_wallet_ai';
+        const d = new Date(tx.created_at * 1000);
+        const timeStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const sign = tx.amount >= 0 ? '+' : '';
+        const cls = tx.amount >= 0 ? 'positive' : 'negative';
+        const uName = '用户';
+        let desc = tx.description || (isAi ? 'Connor转账' : `${uName}转账`);
+        return `<div class="wallet-tx-item"><div><div class="wallet-tx-desc">${esc(desc)}</div><div class="wallet-tx-time">${timeStr}</div></div><div class="wallet-tx-amount ${cls}">${sign}${tx.amount.toFixed(2)}</div></div>`;
+      }).join('');
+    }
+  } catch(e) {
+    document.getElementById('crWalletTxList').innerHTML = '<div class="wallet-tx-empty">加载失败</div>';
+  }
+}
+
+function crCloseWalletPanel() {
+  document.getElementById('crWalletPanelOverlay').classList.remove('show');
+}
+
+function crOnWhisperModeChange() {
+  crWhisperMode = document.getElementById('crWhisperModeToggle').checked;
+  crToyLog(crWhisperMode ? '🔮 密语模式已开启' : '🔮 密语模式已关闭', 'wl-sys');
+}
+
+// ── 预设编辑器 ──
+function crToyOpenEditor(idx) {
+  const p = crToyPresets[idx];
+  let h = `<h3>${CR_TOY_PICONS[idx]} ${CR_TOY_PNAMES[idx]}</h3>`;
+  for (let mi = 0; mi < 3; mi++) {
+    const ms = p.motors[mi], mo = CR_TOY_MOTORS[mi];
+    h += `<div class="toy-me-block"><div class="toy-me-head"><span>${mo.label}</span>
+    <label class="toggle-switch" style="transform:scale(.8)"><input type="checkbox" id="crteo${mi}" ${ms.on?'checked':''}><span class="toggle-slider"></span></label>
+    </div><div class="toy-chip-row" id="crtem${mi}">
+    ${mo.modes.map(md => `<span class="toy-chip${md.id===ms.mode?' sel':''}" data-mid="${md.id}" onclick="crToyESel(${mi},${md.id})">${md.name}</span>`).join('')}
+    </div><div class="toy-ed-speed"><label>速度</label>
+    <input type="range" min="0" max="100" value="${ms.speed}" id="crtes${mi}" oninput="document.getElementById('crtev${mi}').textContent=this.value">
+    <span class="toy-ed-sv" id="crtev${mi}">${ms.speed}</span></div></div>`;
+  }
+  h += `<div class="toy-sheet-btns"><button class="toy-sb-cancel" onclick="crToyCloseEditor()">取消</button><button class="toy-sb-save" onclick="crToySaveEd(${idx})">保存</button></div>`;
+  document.getElementById('crToyEditContent').innerHTML = h;
+  document.getElementById('crToyEditorOverlay').classList.add('show');
+}
+
+function crToyESel(mi, mid) {
+  document.querySelectorAll(`#crtem${mi} .toy-chip`).forEach(c => c.classList.toggle('sel', parseInt(c.dataset.mid) === mid));
+}
+
+function crToySaveEd(idx) {
+  const p = crToyPresets[idx];
+  for (let mi = 0; mi < 3; mi++) {
+    p.motors[mi].on = document.getElementById(`crteo${mi}`).checked ? 1 : 0;
+    const sc = document.querySelector(`#crtem${mi} .toy-chip.sel`);
+    if (sc) p.motors[mi].mode = parseInt(sc.dataset.mid);
+    p.motors[mi].speed = parseInt(document.getElementById(`crtes${mi}`).value);
+  }
+  crToySavePresets(); crToyCloseEditor(); crToyRenderGrid();
+  crToyLog(`预设${idx+1}已保存`, 'wl-sys');
+}
+
+function crToyCloseEditor() { document.getElementById('crToyEditorOverlay').classList.remove('show'); }
 
 // ══════════════════════════════════════════════════
 //  初始化
 // ══════════════════════════════════════════════════
 
 (async function init() {
+  // 从服务端加载 TTS 配置，所有窗口共享同一份
+  try {
+    const cfg = await api('/config');
+    crTtsEnabled = !!cfg.tts_enabled;
+    crTtsAionVoice = cfg.tts_aion_voice || '';
+    crTtsConnorVoice = cfg.tts_connor_voice || '';
+  } catch(e) {}
   await fetchCurrentModel();
   await loadRooms();
   // 默认打开最后一次聊天的房间

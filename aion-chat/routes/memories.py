@@ -168,22 +168,50 @@ async def get_memory_source(mem_id: str):
     user_name = wb.get("user_name", "用户")
     ai_name = wb.get("ai_name", "AI")
 
+    start_ts, end_ts = mem["source_start_ts"], mem["source_end_ts"]
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
+        # 私聊消息
         cur = await db.execute(
             "SELECT role, content, created_at FROM messages "
             "WHERE role IN ('user','assistant') AND created_at >= ? AND created_at <= ? "
             "ORDER BY created_at ASC",
-            (mem["source_start_ts"], mem["source_end_ts"])
+            (start_ts, end_ts)
         )
-        rows = await cur.fetchall()
+        rows = list(await cur.fetchall())
+        # 群聊消息
+        cur = await db.execute(
+            "SELECT id FROM chatroom_rooms WHERE type = 'group' ORDER BY updated_at DESC LIMIT 1"
+        )
+        group_room = await cur.fetchone()
+        if group_room:
+            cur = await db.execute(
+                "SELECT sender, content, created_at FROM chatroom_messages "
+                "WHERE room_id = ? AND created_at >= ? AND created_at <= ? AND sender != 'system' "
+                "ORDER BY created_at ASC",
+                (group_room["id"], start_ts, end_ts),
+            )
+            for gr in await cur.fetchall():
+                rows.append({"role": "assistant" if gr["sender"] == "aion" else "user",
+                             "content": gr["content"], "created_at": gr["created_at"],
+                             "sender": gr["sender"]})
 
-    messages = []
+    # 按时间合并排序
+    all_msgs = []
     for r in rows:
-        messages.append({
+        sender = r.get("sender", "") if isinstance(r, dict) else ""
+        if sender:
+            name = {"user": user_name, "aion": ai_name, "connor": "Connor"}.get(sender, sender)
+            source = "group"
+        else:
+            name = user_name if r["role"] == "user" else ai_name
+            source = "private"
+        all_msgs.append({
             "role": r["role"],
-            "name": user_name if r["role"] == "user" else ai_name,
+            "name": name,
             "content": r["content"],
             "created_at": r["created_at"],
+            "source": source,
         })
-    return {"ok": True, "messages": messages}
+    all_msgs.sort(key=lambda x: x["created_at"])
+    return {"ok": True, "messages": all_msgs}

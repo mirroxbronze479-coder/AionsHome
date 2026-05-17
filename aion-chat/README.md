@@ -16,7 +16,7 @@
 - **EPUB 解析**：ebooklib（EPUB 读取）+ BeautifulSoup4 / lxml（HTML 解析）
 - **基金监控**：akshare（A股/基金数据拉取）+ chinese-calendar（中国节假日/交易日判断）
 - **MCP 娱乐室**：mcp（Python MCP SDK，支持 Streamable HTTP / stdio 传输，接入外部服务如 AI 小镇）
-- **聊天室**：三人群聊（用户 + Aion + Connor-Codex），Connor 代理通过 HTTP 轮询接入 Codex CLI 服务，随机回复顺序，统一时间线上下文（私聊+群聊合并排序，场景切换标记），统一记忆总结（Aion/Connor 各自合并私聊+群聊消息总结，独立锚点，1小时无新消息自动触发），图片收发（用户发图→CLI 管线通过本地绝对路径传递、API 管线通过 base64 内嵌，Codex 回复 `[[image:...]]` 标记→前端渲染，图片存储于 `Connor-Codex/uploads/YYYY-MM-DD/`），TTS 语音合成（Aion/Connor 独立音色配置，硬基流动 CosyVoice2 服务端流式切分+并行合成，通过 SSE 推送音频分段顺序播放，配置持久化 localStorage）
+- **聊天室**：三人群聊（用户 + Aion + Connor-Codex），Connor 代理通过 HTTP 轮询接入 Codex CLI 服务，随机回复顺序，统一时间线上下文（私聊+群聊合并排序，场景切换标记），统一记忆总结（Aion/Connor 各自合并私聊+群聊消息总结，独立锚点，1小时无新消息自动触发），图片收发（用户发图→CLI 管线通过本地绝对路径传递、API 管线通过 base64 内嵌，Codex 回复 `[[image:...]]` 标记→前端渲染，图片存储于 `Connor-Codex/uploads/YYYY-MM-DD/`），＋展开菜单（上传图片/拍照/语音消息/密语时刻，复用 Android 原生桥 AionCamera/AionAudio，iframe 穿透访问），拍照功能（getUserMedia + AionCamera 原生桥回退，前后摄切换），语音消息（按住说话 + 上滑取消 + MediaRecorder / AionAudio 原生桥录制 → 上传 → ASR 转写 → 橙色语音气泡 + 转写小字 + 播放动画，音频文件同时发送给 AI 模型），TTS 语音合成（Aion/Connor 独立音色配置，硬基流动 CosyVoice2 服务端流式切分+并行合成，通过 SSE 推送音频分段顺序播放，配置持久化服务端 `chatroom_config.json` + localStorage 双存），侧栏群聊/私聊分 Tab 筛选 + 新建房间自动日期命名，Connor 名字可配置（`chatroom_config.json` 中 `connor_name`），聊天室内 [CAM_CHECK] 摄像头查看独立实现（提示音→延迟→截图→AI 分析→回复写入聊天室），日程/闹铃/定时监控按来源窗口路由回复（origin + origin_room_id 追踪，Connor 来源使用 Connor TTS 音色），音乐点歌（[MUSIC:xxx] 指令检测 + 音乐卡片 + 在线播放器 + 自动播放），密语时刻 BLE 控制（完整 BLE 连接/预设/编辑器 + 跨页面 BLE 状态同步 + 密语模式开关 + AI [TOY:x] 指令执行 + 胶囊气泡）
 - **依赖库**：fastapi, uvicorn, httpx, aiosqlite, opencv-python, Pillow, sounddevice, numpy, webrtcvad-wheels, pyncm, pywin32, psutil, ebooklib, beautifulsoup4, lxml, akshare, chinese-calendar, mcp
 
 ## 模块化文件结构
@@ -34,6 +34,7 @@
 │   ├── AIonResponse.mp3          # 语音唤醒回复音频（"诶，我在呢"）
 │   ├── UserIcon.png              # 用户聊天头像
 │   ├── AIIcon.png                # AI 聊天头像
+│   ├── card/                     # 斗地主牌桌音效（洗牌/出牌/炸弹/胜负/轮到你/换人出牌）
 │   └── 生图锚点.jpg             # SELFIE 参考图（AI 人物一致性锚点）
 │   └── wallpaper/                # 动态壁纸媒体文件（图片+视频）
 ├── AionApp/                      # Android WebView 原生壳（Java，Android Studio 项目）
@@ -54,14 +55,14 @@
     ├── main.py                   # 入口：lifespan、路由注册、静态挂载、WebSocket、PWA 路由、自动记忆总结定时任务（私聊+群聊空闲检测）、Connor自动总结定时任务
     ├── config.py                 # 全局路径、常量、settings/worldbook/chat_status/cam_config 读写、哨兵模型配置(get_sentinel_config)、向量模型配置(get_embedding_config)
     ├── database.py               # SQLite 初始化（conversations/messages/memories/schedules/theater 等表 + 性能索引）
-    ├── ws.py                     # WebSocket ConnectionManager 单例，含 tts_clients 状态追踪 + _tts_fallback HTTP 回落机制 + client_id 注册/定向推送
+    ├── ws.py                     # WebSocket ConnectionManager 单例，含 tts_clients 状态追踪 + _tts_fallback HTTP 回落机制 + client_id 注册/定向推送 + 各AI最后活跃窗口追踪
     ├── ai_providers.py           # AI 调用：硅基流动/Gemini/AiPro中转站/GeminiCLI 流式 + 非流式 + 多模态消息构建
     ├── memory.py                 # 向量记忆：embedding（Gemini/OpenAI兼容）、综合评分召回、手动/自动总结（合并私聊+群聊消息）、即时哨兵(RAG路由)、原文追溯、重建向量索引
     ├── camera.py                 # 摄像头：CameraMonitor 类、Sentinel 分析（注入设备活动摘要）、Core 唤醒、[CAM_CHECK]、ESP32-CAM 双摄切换+App桥接
     ├── location.py               # 高德地图定位：GPS心跳处理、三级研判、状态机(at_home/outside)、哨兵通知、POI搜索
     ├── voice.py                  # 语音唤醒 + 半双工通话（WebRTC VAD + 硬基流动 ASR），通话中自动携带 TTS 参数
     ├── tts.py                    # 服务端流式 TTS：按句切分（100-200字）+ 异步并行合成 + WebSocket/SSE 推送音频分片
-    ├── schedule.py               # 日程/闹铃/定时监控管理器：ScheduleManager、文本指令解析、闹铃触发Core唤醒、定时监控截图+Core分析（注入设备活动摘要）
+    ├── schedule.py               # 日程/闹铃/定时监控管理器：ScheduleManager、文本指令解析、闹铃触发Core唤醒、定时监控截图+Core分析（注入设备活动摘要）、origin来源路由（回复自动投递到原始窗口）
     ├── ghost_forest.py            # 奥罗斯幽林 TRPG 引擎：会话管理、AI 对话历史压缩、D20 骰子判定、角色属性/道具系统
     ├── gift.py                    # 礼物系统：AI 判断送礼 + 硅基流动 Kolors 生图 + 礼物数据 CRUD
     ├── fund.py                    # 基金持仓监控：akshare数据拉取、盈亏计算、上证指数、历史走势、AI分析prompt生成、每日14:45定时任务(FundScheduler)
@@ -72,7 +73,7 @@
     ├── chatroom.py                # 聊天室核心逻辑：Connor-Codex 代理调用（HTTP+taskId轮询+images）、统一时间线上下文构建、统一记忆总结（Connor 1v1+群聊合并，独立锚点 connor_unified）、1h无消息自动总结
     ├── routes/
     │   ├── __init__.py
-    │   ├── book.py               # 阅读功能 API：书籍上传/列表/章节/进度/删除/图片/AI批注（单段+全章SSE）
+    │   ├── book.py               # 阅读功能 API：书籍上传/列表/章节/进度/删除/图片/AI批注（Aion+Connor并行，单段+全章SSE）/用户高亮（框选多目标提问持久化CRUD）
     │   ├── theater.py            # 小剧场 API：独立对话CRUD、消息CRUD、角色CRUD、SSE流式回复（无记忆/系统能力注入）+ TTS
     ├── chat.py               # 对话/消息 CRUD、send_message(SSE)、regenerate、cam-check-trigger、[MUSIC:xxx]/[ALARM:...]/[REMINDER:...]/[Monitor:...]/[TOY:x]/[查看动态:n]/[视频电话] 检测
     │   ├── music.py              # 音乐搜索/详情/播放/代理推流 API（pyncm）
@@ -82,7 +83,8 @@
     │   ├── files.py              # 上传、聊天记录文件导出/管理
     │   ├── settings.py           # 设置、世界书、模型列表、TTS 代理、视频通话开关、AI生图开关
     │   ├── memories.py           # 记忆库 CRUD + 手动总结触发 + 原文查看 + 锚点管理 API
-    │   ├── heart_whispers.py     # 心语 API（列表查询 + 删除）
+    │   ├── heart_whispers.py     # 心语 API（列表查询 + 删除，旧版兼容保留）
+    │   ├── moments.py            # 朋友圈 API（发布/删除/点赞点踩/评论/AI自动回复/未读红点）
     │   ├── activity.py           # 活动日志 API（上报/查询/清理/状态诊断/10分钟摘要/AI联动开关配置）
     │   ├── voice.py              # 语音唤醒/通话控制 API
     │   ├── ghost_forest.py       # 奥罗斯幽林 TRPG API（16 个端点：人设/会话/剧情生成/选择/骰子/大结局）+ SSE 流式 TTS
@@ -90,8 +92,9 @@
     │   ├── fund.py               # 基金监控 API：持仓CRUD、配置开关、数据拉取、手动触发AI分析、缓存读取、历史走势
     │   ├── wallet.py             # 钱包/转账 API：余额查询、交易记录、转账操作（复用 bookkeeping 表）
     │   ├── playground.py         # 娱乐室 API：MCP Server 连接/断开、tool calling 循环、SSE 流式行动日志、经历总结归档
+    │   ├── doudizhu.py           # 斗地主 API：发牌/叫地主/出牌校验/AI JSON 决策/结算/钱包联动/群聊战报
     │   └── wallpaper.py          # 动态壁纸 API：文件列表/配置读写/上传/删除
-    │   └── chatroom.py           # 聊天室 API：房间 CRUD、发消息(SSE)、AI 互聊(SSE)、记忆 CRUD、配置、Connor 状态、总结记忆、图片上传（/api/chatroom/upload）+ 图片路径重写 + TTS流式合成（Aion/Connor独立音色）
+    │   └── chatroom.py           # 聊天室 API：房间 CRUD、发消息(SSE)、AI 互聊(SSE)、记忆 CRUD、配置（connor_url/connor_name/TTS音色）、Connor 状态、总结记忆、图片/音频上传（/api/chatroom/upload，支持 image + audio MIME）+ 图片路径重写 + 语音附件预处理（转写注入+音频URL保留） + TTS流式合成（Aion/Connor独立音色） + 聊天室内 [CAM_CHECK] 独立实现 + Connor 1v1 指令处理（[MUSIC:]/[MEMORY:]/[TOY:]/[ALARM:] 等）+ 密语模式能力注入
     ├── activity.py               # 设备活动日志：JSONL 存储、自动清理（保留最近 3 小时）、PC 前台窗口采集（win32gui+psutil）、App 包名→中文名映射、10分钟窗口摘要（时长权重+carry-forward状态追溯）、AI联动开关+Prompt摘要生成
     ├── music.py                  # pyncm 封装层（搜索/歌曲详情/音频URL/MUSIC_U Cookie 登录/匿名登录）
     ├── README.md                 # 本文件
@@ -110,9 +113,10 @@
     │   ├── camera.html           # 摄像头页 → /camera（预览/缩放/监控开关/配置）
     │   ├── monitor-logs.html     # 监控日志页 → /monitor-logs（按日期查看/实时WS推送）
     │   ├── location.html         # 定位页 → /location（状态/POI/配置）
-    │   ├── heart-whispers.html   # 心语页 → /heart-whispers（AI秘密日记查看/删除）
+    │   ├── heart-whispers.html   # 心语页 → /heart-whispers（AI秘密日记查看/删除，旧版保留）
+    │   ├── moments.html          # 朋友圈页 → /moments（微信朋友圈风格，三人动态+点赞+评论+AI回复）
     │   ├── activity-logs.html    # 活动日志页 → /activity-logs（双设备活动查看/筛选/清理/10分钟摘要弹窗/AI联动开关）
-    │   ├── reading.html          # 阅读页 → /reading（书架+阅读器+AI批注+选文聊天+音乐播放）
+    │   ├── reading.html          # 阅读页 → /reading（书架+阅读器+双AI批注+选文多目标聊天+用户高亮标注+音乐播放）
     │   ├── theater.html          # 小剧场页 → /theater（独立聊天+多角色管理+TTS，茶色暗色主题）
     │   ├── ghost-forest.html     # 奥罗斯幽林页 → /ghost-forest（TRPG 游戏：D20 骰子+角色扮演+AI DM）
     │   ├── gift.html              # 爱的印记页 → /gift（礼物陈列馆，缩略图网格+详情弹窗）
@@ -120,9 +124,12 @@
     │   ├── playground.html        # 娱乐室页 → /playground（MCP 服务连接 + AI 自主探索 + 行动日志 + 历史记录）
     │   ├── playground.css         # 娱乐室样式
     │   ├── playground.js          # 娱乐室前端逻辑（SSE 实时渲染 + 历史记录加载）
-    │   ├── chatroom.html          # 聊天室页 → /chatroom（三人群聊 + Connor 私聊 + 房间管理 + 记忆库悬浮窗 + 图片收发 + TTS设置）
-    │   ├── chatroom.css           # 聊天室样式（暖色三人气泡、头像、双换行拆分气泡、图片预览/查看器/内联图片、TTS滑块开关）
-    │   ├── chatroom.js            # 聊天室前端逻辑（SSE流式、AI互聊、记忆CRUD、世界书人设继承、图片上传/粘贴/[[image:]]渲染、TTS分段队列播放+音色配置持久化）
+    │   ├── doudizhu.html          # 斗地主页 → /doudizhu（三人牌桌：用户+Aion+Connor，手机牌桌布局）
+    │   ├── doudizhu.css           # 斗地主样式（桌面/手机自适应、手牌压叠、弃牌堆、结算弹窗）
+    │   ├── doudizhu.js            # 斗地主前端逻辑（发牌预览、叫地主/出牌交互、AI回合推进、TTS/音效、昭告天下）
+    │   ├── chatroom.html          # 聊天室页 → /chatroom（三人群聊 + Connor 私聊 + 房间管理 + 记忆库悬浮窗 + 图片/语音收发 + 拍照 + TTS设置 + Connor名字设置 + 密语时刻面板）
+    │   ├── chatroom.css           # 聊天室样式（暖色三人气泡、头像、双换行拆分气泡、图片预览/查看器/内联图片、＋展开菜单、拍照全屏遮罩、语音录制浮层、橙色语音气泡+播放动画+转写小字、TTS滑块开关、群聊/私聊Tab样式、音乐卡片+播放器、密语面板+编辑器+胶囊样式）
+    │   ├── chatroom.js            # 聊天室前端逻辑（SSE流式、AI互聊、记忆CRUD、世界书人设继承、图片上传/粘贴/[[image:]]渲染、＋展开菜单（上传图片/拍照/语音消息/密语时刻）、拍照（getUserMedia+AionCamera原生桥+iframe穿透）、语音消息（按住说话+上滑取消+MediaRecorder/AionAudio原生桥+WAV转换+ASR转写+语音气泡渲染+播放）、TTS分段队列播放+音色配置持久化服务端+localStorage、侧栏群聊/私聊Tab筛选+自动日期命名、音乐卡片+在线播放器+自动播放、BLE密语控制系统+BroadcastChannel跨页同步+指令胶囊气泡）
     │   ├── wallpaper.html         # 动态壁纸页 → /wallpaper（全屏壁纸轮播+AI气泡，独立显示器使用）
     │   ├── video-call.js         # 视频通话模块：摄像头预览 + 按住录制视频 + ASR转写 + 来电/去电 UI
     │   ├── manifest.json         # PWA Web App Manifest（从 /manifest.json 提供）
@@ -145,6 +152,8 @@
         ├── theater_personas.json # 小剧场角色预设（多套人设，JSON数组）
         ├── fund_config.json      # 基金监控配置（开关、投资倾向）
         ├── fund_cache.json       # 基金数据缓存（最近一次拉取结果）
+        ├── chatroom_config.json  # 聊天室配置（connor_url、connor_name、tts_aion_voice、tts_connor_voice）
+        ├── doudizhu_state.json   # 斗地主当前牌局状态（手牌/底牌/回合/历史/结算）
         ├── mcp_servers.json      # MCP Server 配置（娱乐室服务地址列表）
         ├── wallpaper_config.json  # 动态壁纸配置（轮换间隔、文件启用状态、气泡锚点坐标）
         └── ghost_forest/          # 奥罗斯幽林 TRPG 数据
@@ -164,14 +173,16 @@
 | `/camera` | camera.html 摄像头监控页 |
 | `/monitor-logs` | monitor-logs.html 监控日志页 |
 | `/location` | location.html 定位地图页 |
-| `/heart-whispers` | heart-whispers.html 心语页（AI秘密日记） |
+| `/heart-whispers` | heart-whispers.html 心语页（旧版兼容保留） |
+| `/moments` | moments.html 朋友圈页（三人动态+点赞+评论+AI回复） |
 | `/activity-logs` | activity-logs.html 活动日志页（双设备活动查看） |
-| `/reading` | reading.html 阅读页（书架+阅读器+AI批注+选文聊天） |
+| `/reading` | reading.html 阅读页（书架+阅读器+双AI批注+选文多目标聊天+用户高亮标注） |
 | `/theater` | theater.html 小剧场页（独立聊天+多角色+TTS） |
 | `/ghost-forest` | ghost-forest.html 奥罗斯幽林页（TRPG 冒险游戏） |
 | `/gift` | gift.html 爱的印记页（礼物陈列馆） |
 | `/fund` | fund.html 奥罗斯财团页（基金持仓监控） |
 | `/playground` | playground.html 娱乐室页（MCP 服务接入 + AI 自主探索） |
+| `/doudizhu` | doudizhu.html 斗地主牌桌（三人真实牌局：用户 + Aion + Connor） |
 | `/wallpaper` | wallpaper.html 动态壁纸页（全屏壁纸轮播+AI气泡） |
 | `/manifest.json` | PWA Web App Manifest |
 | `/sw.js` | PWA Service Worker（根路径提供，作用域覆盖全站） |
@@ -500,7 +511,7 @@
 72. **AI 设置日程** — AI 在回复中使用文本指令创建日程/闹铃，格式：`[ALARM:2026-03-25T10:00|叫用户参加聚会]`、`[REMINDER:2026-04-09|还信用卡]`
 73. **AI 删除日程** — AI 输出 `[SCHEDULE_DEL:日程id]` 删除指定日程/闹铃/定时监控
 74. **日程列表注入** — 每次对话时将当前活跃日程列表注入到 Prompt 的 `[系统能力]` 区块，AI 可自然提起日程提醒
-75. **闹铃自动触发** — 后台 ScheduleManager 每 30 秒扫描到期闹铃，组装完整 Prompt（世界书+记忆+上下文+当前时间+活跃日程列表）调用 Core 生成提醒回复
+75. **闹铃自动触发** — 后台 ScheduleManager 每 30 秒扫描到期闹铃，组装完整 Prompt（世界书+记忆+上下文+当前时间+活跃日程列表）调用 Core 生成提醒回复。日程记录来源窗口（`origin` = aion/connor，`origin_room_id`），触发时自动路由回复到原始窗口（Aion 私聊 / 聊天室房间），若来源窗口无法确定则根据用户最后活跃窗口投递。Connor 来源的日程使用 Codex CLI 生成回复 + Connor 配置的 TTS 音色
 76. **前端弹窗** — 闹铃触发时所有连接的前端弹出全屏遮罩弹窗（脉冲动画），必须用户点击「确认」才关闭，支持多条闹铃排队
 77. **多端同步** — 闹铃弹窗通过 WebSocket 广播到所有连接的客户端
 78. **持久化** — 所有日程存储在 SQLite schedules 表，服务器重启后自动恢复，遗漏的闹铃立即补触发
@@ -516,7 +527,7 @@
 86. **[Monitor:...] 指令** — AI 可在回复中输出 `[Monitor:YYYY-MM-DDTHH:MM|内容]`，设定定时截图监控任务，例如检查用户是否去睡觉、是否在运动等
 87. **日程类型 `monitor`** — 存储在 schedules 表，类型为 `monitor`，在日程管理面板显示为「👁 监督」（紫色标签），用户可手动添加/删除
 88. **提示音 + 5秒延迟** — 触发时先通过 WebSocket 广播 `monitor_alert`，前端播放 `AionMonitoralart.mp3`，等待 5 秒给用户反应时间，然后再截图
-89. **截图 + Core 分析** — 到时间后自动截取摄像头画面，组装 Prompt（人设+上下文+日程列表+截图+监控目的+设备活动摘要（近 120 分钟 12 条））调用 Core 生成回复，不经过哨兵模型，不召回记忆库
+89. **截图 + Core 分析** — 到时间后自动截取摄像头画面，组装 Prompt（人设+上下文+日程列表+截图+监控目的+设备活动摘要（近 120 分钟 12 条））调用 Core 生成回复，不经过哨兵模型，不召回记忆库。系统消息显示正确的 AI 名字（Aion 来源用 `ai_name`，Connor 来源用 `connor_name` 配置值）
 90. **截图双存** — 截图同时保存到 `data/uploads/` 和 `data/screenshots/`
 91. **摄像头离线处理** — 若触发时摄像头未开启，插入系统消息「定时监控触发失败：摄像头未开启」，不发送给 Core
 92. **AI 可取消** — 复用 `[SCHEDULE_DEL:id]` 指令取消未触发的定时监控，例如用户提前完成了任务时 AI 自主取消
@@ -528,11 +539,13 @@
 96. **AI 控制玩具** — 开启密语模式后，AI 的 prompt 注入 `[TOY:1]`~`[TOY:9]` 和 `[TOY:STOP]` 能力，AI 可根据对话氛围自主控制玩具档位
 97. **9 级预设模式** — 微风轻拂、春水初生、暗流涌动、如梦似幻、情潮渐涨、烈焰焚身、极乐之巅、魂飞魄散、失控，每个预设控制 3 个马达（震动/电流/吮吸）的模式+速度
 98. **前端指令过滤** — 流式输出时实时 strip `[TOY:x]`，用户看不到原始指令
-99. **系统消息胶囊** — AI 触发玩具指令后自动插入居中系统消息：「❤️ {AI名} · 心动3 · 暗流涌动」或「❤️ {AI名} 停止了玩具」
+99. **指令胶囊气泡** — AI 触发玩具指令后在消息气泡下方显示粉色胶囊：「❤️ 微风轻拂」「❤️ 停止」等，同时自动插入居中系统消息：「❤️ {AI名} · 心动3 · 暗流涌动」或「❤️ {AI名} 停止了玩具」
 100. **BLE 连接保持** — 控制面板嵌入 chat.html 内部浮层，关闭面板后 BLE 连接不断，正常聊天时 AI 指令仍可直接控制玩具
 101. **设备过滤** — BLE 扫描仅显示名称以 SOSEXY 开头的设备
 102. **多端同步** — 玩具指令通过 SSE + WebSocket 双通道广播至所有连接的客户端
 103. **主页快捷入口** — home.html 「密语时刻」图标点击跳转 `/chat?whisper=1`，自动弹出密语面板
+103b. **BLE 状态跨页同步** — Aion 私聊页和聊天室页通过 `BroadcastChannel('toy_ble_state')` 实时同步 BLE 连接/断开状态，任一页面连接后另一页面自动更新 UI；打开密语面板时额外检查 `AionBle.isConnected()` 确保原生桥接状态准确
+103c. **聊天室密语支持** — 聊天室页左侧侧栏独立「💗 密语时刻」按钮，完整 BLE 控制面板（连接/预设网格/编辑器/日志），密语模式开关打通后端能力注入，AI 发送 [TOY:x] 指令直接执行 + 显示胶囊气泡
 
 ### 背景记忆浮现（替代旧版“近期记忆注入”）
 104. **智能背景记忆浮现** — 每次发消息/重新生成时，通过三层策略构建背景记忆（最多 8 条）：① unresolved 记忆优先（最多 2 条，待办/未完成的事项）→ ② 话题相关浮现（用即时哨兵的 topic 做 embedding 匹配，Top 3）→ ③ 近期补充（最近 3 天，补满 8 条）。与 RAG 精确召回自动去重
@@ -706,43 +719,63 @@
 160. **保留核心能力** — 快速模式下仍保留世界书人设、系统能力指令、日程列表、位置信息等静态注入，AI 回复质量不受太大影响
 161. **消息正常保存** — 语音通话的消息仍正常存入数据库和导出聊天记录，仅跳过记忆检索环节
 
-### 心语功能（AI 秘密日记）
-162. **[HEART:xxx] 指令** — AI 在回复中可使用 `[HEART:内心想法]` 指令悄悄记录内心感受，如口是心非、觉得用户可爱、想偷偷记住的小秘密等
-163. **前端实时过滤** — 流式输出时实时 strip `[HEART:xxx]`，用户在聊天界面看不到原始指令
-164. **💭 头像气泡** — AI 记录心语时，对应消息的 AI 头像右上角浮现 💭 图标（带弹出动画），提示本条消息有心语。刷新后消失，不持久化
-165. **数据库存储** — 心语存入 SQLite `heart_whispers` 表（id, conv_id, msg_id, content, created_at），支持按时间检索
-166. **心语查看页** — 独立页面 `/heart-whispers`（`heart-whispers.html`），分页显示所有心语记录，支持删除，WebSocket 实时推送新心语
-167. **API 接口** — `GET /api/heart-whispers`（分页列表）、`DELETE /api/heart-whispers/{id}`（删除单条）
-168. **主页入口** — home.html 「心语」图标链接到 `/heart-whispers`，位于 Dock 栏
-169. **多端同步** — 心语事件通过 SSE + WebSocket 双通道广播，💭 气泡在 `renderMessages()` 重建 DOM 后自动恢复
+### 朋友圈（微信朋友圈风格，替代旧版心语）
+162. **[MOMENT:xxx|true/false] 指令** — AI 在私聊或群聊回复中输出 `[MOMENT:朋友圈内容|true]` 发布朋友圈动态，`true`/`false` 控制是否期望其他人回复
+163. **前端实时过滤** — 流式输出时实时 strip `[MOMENT:xxx]`，用户在聊天界面看不到原始指令
+164. **三人参与** — 用户、Aion、Connor 三人均可发朋友圈（用户通过页面发布，AI 通过指令发布），均可点赞/点踩/评论
+165. **AI 自动回复** — 新朋友圈发布后（expect_reply=true 或用户发布），自动触发 Aion 和 Connor 回复评论，回复顺序随机，1-3秒延迟，70% 概率同时点赞
+166. **AI 回复上下文** — AI 回复时注入角色人设 + 最近 5 条记忆 + 最近 30 条聊天消息（私聊+群聊合并）+ 朋友圈内容及已有评论，确保回复自然贴合语境
+167. **模型跟随主聊天** — Aion 回复朋友圈使用用户当前私聊会话选用的主模型（而非默认 lite 模型），Connor 使用 Codex CLI
+168. **点赞/点踩** — 每人每条朋友圈只能选择点赞或点踩其一，再次点击取消，显示点赞/踩人名列表
+169. **一级评论嵌套** — 支持回复评论（显示「A 回复 B」），用户评论后触发 AI 自动跟评
+170. **未读红点** — 主页朋友圈图标显示红点徽章（每 60 秒检查 `/api/moments/unread`），进入朋友圈页自动标记已读
+171. **发布弹窗** — 右上角"＋"按钮弹出悬浮窗口编辑发布，不占用列表空间
+172. **评论弹窗** — 点击评论气泡弹出悬浮窗口输入评论，与发布交互一致
+173. **实时同步** — WebSocket 广播 `moment_new`/`moment_comment`/`moment_reaction`/`moment_reaction_removed` 事件，多端实时刷新
+174. **数据库设计** — 4 张新表：`moments`（动态）、`moment_comments`（评论）、`moment_reactions`（点赞/踩，UNIQUE约束）、`moment_read_anchor`（未读锚点）
+175. **API 接口** — `GET /api/moments`（分页列表）、`POST /api/moments`（发布）、`DELETE /api/moments/{id}`（删除）、`POST /api/moments/{id}/react`（点赞/踩）、`POST /api/moments/{id}/comments`（评论）、`GET /api/moments/unread`（红点检查）、`POST /api/moments/mark-read`（标记已读）
+176. **主页入口** — home.html「朋友圈」图标链接到 `/moments`，位于 Dock 栏
 
-### 心语工作流程
+### 朋友圈工作流程
 ```
-【AI 记录心语（聊天过程中）】
-  AI 回复包含 [HEART:觉得她今天特别可爱]
+【AI 发朋友圈（私聊/群聊过程中）】
+  AI 回复包含 [MOMENT:今天天气真好|true]
   → 后端 regex 检测 → 从显示文本和数据库中 strip 掉
-  → 存入 heart_whispers 表（关联 conv_id + msg_id）
-  → SSE 发 heart_whisper 事件 + WebSocket 广播
-  → 前端在 AI 头像右上角显示 💭 图标
+  → 存入 moments 表（记录 author/source_conv）
+  → WebSocket 广播 moment_new
+  → expect_reply=true → 触发另一个 AI 回复评论（随机顺序，1-3秒延迟）
 
-【查看心语】
-  home.html 「心语」→ /heart-whispers
-  → 分页加载心语列表（按时间倒序）
-  → 每条显示时间 + 内容，支持删除
-  → WebSocket 实时推送新心语到列表顶部
+【用户发朋友圈（页面发布）】
+  点击右上角 ＋ → 弹出发布窗口 → 输入内容 → 点击发布
+  → POST /api/moments → 存入数据库
+  → 触发 Aion + Connor 两个 AI 同时回复评论
+  → 70% 概率同时点赞
+
+【AI 回复评论】
+  构建上下文：角色人设 + 用户人设 + 最近 5 条记忆 + 最近 30 条聊天消息 + 朋友圈内容及已有评论 + 任务指令
+  → Aion：stream_ai()（用户当前私聊主模型）
+  → Connor：send_to_connor() HTTP 优先，失败回退 stream_connor_cli()
+  → 评论存入 moment_comments 表
+  → WebSocket 广播 moment_comment
+
+【未读红点】
+  主页每 60秒 GET /api/moments/unread
+  → 比较 moments/moment_comments 最新时间 vs moment_read_anchor
+  → 有未读 → 朋友圈图标显示红点
+  → 进入朋友圈页 → POST /api/moments/mark-read → 红点消失
 ```
 
-### AI 陪伴阅读（EPUB 书架 + AI 批注 + 选文聊天）
+### AI 陪伴阅读（EPUB 书架 + 双AI批注 + 选文多目标聊天 + 用户高亮标注）
 185. **EPUB 导入** — 支持上传 `.epub` 格式电子书，后端使用 `ebooklib` 解析，自动提取目录、章节内容、封面与内嵌图片。书籍数据存储在 `data/books/{book_id}/` 目录下，每本书有独立的 SQLite 数据库（`book.db`）存储章节和批注
 186. **书架界面** — `/reading` 页面上半部分为书架，网格展示已导入书籍（封面+标题+作者+章节数），支持上传新书和删除
 187. **阅读器** — 点击书籍进入阅读器，显示章节标题、正文内容（含字数统计）、上/下章导航，阅读进度自动保存并恢复
-188. **AI 批注系统** — 每章支持 AI 逐段批注，批注由 AI 模型（默认 `gemini-3-flash`）根据世界书人设、聊天上下文、前章摘要生成，包含批注类型（情感共振/知识延伸/个人联想等）和内容
-189. **批注气泡** — 有批注的段落右侧显示 AI 头像+💭气泡图标，点击弹出批注弹窗，显示批注类型和内容
+188. **双AI批注系统** — 每章支持 Aion + Connor 并行逐段批注（`asyncio.create_task` 双任务），Aion 使用配置模型（默认 `gemini-3-flash`），Connor 通过 Codex CLI 生成。批注上下文包含世界书人设、合并聊天时间线（私聊+群聊 `fetch_merged_timeline`）、前章摘要。Connor 不可用时自动跳过并 toast 提示。每个 annotator 独立存储（`book_annotations` 表 `annotator` 字段区分）
+189. **批注气泡** — 有批注的段落右侧显示双色气泡图标：Aion（暖橙）和 Connor（蓝色），点击分别弹出对应批注弹窗。段落摘要按钮也分 Aion/Connor 两个
 190. **[MUSIC:xxx] 批注点歌** — AI 批注中可使用 `[MUSIC:歌曲名 歌手名]` 指令点歌，批注弹窗中以音乐卡片形式展示，点击通过网易云 API 搜索并在页内在线播放
 191. **批注 SSE 流式生成** — 单段批注（`/api/books/{id}/chapters/{ch}/annotate`）和全章批注（`/annotate-all`）均使用 SSE 流式输出，前端逐条实时渲染批注气泡
-192. **批注提示词** — 批注 Prompt 注入书名、世界书人设（AI+用户）、当前时间、前章摘要（最近 3 章、每章≤200字）、最近 15 条聊天上下文，让 AI 批注贴合人设和聊天氛围
-193. **选文快捊提问** — 阅读器内选中文字后弹出「💬 问问{AI名}」工具栏，点击后打开提问弹窗（可附加问题或直接发送），消息发送到主聊天对话（调用 `/api/conversations/{conv_id}/send`），回复保存在主聊天历史中
-194. **嵌入式聊天面板** — 提问后在阅读页底部弹出聊天面板，显示最近 6 条主聊天消息作为上下文 + 分割线 + 当前对话，AI 回复以流式气泡展示，支持继续追问。气泡样式与 `/chat` 页面一致（多段落自动拆分为多气泡）
+192. **批注提示词** — 批注 Prompt 注入书名、世界书人设（AI+用户）、当前时间、前章摘要（最近 3 章、每章≤200字）、最近 15 条合并聊天时间线（私聊+群聊），让 AI 批注贴合人设和聊天氛围。Connor 使用独立 Prompt（注入 Connor persona）
+193. **选文多目标提问** — 阅读器内选中文字后弹出三按钮工具栏：「💬 问Aion」/「💬 问Connor」（蓝色）/「💬 群里聊」（紫色），分别路由到 Aion 私聊（`/api/conversations/{conv_id}/send`）、Connor 1v1 房间（`/api/chatroom/rooms/{room_id}/send`）、群聊房间。群聊模式同时获取双 AI 回复
+194. **嵌入式聊天面板** — 提问后在阅读页底部弹出聊天面板，根据目标加载最近 6 条对应消息（私聊/聊天室）作为上下文 + 分割线 + 当前对话。Aion 回复暖色气泡、Connor 回复蓝色气泡（含 codexicon 头像），群聊模式双气泡并行渲染。支持继续追问
 195. **聊天面板音乐播放** — AI 在聊天面板中点歌时（`[MUSIC:xxx]` 指令），自动触发页内在线播放并显示音乐卡片
 196. **章节目录** — 左上角「☰ 目录」按钮展开章节列表弹窗，可快速跳转到任意章节
 197. **进度记忆** — 每次切换章节或关闭页面自动保存阅读进度（当前章节索引），重新打开自动恢复到上次阅读位置
@@ -759,27 +792,40 @@
   → 返回 book_id
 
 【阅读 + 批注】
-  GET /api/books/{id}/chapters/{ch} → 返回章节内容（段落数组）+ 已有批注 + AI名/用户名
-  → 前端渲染段落 + 批注气泡
+  GET /api/books/{id}/chapters/{ch} → 返回章节内容（段落数组）+ Aion批注 + Connor批注 + AI名/Connor名/用户名
+  → 前端渲染段落 + 双色批注气泡（Aion 暖橙 / Connor 蓝色）
   → 用户点击「AI 批注」→ POST /api/books/{id}/chapters/{ch}/annotate-all
-  → 后端逐段处理：
+  → 后端逐段处理（Aion + Connor 并行 asyncio.create_task）：
     ├ 加载世界书人设 + 查询书名
     ├ 获取前 3 章摘要（每章≤200字）
-    ├ 获取最近 15 条聊天消息
-    ├ 构建批注 Prompt（人设+时间+书名+上下文+段落文本）
-    ├ stream_ai() 流式生成 → 解析 JSON 批注
-    └ 存入 book_annotations 表 → SSE 推送前端
-  → 前端实时渲染批注气泡
+    ├ 获取最近 15 条合并聊天时间线（fetch_merged_timeline，私聊+群聊）
+    ├ Aion: 构建批注 Prompt → stream_ai() 流式生成 → 解析 JSON 批注
+    ├ Connor: 构建 Connor Prompt（注入 persona）→ stream_connor_cli() → 解析 JSON 批注
+    └ 分别存入 book_annotations 表（annotator='aion'/'connor'）→ SSE 推送前端
+  → 前端实时渲染双色批注气泡（Connor 不可用时仅渲染 Aion）
 
-【选文聊天】
-  选中文字 → 弹出工具栏「💬 问问AI」→ 点击 → 弹出提问窗
+【选文聊天 + 高亮标注】
+  选中文字 → 弹出三按钮工具栏「💬 问Aion」/「💬 问Connor」/「💬 群里聊」
+  → 点击任一按钮 → 弹出提问窗（placeholder 显示对应目标名称）
   → 输入问题（可选）→ 提交
-  → 打开聊天面板 → 加载最近 6 条主聊天消息（GET /api/conversations/{conv_id}/messages?limit=6）
+  → 打开聊天面板 → 根据目标加载上下文：
+    ├ Aion: GET /api/conversations/{conv_id}/messages?limit=6（主聊天历史）
+    ├ Connor: GET /api/chatroom/rooms/{connor_room_id}/messages?limit=6
+    └ 群聊: GET /api/chatroom/rooms/{group_room_id}/messages?limit=6
   → 显示上下文 + 分割线 + 用户消息
-  → POST /api/conversations/{conv_id}/send（SSE 流式）
-  → AI 回复流式渲染为多气泡（按 \n\n 分段）
-  → 支持继续在面板内追问（同一对话）
-  → 所有消息保存在主聊天历史中
+  → 发送到对应目标：
+    ├ Aion: POST /api/conversations/{conv_id}/send（SSE: chunk）
+    ├ Connor: POST /api/chatroom/rooms/{connor_room_id}/send（SSE: connor_chunk）
+    └ 群聊: POST /api/chatroom/rooms/{group_room_id}/send（SSE: aion_chunk + connor_chunk 双流）
+  → AI 回复流式渲染为多气泡（按 \n\n 分段，Connor 蓝色气泡）
+  → 回复完成后自动保存高亮：
+    ├ POST /api/books/{id}/chapters/{ch}/highlights（存储段落索引+字符偏移+原文+提问+AI回复+annotator+connor_answer）
+    ├ 立即在 DOM 中包裹橙色下划线（.user-hl）
+    └ 下次打开章节时自动恢复所有高亮
+  → 点击下划线文字 → 弹出详情面板（原文 + 提问 + AI回复，群聊模式显示双 AI 回复）
+  → 支持删除单条标注（DELETE /api/books/{id}/highlights/{hl_id}）
+  → 支持继续在面板内追问（同一目标）
+  → 消息保存在对应聊天窗口（主聊天/聊天室）
 ```
 
 ### 小剧场（独立角色扮演聊天）
@@ -1506,6 +1552,25 @@
 **解决**：`stream_connor_cli` 新增 `messages` 参数，`_reply_connor` 直接传 `connor_history`（保留 attachments），跳过手动转文本步骤。
 **教训**：**修复底层函数（`_build_cli_prompt`）时，必须检查整条调用链是否有中间层把信息提前丢弃了。"数据在到达修复点之前就已经丢失"是很隐蔽的 bug。**
 
+### 坑 13：Android Studio Run/Deploy 不更新手机上的 APK（终极大坑）
+**现象**：修改 Java 代码后在 Android Studio 中 Build 成功，但手机上运行的始终是旧版本。新加的 switch case 不生效、新加的权限不弹出、通知内容不变。反复修改代码、Clean Build、重启 Android Studio 均无效，误以为是代码逻辑问题或 vivo ROM 兼容性问题，浪费大量时间排查。
+**原因**：Android Studio 的 Run 按钮（绿色三角）虽然显示 Build 成功，但实际上**没有将新 APK 推送到手机**。可能是 ADB 连接配置、部署配置（Run Configuration）或 Instant Run/Apply Changes 缓存问题。通过 `dexdump` 分析编译产物确认 DEX 文件中包含新代码，证明编译本身没问题，是部署环节断裂。
+**解决**：放弃 Android Studio 的 Run 部署，改用 ADB 命令行直接安装：
+```powershell
+# 1. Android Studio 中 Build → Clean and Assemble Project
+# 2. 命令行安装（覆盖安装用 -r，首次或改权限用先卸载再装）
+& "C:\Users\32816\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r "F:\MyDreamWorld\trunk\AionsHome\AionApp\app\build\outputs\apk\debug\app-debug.apk"
+```
+**教训**：**永远不要假设 Android Studio 的 Run 按钮真的部署了新 APK。如果改了代码但手机上行为没变，第一件事不是怀疑代码逻辑，而是验证 APK 是否真的更新了（检查 versionCode / 加 debug 标记 / adb 命令行装）。ADB 命令行安装是最可靠的部署方式。**
+
+### 坑 14：Python 端 workaround 广播导致 Android 重复通知
+**现象**：聊天室每条 AI 消息弹出两条通知——一条发送者名字大写（来自 `msg_created`），一条小写（来自 `chatroom_msg_created`）。
+**原因**：因为坑 13（APK 没更新），误以为 `chatroom_msg_created` 在 vivo 上不生效，在 Python 端 `_save_msg()` 和 `_save_to_chatroom()` 中加了 workaround——每次广播 `chatroom_msg_created` 后额外广播一条 `msg_created`。实际上 `chatroom_msg_created` 一直正常工作，只是手机跑的是旧 APK 没有对应的 case 处理。坑 13 解决后，两种广播都触发通知，造成重复。同时 `chatroom_msg_created` handler 中缺少 sender 首字母大写处理。
+**解决**：
+  ① 删除 Python 端 `chatroom.py` `_save_msg()` 和 `schedule.py` `_save_to_chatroom()` 中的 `msg_created` workaround 广播
+  ② Java 端 `chatroom_msg_created` case 中添加 `sender = sender.substring(0, 1).toUpperCase() + sender.substring(1)` 首字母大写
+**教训**：**不要在没找到根因的情况下加 workaround。workaround 会在根因修复后变成 bug（本例中造成重复通知）。应该先确认"代码是否真的跑在设备上"，再判断逻辑是否有误。**
+
 ### 最终技术方案总结
 | 组件 | 技术选型 | 关键参数 |
 |------|---------|---------|
@@ -1743,6 +1808,29 @@ python main.py
 515. **余额实时同步** — 转账操作后通过 WebSocket 广播 `wallet_update` 事件，钱包面板实时刷新；余额注入 AI prompt 的 `[系统能力]` 区块，AI 可感知当前余额
 516. **数据存储** — 复用 `bookkeeping` 表，`record_type` 为 `wallet_user`（用户发起）/ `wallet_ai`（AI 发起），存储金额、描述、参与方名称
 517. **TTS 过滤** — `[转账：N元]` 在 TTS 合成时自动剥除，不被语音朗读
+518. **聊天室＋展开菜单** — 聊天室输入栏新增＋按钮，点击展开三项操作：上传图片、拍照、语音消息。点击菜单外区域自动收起
+519. **聊天室拍照** — ＋菜单中「拍照」打开全屏相机遮罩，支持前后摄切换。浏览器端使用 getUserMedia，Android 端使用 AionCamera 原生桥（通过 `_getNativeBridge()` 从 iframe 穿透到顶层 WebView 获取）。拍照后自动上传并插入消息
+520. **聊天室语音消息** — ＋菜单中「语音消息」切换为按住说话模式。长按录音，上滑取消，松手发送。浏览器端使用 MediaRecorder 录制 WebM，Android 端优先使用 AionAudio 原生桥录制（通过 iframe 穿透 + `window.top` 回调注册解决 WebView iframe 环境限制）。录音上传后通过硅基流动 ASR 自动转写，消息以橙色语音气泡展示（播放按钮 + 波形动画 + 时长），转写文字以小字显示在气泡下方。音频文件 URL 同时传递给 AI 模型用于理解语音内容
+521. **聊天室音频上传** — 聊天室上传接口 `/api/chatroom/upload` 新增音频 MIME 类型支持（webm/wav/mp4/mpeg/ogg），后端 `_process_voice_attachments()` 将语音附件的 ASR 转写注入消息 content、保留音频 URL 供模型访问
+522. **Connor 独立钱包** — Connor 拥有自己的钱包系统，数据与 AIon 钱包完全分离。使用 `connor_wallet_user`/`connor_wallet_ai` 两种 record_type 存储在 bookkeeping 表中
+523. **Connor 钱包 API** — 新增 `/api/connor-wallet/balance`（余额查询）、`/api/connor-wallet/transactions`（记录列表）、`/api/connor-wallet/transfer`（转账入账）三个独立端点
+524. **聊天室钱包面板** — 聊天室侧栏底部新增「💰 钱包」按钮，打开 Connor 专属钱包浮层面板（蓝色渐变主题区分于 AIon 橙色），显示余额和转账记录
+525. **聊天室转账功能** — 聊天室＋菜单新增「💰 转账」入口，弹出转账弹窗，确认后插入 `[转账：N元]` 标签到输入框
+526. **聊天室转账入账** — 用户消息中的 `[转账：N元]` 自动检测并记入 Connor 钱包（`connor_wallet_user`）；Connor AI 回复中的 `[转账：N元]` 记为 Connor 支出（`connor_wallet_ai`）
+527. **聊天室转账卡片** — 聊天室消息中的 `[转账：N元]` 渲染为微信风格转账卡片（正数橙色转账卡、负数绿色扣除卡），卡片独占气泡且去除背景
+528. **Connor 钱包余额感知** — `build_ability_block` 根据 `who` 参数区分角色，Connor 读取 `_get_connor_balance()`、AIon 读取 `_get_balance()`，各自 prompt 中注入自己的余额
+529. **Connor 钱包实时刷新** — 转账操作后通过 WebSocket 广播 `connor_wallet_update` 事件，钱包面板开启时自动刷新余额和记录
+
+### 斗地主牌桌（/doudizhu）
+530. **独立牌桌入口** — `home.html` 主页新增「斗地主」入口，路由 `/doudizhu`，相关后端集中在 `routes/doudizhu.py`，前端集中在 `static/doudizhu.html/css/js`，尽量不侵入主聊天逻辑
+531. **真实三人牌局状态** — 服务端负责洗牌、随机发牌、底牌、叫地主、出牌校验、手牌扣除、回合推进和结算，状态持久化到 `data/doudizhu_state.json`
+532. **AI 私有手牌隔离** — Aion / Connor 回合调用现有群聊上下文构建逻辑（人设、私聊/群聊历史等保持一致），但只给当前 AI 注入自己的手牌和公共牌局信息，不泄露其他玩家手牌
+533. **JSON 决策协议** — AI 必须返回 JSON（叫地主/出牌/不出 + `speech`），服务端解析后校验动作；非法输出或超时会走服务端策略兜底
+534. **出牌策略增强** — 服务端内置斗地主评分策略：优先走完、残局阻截、农民配合、地主下一手行动时抬高门槛、炸弹/王炸关键时刻使用，降低 AI 随机/贪心出牌的问题
+535. **牌桌体验** — 支持新局先看牌确认、重新发牌、随机 Aion/Connor 座次、洗牌延迟、出牌/炸弹/胜负/轮到你/换人音效、AI `speech` 单独接入现有 TTS
+536. **移动端牌桌布局** — 手机端做独立布局：AI 座位上移、底牌缩小贴近用户手牌区、用户手牌压叠排列、已出牌暗色弃牌堆、结算弹窗
+537. **群聊战报** — 结算窗提供「继续玩」和「昭告天下」；昭告天下会把本局赢家、地主、剩余手牌、钱包结算等写入最新群聊，并触发群聊 AI 后续回应
+538. **钱包结算** — 斗地主按阵营结算虚拟货币：地主赢则两个农民按剩牌扣款给地主；农民赢则地主按剩牌扣款并均分给两个农民。用户金额只展示，不写入钱包；Aion/Connor 金额写入各自 `bookkeeping` 钱包记录
 
 ## 注意事项
 - 搬迁目录后需修改 `一键启动.bat` 中的路径（第11行 `cd /d` 后面的绝对路径）

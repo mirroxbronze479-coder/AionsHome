@@ -35,6 +35,7 @@ from routes import music as music_routes
 from routes import schedule as schedule_routes
 from routes import location as location_routes
 from routes import heart_whispers as heart_whispers_routes
+from routes import moments as moments_routes
 from routes import activity as activity_routes
 from routes import book as book_routes
 from routes import theater as theater_routes
@@ -44,7 +45,9 @@ from routes import fund as fund_routes
 from routes import wallpaper as wallpaper_routes
 from routes import playground as playground_routes
 from routes import chatroom as chatroom_routes
+from routes import doudizhu as doudizhu_routes
 from routes import wallet as wallet_routes
+from routes import connor_wallet as connor_wallet_routes
 from activity import pc_tracker
 from memory import auto_digest
 from chatroom import _connor_1v1_auto_digest_loop
@@ -171,6 +174,7 @@ app.include_router(music_routes.router)
 app.include_router(schedule_routes.router)
 app.include_router(location_routes.router)
 app.include_router(heart_whispers_routes.router)
+app.include_router(moments_routes.router)
 app.include_router(activity_routes.router)
 app.include_router(book_routes.router)
 app.include_router(theater_routes.router)
@@ -180,7 +184,9 @@ app.include_router(fund_routes.router)
 app.include_router(wallpaper_routes.router)
 app.include_router(playground_routes.router)
 app.include_router(chatroom_routes.router)
+app.include_router(doudizhu_routes.router)
 app.include_router(wallet_routes.router)
+app.include_router(connor_wallet_routes.router)
 
 
 # 页面
@@ -224,6 +230,10 @@ async def location_page():
 async def heart_whispers_page():
     return FileResponse(BASE_DIR / "static" / "heart-whispers.html")
 
+@app.get("/moments")
+async def moments_page():
+    return FileResponse(BASE_DIR / "static" / "moments.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+
 @app.get("/activity-logs")
 async def activity_logs_page():
     return FileResponse(BASE_DIR / "static" / "activity-logs.html")
@@ -260,6 +270,10 @@ async def playground_page():
 async def chatroom_page():
     return FileResponse(BASE_DIR / "static" / "chatroom.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
+@app.get("/doudizhu")
+async def doudizhu_page():
+    return FileResponse(BASE_DIR / "static" / "doudizhu.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+
 @app.get("/pet")
 async def pet_page():
     return FileResponse(BASE_DIR / "static" / "pet.html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
@@ -290,6 +304,9 @@ async def websocket_endpoint(ws: WebSocket):
                     manager.register_client_id(ws, msg.get("client_id", ""))
                 elif msg.get("type") == "pet_state":
                     manager.set_pet_state(ws, msg.get("enabled", False))
+                elif msg.get("type") == "step_diag":
+                    # 手机回传的步数传感器诊断 → 转发给所有浏览器客户端
+                    await manager.broadcast(msg, exclude=ws)
             except (json.JSONDecodeError, Exception):
                 pass
     except WebSocketDisconnect:

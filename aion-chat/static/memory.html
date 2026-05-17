@@ -350,7 +350,8 @@ async function viewSource(memId) {
     }
     listEl.innerHTML = result.messages.map(m => {
       const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleString("zh-CN", {month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "";
-      return `<div class="source-msg"><span class="source-name">${escHtml(m.name)}</span><span class="source-time">${escHtml(timeStr)}</span><div style="margin-top:4px;white-space:pre-wrap;word-break:break-word;">${escHtml(m.content)}</div></div>`;
+      const srcTag = m.source === "group" ? '<span style="color:#f0a040;font-size:11px;margin-left:6px;">[群聊]</span>' : "";
+      return `<div class="source-msg"><span class="source-name">${escHtml(m.name)}</span>${srcTag}<span class="source-time">${escHtml(timeStr)}</span><div style="margin-top:4px;white-space:pre-wrap;word-break:break-word;">${escHtml(m.content)}</div></div>`;
     }).join("");
   } catch(e) { listEl.innerHTML = '<div class="mem-empty">加载失败</div>'; }
 }

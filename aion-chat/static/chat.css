@@ -227,6 +227,7 @@ body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-se
 .music-candidates .cand-item:hover { color:var(--accent); }
 .music-capsule { display:inline-flex; align-items:center; gap:4px; margin-top:6px; padding:4px 12px; background:linear-gradient(135deg, rgba(220,38,38,0.06), rgba(239,68,68,0.03)); border:1px solid rgba(220,38,38,0.15); border-radius:16px; font-size:12px; color:var(--text2); cursor:pointer; transition:background 0.15s; }
 .music-capsule:hover { background:linear-gradient(135deg, rgba(220,38,38,0.12), rgba(239,68,68,0.08)); color:var(--text); }
+.toy-capsule { display:inline-flex; align-items:center; gap:4px; margin-top:6px; padding:4px 12px; background:linear-gradient(135deg, rgba(232,83,122,0.08), rgba(247,141,167,0.04)); border:1px solid rgba(232,83,122,0.2); border-radius:16px; font-size:12px; color:#e8537a; }
 @media (max-width: 768px) {
   .music-card { max-width:100%; }
   .music-card .music-cover { width:48px; height:48px; }

@@ -1164,11 +1164,8 @@ function handleSync(msg) {
     sendSystemNotification('📷 监控提醒', data.content || '哨兵监控即将分析');
   } else if (type === "schedule_changed") {
     // 日程管理已拆分为独立页面
-  } else if (type === "heart_whisper") {
-    // 通过 WebSocket 收到心语（语音发送时前端没有 SSE 流）
-    if (data.msg_id && !streamingAiId) {
-      showHeartWhisperHint(data.msg_id, data.content);
-    }
+  } else if (type === "moment_new") {
+    // 朋友圈动态已移至朋友圈页面，不在聊天界面展示
   } else if (type === "memory_record") {
     // 通过 WebSocket 收到记忆录入
     if (data.msg_id && !streamingAiId) {
@@ -2056,8 +2053,9 @@ async function _processSSEStream(res) {
             if (data.cards && data.cards.length) playMusicOnline(data.cards[0].id);
           } else if (data.type === "toy_command") {
             if (toyConnected) data.commands.forEach(c => toyExecCmd(c));
-          } else if (data.type === "heart_whisper") {
-            showHeartWhisperHint(data.msg_id, data.content);
+            showToyCapsule(data.msg_id, data.commands);
+          } else if (data.type === "moment_new") {
+            // 朋友圈动态不在聊天界面展示
           } else if (data.type === "memory_record") {
             showMemoryRecordHint(data.msg_id, data.content);
           } else if (data.type === "video_call_incoming") {
@@ -2223,8 +2221,9 @@ async function saveEdit(id) {
             if (data.cards && data.cards.length) playMusicOnline(data.cards[0].id);
           } else if (data.type === 'toy_command') {
             if (toyConnected) data.commands.forEach(c => toyExecCmd(c));
-          } else if (data.type === 'heart_whisper') {
-            showHeartWhisperHint(data.msg_id, data.content);
+            showToyCapsule(data.msg_id, data.commands);
+          } else if (data.type === 'moment_new') {
+            // 朋友圈动态不在聊天界面展示
           } else if (data.type === 'memory_record') {
             showMemoryRecordHint(data.msg_id, data.content);
           } else if (data.type === 'video_call_incoming') {
@@ -2335,8 +2334,9 @@ async function regenerateMsg(aiMsgId) {
             if (d.cards && d.cards.length) playMusicOnline(d.cards[0].id);
           } else if (d.type === "toy_command") {
             if (toyConnected) d.commands.forEach(c => toyExecCmd(c));
-          } else if (d.type === "heart_whisper") {
-            showHeartWhisperHint(d.msg_id, d.content);
+            showToyCapsule(d.msg_id, d.commands);
+          } else if (d.type === "moment_new") {
+            // 朋友圈动态不在聊天界面展示
           } else if (d.type === "memory_record") {
             showMemoryRecordHint(d.msg_id, d.content);
           } else if (d.type === "video_call_incoming") {
@@ -3399,9 +3399,19 @@ let whisperMode = false;
 let toyActivePreset = -1;
 
 // 原生 BLE 回调（Android APK 的 BleBridge.java 通过 evaluateJavascript 调用）
+// BLE 状态跨页面同步（BroadcastChannel）
+const _bleCh = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('toy_ble_state') : null;
+function _bleNotify(connected) { if (_bleCh) _bleCh.postMessage({ connected }); }
+if (_bleCh) _bleCh.onmessage = function(ev) {
+  toyConnected = !!ev.data.connected;
+  toyUpdateUI();
+  if (toyConnected) toyLog('已连接（来自聊天室）', 'wl-sys');
+  else toyLog('已断开（来自聊天室）', 'wl-err');
+};
+
 window.toyNativeBle = {
-  onConnected()      { toyConnected = true; toyUpdateUI(); toyLog('已连接 ♡', 'wl-sys'); },
-  onDisconnected()   { toyConnected = false; toyUpdateUI(); toyLog('断开', 'wl-err'); },
+  onConnected()      { toyConnected = true; toyUpdateUI(); toyLog('已连接 ♡', 'wl-sys'); _bleNotify(true); },
+  onDisconnected()   { toyConnected = false; toyUpdateUI(); toyLog('断开', 'wl-err'); _bleNotify(false); },
   onError(msg)       { toyLog(msg, 'wl-err'); },
   onLog(msg)         { toyLog(msg, 'wl-sys'); }
 };
@@ -3505,6 +3515,25 @@ function toyExecCmd(cmd) {
   toyLog('无效指令:' + cmd, 'wl-err');
 }
 
+function showToyCapsule(msgId, commands) {
+  if (!msgId || !commands || !commands.length) return;
+  const row = document.getElementById('m_' + msgId);
+  if (!row) return;
+  const msgBody = row.querySelector('.msg-body');
+  if (!msgBody) return;
+  commands.forEach(cmd => {
+    const c = cmd.trim().toUpperCase();
+    let label;
+    if (c === 'STOP' || c === '0') label = '❤️ 停止';
+    else { const n = parseInt(c); label = (n >= 1 && n <= 9) ? `❤️ ${TOY_PNAMES[n-1]}` : `❤️ ${cmd}`; }
+    const pill = document.createElement('div');
+    pill.className = 'toy-capsule';
+    pill.textContent = label;
+    msgBody.appendChild(pill);
+  });
+  scrollBottom();
+}
+
 function toyRenderGrid() {
   const g = $('toyPresetGrid'); if (!g) return;
   g.innerHTML = '';
@@ -3527,7 +3556,7 @@ async function toyToggleConnect() {
     toyLog('搜索中...', 'wl-sys');
     toyDevice = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SOSEXY' }], optionalServices: [TOY_SERVICE_UUID] });
     toyLog(toyDevice.name || '已找到设备', 'wl-sys');
-    toyDevice.addEventListener('gattserverdisconnected', () => { toyConnected = false; toyWriteChar = null; toyUpdateUI(); toyLog('断开','wl-err'); });
+    toyDevice.addEventListener('gattserverdisconnected', () => { toyConnected = false; toyWriteChar = null; toyUpdateUI(); toyLog('断开','wl-err'); _bleNotify(false); });
     toyServer = await toyDevice.gatt.connect();
     const svc = await toyServer.getPrimaryService(TOY_SERVICE_UUID);
     toyWriteChar = await svc.getCharacteristic(TOY_WRITE_UUID);
@@ -3538,6 +3567,7 @@ async function toyToggleConnect() {
     toyConnected = true;
     toyUpdateUI();
     toyLog('已连接 ♡', 'wl-sys');
+    _bleNotify(true);
   } catch(e) { toyLog('连接失败:'+e.message, 'wl-err'); }
 }
 
@@ -3550,6 +3580,7 @@ function toyDisconnect() {
   }
   toyConnected = false; toyWriteChar = null;
   toyUpdateUI(); toyLog('已断开', 'wl-sys');
+  _bleNotify(false);
 }
 
 function toyUpdateUI() {
@@ -3561,6 +3592,10 @@ function toyUpdateUI() {
 
 function openWhisper() {
   closeSidebar();
+  // 检查原生 BLE 桥接的实际连接状态
+  if (window.AionBle && typeof window.AionBle.isConnected === 'function') {
+    toyConnected = window.AionBle.isConnected();
+  }
   toyLoadPresets();
   toyRenderGrid();
   toyUpdateUI();
@@ -3679,6 +3714,7 @@ function _presentNextGift() {
           <img class="gift-image" src="/uploads/${gift.image_path}" alt="礼物" />
         </div>
         <div class="gift-message-wrap" id="giftMessageWrap" style="display:none">
+          <p class="gift-message-from" style="text-align:center;opacity:0.7;font-size:0.85em;margin-bottom:4px">—— from ${gift.sender === 'connor' ? 'Connor' : 'Aion'} ——</p>
           <p class="gift-message-text">${escHtml(gift.message)}</p>
         </div>
         <button class="gift-receive-btn" id="giftReceiveBtn" style="display:none" onclick="_receiveGift('${gift.id}')">💝 收下礼物</button>

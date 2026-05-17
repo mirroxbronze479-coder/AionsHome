@@ -33,6 +33,9 @@ aion-chat/data/fund_cache.json
 aion-chat/data/chatroom_config.json
 aion-chat/data/chatroom_images/
 aion-chat/data/mcp_servers.json
+aion-chat/data/home_assistant_mcp.json
+aion-chat/data/home_assistant_aliases.json
+aion-chat/data/homeassistant-config/
 aion-chat/data/wallpaper_config.json
 aion-chat/data/ghost_forest/*.json
 aion-chat/data/books/
