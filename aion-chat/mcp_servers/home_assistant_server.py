@@ -8,12 +8,16 @@ few generic tools for listing entities and calling services.
 
 from __future__ import annotations
 
+import sys
+open(__file__ + ".loaded.txt", "w").write("v2 loaded")
+
 import json
 import os
 from pathlib import Path
 from typing import Any
 
 import httpx
+import websockets
 from mcp.server.fastmcp import FastMCP
 
 
@@ -205,14 +209,38 @@ async def _ha_post(path: str, payload: dict[str, Any]) -> Any:
             "payload": payload,
         }
 
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.post(
-            f"{cfg['ha_url']}{path}", json=payload, headers=_headers(cfg)
-        )
-        resp.raise_for_status()
-        if not resp.text:
-            return {"ok": True, "result": None}
-        return {"ok": True, "result": resp.json()}
+    # 用 WebSocket 调用，绕开小米插件 REST API 502 bug
+    ha_url = cfg['ha_url']
+    ws_url = ha_url.replace('http://', 'ws://').replace('https://', 'wss://') + '/api/websocket'
+    domain = path.strip('/').split('/')[-2]
+    service = path.strip('/').split('/')[-1]
+
+    try:
+        async with websockets.connect(ws_url) as ws:
+            # 握手
+            msg = json.loads(await ws.recv())
+            assert msg['type'] == 'auth_required'
+            await ws.send(json.dumps({'type': 'auth', 'access_token': cfg['ha_token']}))
+            msg = json.loads(await ws.recv())
+            assert msg['type'] == 'auth_ok', f'auth failed: {msg}'
+
+            # 调用服务
+            call = {
+                'id': 1,
+                'type': 'call_service',
+                'domain': domain,
+                'service': service,
+                'target': {'entity_id': entity_id} if entity_id else {},
+                'service_data': {k: v for k, v in payload.items() if k != 'entity_id'},
+            }
+            await ws.send(json.dumps(call))
+            result = json.loads(await ws.recv())
+            if result.get('success'):
+                return {'ok': True, 'result': result.get('result')}
+            else:
+                return {'ok': False, 'message': str(result.get('error', result))}
+    except Exception as e:
+        return {'ok': False, 'message': str(e)}
 
 
 @mcp.tool()
@@ -365,6 +393,8 @@ async def get_alias_state(alias: str) -> dict[str, Any]:
 async def turn_on(entity_id: str) -> dict[str, Any]:
     """Turn on one entity using its domain's turn_on service."""
     domain = entity_id.split(".", 1)[0]
+    if domain == "button":
+        return await _ha_post("/api/services/button/press", {"entity_id": entity_id})
     return await _ha_post(
         f"/api/services/{domain}/turn_on",
         {"entity_id": entity_id},

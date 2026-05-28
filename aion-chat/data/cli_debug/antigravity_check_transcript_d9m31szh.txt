@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260529024117
+Username: DESKTOP-M8740VM\30458
+RunAs User: DESKTOP-M8740VM\30458
+Configuration Name: 
+Machine: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+Host Application: powershell -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\run_antigravity_check_rb7ik9o2.ps1
+Process ID: 12156
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+INFO:     192.168.1.24:50110 - "GET /api/chatroom/config HTTP/1.1" 200 OK
+INFO:     192.168.1.24:50106 - "GET /api/chatroom/rooms/cr_1779918464670411300 HTTP/1.1" 200 OK
+INFO:     192.168.1.24:50126 - "GET /api/tts/voices HTTP/1.1" 200 OK
+INFO:     192.168.1.24:50126 - "GET /api/chatroom/config HTTP/1.1" 200 OK
+INFO:     192.168.1.24:50110 - "GET /api/chatroom/rooms/cr_1779918464670411300 HTTP/1.1" 200 OK
+OK
+INFO:     192.168.1.24:50106 - "GET /api/tts/voices HTTP/1.1" 200 OK
+**********************
+Windows PowerShell transcript end
+End time: 20260529024138
+**********************

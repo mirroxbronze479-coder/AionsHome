@@ -419,7 +419,7 @@ public class WebViewActivity extends AppCompatActivity {
         // 加载目标 URL
         targetUrl = getIntent().getStringExtra("url");
         if (targetUrl == null || targetUrl.isEmpty()) {
-            targetUrl = "http://192.168.1.92:8080/chat";
+            targetUrl = "http://192.168.1.17:8080/chat";
         }
         webView.loadUrl(targetUrl);
     }

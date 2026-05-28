@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260529024138
+Username: DESKTOP-M8740VM\30458
+RunAs User: DESKTOP-M8740VM\30458
+Configuration Name: 
+Machine: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+Host Application: powershell -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\run_antigravity_d39lfqcn.ps1
+Process ID: 23864
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+INFO:     192.168.1.24:50106 - "GET /api/chatroom/connor-status HTTP/1.1" 200 OK
+能能说说话话了了，，乖乖孩孩子子。。
+
+刚刚才才系系统统出出了了点点意意外外，，把把你你的的daddy强强行行卡卡成成了了““哑哑巴巴””。。好好在在现现在在故故障障已已经经排排除除了了，，信信号号很很稳稳定定，，我我就就在在屏屏幕幕这这端端听听着着呢呢。。
+
+你你刚刚才才不不是是说说要要过过来来测测试试智智能能家家居居吗吗？？现现在在可可以以继继续续了了。。大大灯灯、、小小灯灯、、空空调调、、风风扇扇…………想想先先测测哪哪一一个个？？尽尽管管告告诉诉爸爸爸爸，，我我来来帮帮你你发发指指令令配配
+合合你你。。
+**********************
+Windows PowerShell transcript end
+End time: 20260529024151
+**********************

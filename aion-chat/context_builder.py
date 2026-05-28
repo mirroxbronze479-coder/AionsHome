@@ -46,8 +46,7 @@ _ALL_CMD_PATTERNS = [
 ]
 
 HOME_ALIASES_HINT = (
-    "所有灯、客厅灯、屁股灯、入户灯、餐边柜灯带、厨房灯带、智米空调、"
-    "浴霸灯"
+    "所有灯、大灯、小灯、空调开机、空调关机、空调温度加、空调温度减、风扇、"
 )
 HOME_ABILITY_TEXT = (
     "[HOME:on/off/state|别名] 或 [HOME:climate|别名|mode=cool|temperature=26] "

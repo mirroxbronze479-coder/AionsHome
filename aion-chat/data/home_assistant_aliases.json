@@ -1,179 +1,37 @@
 {
   "aliases": {
-    "客厅灯": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_2_1",
-      "notes": "领普单火智能墙壁开关（MESH2.0 双键） 客厅灯 左键"
+    "大灯": {
+      "entity_id": "switch.zimi_cn_1173981600_dhkg01_on_p_2_1",
+      "notes": "卧室大灯"
     },
-    "客厅": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_2_1",
-      "notes": "客厅灯的简称"
+    "空调开机": {
+      "entity_id": "button.miir_cn_ir_2057806494162100226_ir02_turn_on_a_2_6",
+      "notes": "空调红外开机"
     },
-    "living_room_light": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_2_1",
-      "notes": "客厅灯的英文备用别名"
+    "空调关机": {
+      "entity_id": "button.miir_cn_ir_2057806494162100226_ir02_turn_off_a_2_5",
+      "notes": "空调红外关机"
     },
-    "keting_deng": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_2_1",
-      "notes": "客厅灯的拼音备用别名"
+    "空调温度加": {
+      "entity_id": "button.miir_cn_ir_2057806494162100226_ir02_temperature_up_a_2_4",
+      "notes": "空调温度+"
     },
-    "智米空调": {
-      "entity_id": "climate.zhimi_cn_74796244_v1",
-      "notes": "智米全直流变频空调"
+    "空调温度减": {
+      "entity_id": "button.miir_cn_ir_2057806494162100226_ir02_temperature_down_a_2_3",
+      "notes": "空调温度-"
     },
-    "智米": {
-      "entity_id": "climate.zhimi_cn_74796244_v1",
-      "notes": "智米空调的简称"
+    "风扇": {
+      "entity_id": "switch.yutai_cn_1169779496_fsov7m_switch_p_7_1",
+      "notes": "风扇开关"
     },
-    "空调": {
-      "entity_id": "climate.zhimi_cn_74796244_v1",
-      "notes": "智米空调的简称"
-    },
-    "zhimi_ac": {
-      "entity_id": "climate.zhimi_cn_74796244_v1",
-      "notes": "智米全直流变频空调的英文备用别名"
-    },
-    "青萍温度": {
-      "entity_id": "sensor.cgllc_cn_blt_3_1d06r76j0ls00_dk2_temperature_p_2_1",
-      "notes": "青萍蓝牙温湿度计Lite（纽扣电池） 温度，只读"
-    },
-    "qingping_temperature": {
-      "entity_id": "sensor.cgllc_cn_blt_3_1d06r76j0ls00_dk2_temperature_p_2_1",
-      "notes": "青萍温度的英文备用别名，只读"
-    },
-    "青萍湿度": {
-      "entity_id": "sensor.cgllc_cn_blt_3_1d06r76j0ls00_dk2_relative_humidity_p_2_2",
-      "notes": "青萍蓝牙温湿度计Lite（纽扣电池） 相对湿度，只读"
-    },
-    "qingping_humidity": {
-      "entity_id": "sensor.cgllc_cn_blt_3_1d06r76j0ls00_dk2_relative_humidity_p_2_2",
-      "notes": "青萍湿度的英文备用别名，只读"
-    },
-    "青萍电量": {
-      "entity_id": "sensor.cgllc_cn_blt_3_1d06r76j0ls00_dk2_battery_level_p_2_3",
-      "notes": "青萍蓝牙温湿度计Lite（纽扣电池） 电池电量，只读"
-    },
-    "qingping_battery": {
-      "entity_id": "sensor.cgllc_cn_blt_3_1d06r76j0ls00_dk2_battery_level_p_2_3",
-      "notes": "青萍电量的英文备用别名，只读"
-    },
-    "餐边柜灯带": {
-      "entity_id": "light.lemesh_cn_947699904_wy0d02_s_2_light",
-      "notes": "餐边柜灯带 灯"
-    },
-    "餐边柜": {
-      "entity_id": "light.lemesh_cn_947699904_wy0d02_s_2_light",
-      "notes": "餐边柜灯带的简称"
-    },
-    "sideboard_light_strip": {
-      "entity_id": "light.lemesh_cn_947699904_wy0d02_s_2_light",
-      "notes": "餐边柜灯带的英文备用别名"
-    },
-    "厨房灯带": {
-      "entity_id": "light.lemesh_cn_947699924_wy0d02_s_2_light",
-      "notes": "厨房灯带 灯"
-    },
-    "厨房": {
-      "entity_id": "light.lemesh_cn_947699924_wy0d02_s_2_light",
-      "notes": "厨房灯带的简称"
-    },
-    "kitchen_light_strip": {
-      "entity_id": "light.lemesh_cn_947699924_wy0d02_s_2_light",
-      "notes": "厨房灯带的英文备用别名"
-    },
-    "屁股灯": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_3_1",
-      "notes": "领普单火智能墙壁开关（MESH2.0 双键） 右键 屁股灯"
-    },
-    "屁股": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_3_1",
-      "notes": "屁股灯的简称"
-    },
-    "pigu_deng": {
-      "entity_id": "switch.linp_cn_2044921546_e3sbw2_on_p_3_1",
-      "notes": "屁股灯的拼音备用别名"
-    },
-    "入户灯": {
-      "entity_id": "switch.linp_cn_2002697036_e3sbw2_on_p_3_1",
-      "notes": "领普单火智能墙壁开关（MESH2.0 双键） 2 右键 入户灯"
-    },
-    "入户": {
-      "entity_id": "switch.linp_cn_2002697036_e3sbw2_on_p_3_1",
-      "notes": "入户灯的简称"
-    },
-    "entry_light": {
-      "entity_id": "switch.linp_cn_2002697036_e3sbw2_on_p_3_1",
-      "notes": "入户灯的英文备用别名"
-    },
-    "米家智能浴霸": {
-      "entity_id": "climate.yeelink_cn_734266955_v11",
-      "notes": "米家智能浴霸 浴霸本体"
-    },
-    "浴霸": {
-      "entity_id": "climate.yeelink_cn_734266955_v11",
-      "notes": "米家智能浴霸 浴霸本体"
-    },
-    "bath_heater": {
-      "entity_id": "climate.yeelink_cn_734266955_v11",
-      "notes": "米家智能浴霸本体的英文备用别名"
-    },
-    "浴霸灯": {
-      "entity_id": "light.yeelink_cn_734266955_v11_s_2_light",
-      "notes": "米家智能浴霸 灯"
-    },
-    "bath_light": {
-      "entity_id": "light.yeelink_cn_734266955_v11_s_2_light",
-      "notes": "浴霸灯的英文备用别名"
-    },
-    "浴霸吹风": {
-      "entity_id": "switch.yeelink_cn_734266955_v11_blow_p_3_2",
-      "notes": "米家智能浴霸 浴霸风暖 吹风"
-    },
-    "bath_blow": {
-      "entity_id": "switch.yeelink_cn_734266955_v11_blow_p_3_2",
-      "notes": "浴霸吹风的英文备用别名"
-    },
-    "浴霸暖风": {
-      "entity_id": "switch.yeelink_cn_734266955_v11_heating_p_3_3",
-      "notes": "米家智能浴霸 浴霸风暖 暖风"
-    },
-    "bath_heating": {
-      "entity_id": "switch.yeelink_cn_734266955_v11_heating_p_3_3",
-      "notes": "浴霸暖风的英文备用别名"
-    },
-    "浴霸换气": {
-      "entity_id": "switch.yeelink_cn_734266955_v11_ventilation_p_3_4",
-      "notes": "米家智能浴霸 浴霸风暖 换气"
-    },
-    "bath_ventilation": {
-      "entity_id": "switch.yeelink_cn_734266955_v11_ventilation_p_3_4",
-      "notes": "浴霸换气的英文备用别名"
+    "小灯": {
+      "entity_id": "light.wiing_cn_1186897549_dmsswd_s_2_light",
+      "notes": "小灯，支持开关、亮度、色温调节"
     }
   },
   "groups": {
-    "所有灯": [
-      "客厅灯",
-      "屁股灯",
-      "入户灯",
-      "餐边柜灯带",
-      "厨房灯带",
-      "浴霸灯"
-    ],
-    "全部灯": [
-      "客厅灯",
-      "屁股灯",
-      "入户灯",
-      "餐边柜灯带",
-      "厨房灯带",
-      "浴霸灯"
-    ],
-    "所有灯光": [
-      "客厅灯",
-      "屁股灯",
-      "入户灯",
-      "餐边柜灯带",
-      "厨房灯带",
-      "浴霸灯"
-    ]
+    "所有灯": ["大灯", "小灯"],
+    "全部灯": ["大灯", "小灯"]
   },
   "blocked_entities": [],
   "blocked_aliases": []

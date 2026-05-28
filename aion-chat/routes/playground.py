@@ -326,7 +326,7 @@ async def run_instruction(req: RunRequest):
 
             # 注入近期对话上下文和记忆
             if recent_chat:
-                chat_text = "\n".join(f"{'\u7528\u6237' if m['role']=='user' else 'AI'}: {m['content']}" for m in recent_chat)
+                chat_text = "\n".join(f"{'用户' if m['role']=='user' else 'AI'}: {m['content']}" for m in recent_chat)
                 prefix.append({"role": "user", "content": f"[最近对话记录]\n{chat_text}"})
                 prefix.append({"role": "assistant", "content": "收到，我记住了我们最近的对话内容。"})
             if memories:
