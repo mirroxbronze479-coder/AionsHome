@@ -893,12 +893,6 @@ class CameraMonitor:
         last_user_ts = await async_get_last_aion_timeline_user_msg_time(conv_id)
         last_user_time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(last_user_ts)) if last_user_ts > 0 else "未知"
 
-        recent_logs = read_logs_since(time.time() - 3600 * 6)
-        log_history = ""
-        if recent_logs:
-            log_lines = [f"[{e.get('time','')}] {e.get('monitoringlog','')}" for e in recent_logs[-20:]]
-            log_history = "\n".join(log_lines)
-
         chat_status_data = load_chat_status()
         chat_status_text = chat_status_data.get("status", "")
 
@@ -943,9 +937,6 @@ class CameraMonitor:
 
 {user_name}近一小时的设备使用动态（手机/电脑应用使用情况，每10分钟一条摘要）：
 {activity_summary_text if activity_summary_text else "（暂无设备活动记录）"}
-
-历史监控日志：
-{log_history if log_history else "（暂无历史日志）"}
 
 请严格按照以下JSON格式回复，不要包含其他任何内容：
 {{"monitoringlog":"这是用户的当前状态{user_name}以及电脑的桌面，用恋人的视角分析{user_name}当前在做什么，所处的状态，位置，例如：{user_name}穿着毛绒睡衣，正在电脑桌前，看起来有些困。电脑屏幕上播放着一部小动物电影。","summary":"根据历史日志，概括{user_name}这段时间以来的整体状况，去掉重复无用的信息，保留关键事件和状态变化，一两句话即可。注意力重点应当放在截图上半部分的摄像头内容","call_core":false,"core_reason":""}}

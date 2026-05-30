@@ -54,7 +54,7 @@ async def get_embedding(text: str) -> list[float] | None:
         headers = {"Authorization": f"Bearer {ecfg['api_key']}", "Content-Type": "application/json"}
         body = {"model": ecfg["model"], "input": text}
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
+            async with httpx.AsyncClient(timeout=30, verify=False) as client:
                 resp = await client.post(url, json=body, headers=headers)
                 if resp.status_code != 200:
                     print(f"[Embedding] OpenAI 兼容调用失败 {resp.status_code}: {resp.text[:300]}")
@@ -69,7 +69,7 @@ async def get_embedding(text: str) -> list[float] | None:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:embedContent?key={ecfg['api_key']}"
         body = {"content": {"parts": [{"text": text}]}}
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
+            async with httpx.AsyncClient(timeout=30, verify=False) as client:
                 resp = await client.post(url, json=body)
                 resp.raise_for_status()
                 return resp.json()["embedding"]["values"]

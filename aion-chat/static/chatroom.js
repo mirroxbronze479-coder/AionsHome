@@ -13,6 +13,21 @@ let chatroomModels = [];
 let pendingAttachments = [];  // [{url, type, name}]
 let crMessagesById = {};
 
+// ── 表情包相关 ──
+const STICKER_BASE = '/static/stickers/';
+let _stickerList = [];
+let _recentStickers = [];
+let _stickerCategories = {};
+let _activeStickerTab = 'recent';
+let _stickerLoaded = false;
+let _stickerFileMap = {};  // { "抱抱": "抱抱.jpeg", ... }
+
+// ── 气泡队列（多条消息暂存，统一发送）──
+let _crBubbleQueue = [];        // 暂存的文字气泡（含 [STICKER:xxx]）
+let _crAttachQueue = [];        // 暂存的附件 [{url, type, name}]
+let _crAutoSendTimer = null;    // 自动发送定时器
+let _crLastClickTime = 0;       // 双击检测
+
 // ── 密语模式 ──
 let crWhisperMode = false;
 const crHandledToyEvents = new Set();
@@ -801,17 +816,19 @@ function msgHTML(m) {
   const hasVoiceAtt = Array.isArray(m.attachments) && m.attachments.some(a => typeof a === 'object' && a.type === 'voice');
   const isVoiceOnly = hasVoiceAtt && (!raw || m.attachments.some(a => typeof a === 'object' && a.type === 'voice' && a.transcript === raw));
 
-  // AI 消息使用 escWithImages 解析 [[image:...]] 和转账卡片，用户消息也渲染转账卡片
-  const fmt = isUser ? escWithTransfer : escWithImages;
+  // 检测是否为纯表情包消息
+  const isStickerOnly = /^\s*\[(?:STICKER|表情)[：:\s]*[^\]]+\]\s*$/.test(raw.trim());
+  // 统一使用 escWithImages 解析表情包、图片和转账卡片
+  const fmt = escWithImages;
   let bubblesHtml = '';
   if (!isVoiceOnly) {
     // 转账标签前后强制换行，确保卡片独占一个气泡
     const splitRaw = raw.replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n$1\n');
     const parts = splitRaw.split(isUser ? /\n+/ : /\n{2,}/).filter(p => p.trim());
     if (parts.length > 1) {
-      bubblesHtml = '<div class="bubbles">' + parts.map(p => `<div class="bubble">${fmt(p)}</div>`).join('') + '</div>';
+      bubblesHtml = '<div class="bubbles">' + parts.map(p => `<div class="bubble${/^\s*\[(?:STICKER|表情)[：:\s]*[^\]]+\]\s*$/.test(p.trim()) ? ' sticker-only' : ''}">${fmt(p)}</div>`).join('') + '</div>';
     } else if (raw.trim()) {
-      bubblesHtml = `<div class="bubble">${fmt(raw)}</div>`;
+      bubblesHtml = `<div class="bubble${isStickerOnly ? ' sticker-only' : ''}">${fmt(raw)}</div>`;
     }
   }
 
@@ -1219,28 +1236,106 @@ function crShowMemoryRecordCard(msgId) {
 
 composer.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const text = inputEl.value.trim();
-  if ((!text && !pendingAttachments.length) || !currentRoom || isSending) return;
+  // 先把当前输入加入队列，再触发发送
+  _crAddToQueue();
+  await _crTriggerSend();
+});
 
+// ── 气泡队列 ──
+
+function _crResetTimer() {
+  if (_crAutoSendTimer) { clearTimeout(_crAutoSendTimer); _crAutoSendTimer = null; }
+}
+
+function _crStartTimer() {
+  _crResetTimer();
+  if (_crBubbleQueue.length === 0 && _crAttachQueue.length === 0) return;
+  _crAutoSendTimer = setTimeout(() => _crTriggerSend(), 20000);
+}
+
+function _crAddToQueue() {
+  const text = inputEl.value.trim();
+  const hasAtts = pendingAttachments.length > 0;
+  if (!text && !hasAtts) return false;
+  if (text) {
+    _crBubbleQueue.push(text);
+    inputEl.value = '';
+    resizeInput();
+  }
+  if (hasAtts) {
+    _crAttachQueue.push(...pendingAttachments);
+    pendingAttachments = [];
+    renderPreview();
+  }
+  _crStartTimer();
+  _crRenderQueuePreview();
+  return true;
+}
+
+function _crRenderQueuePreview() {
+  let area = document.getElementById('crQueuePreview');
+  if (!area) return;
+  const total = _crBubbleQueue.length + _crAttachQueue.length;
+  if (total === 0) { area.innerHTML = ''; area.style.display = 'none'; return; }
+  area.style.display = 'flex';
+  area.innerHTML = _crBubbleQueue.map((t, i) => {
+    // 如果是表情包，显示 emoji 标记
+    const label = /^\[STICKER:/.test(t) ? '🙂 ' + t.replace(/^\[STICKER:|]$/g, '') : esc(t);
+    return `<div class="cr-queue-item"><span>${label}</span><button onclick="_crRemoveQueue(${i})">✕</button></div>`;
+  }).join('') + _crAttachQueue.map((a, i) =>
+    `<div class="cr-queue-item"><span>📎 ${esc(a.name || '图片')}</span><button onclick="_crRemoveAttachQueue(${i})">✕</button></div>`
+  ).join('');
+}
+
+function _crRemoveQueue(i) {
+  _crBubbleQueue.splice(i, 1);
+  _crRenderQueuePreview();
+  if (_crBubbleQueue.length === 0 && _crAttachQueue.length === 0) _crResetTimer();
+  else _crStartTimer();
+}
+
+function _crRemoveAttachQueue(i) {
+  _crAttachQueue.splice(i, 1);
+  _crRenderQueuePreview();
+  if (_crBubbleQueue.length === 0 && _crAttachQueue.length === 0) _crResetTimer();
+  else _crStartTimer();
+}
+
+async function _crTriggerSend() {
+  _crResetTimer();
+  // 把输入框剩余内容也加进去
+  const leftover = inputEl.value.trim();
+  if (leftover || pendingAttachments.length > 0) {
+    if (leftover) { _crBubbleQueue.push(leftover); inputEl.value = ''; resizeInput(); }
+    if (pendingAttachments.length > 0) { _crAttachQueue.push(...pendingAttachments); pendingAttachments = []; renderPreview(); }
+  }
+
+  if (_crBubbleQueue.length === 0 && _crAttachQueue.length === 0) return;
+
+  const combinedText = _crBubbleQueue.join('\n');
+  const attachments = _crAttachQueue.map(a => a.url);
+  _crBubbleQueue = [];
+  _crAttachQueue = [];
+  _crRenderQueuePreview();
+
+  if (!currentRoom || isSending) return;
   isSending = true;
   sendBtn.disabled = true;
-  inputEl.value = '';
-  resizeInput();
 
-  const attachments = pendingAttachments.map(a => a.url);
-  pendingAttachments = [];
-  renderPreview();
-
-  // 立即显示用户消息
   playSend();
-  const localRow = appendMessage({ sender: 'user', content: text, created_at: Date.now() / 1000, attachments });
+  const localRow = appendMessage({ sender: 'user', content: combinedText, created_at: Date.now() / 1000, attachments });
   if (localRow) localRow.dataset.localEcho = '1';
+  pendingUserEcho = {
+    content: combinedText,
+    attachmentsJson: JSON.stringify(attachments || []),
+    expiresAt: Date.now() + 12000,
+  };
 
   try {
     const resp = await fetch(`${API}/rooms/${currentRoom.id}/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text, model: chatroomModel, connor_model: chatroomConnorModel, attachments, tts_enabled: crTtsEnabled, tts_aion_voice: crTtsAionVoice, tts_connor_voice: crTtsConnorVoice, whisper_mode: crWhisperMode }),
+      body: JSON.stringify({ content: combinedText, model: chatroomModel, connor_model: chatroomConnorModel, attachments, tts_enabled: crTtsEnabled, tts_aion_voice: crTtsAionVoice, tts_connor_voice: crTtsConnorVoice, whisper_mode: crWhisperMode }),
     });
 
     await consumeChatroomSSE(resp);
@@ -1252,7 +1347,7 @@ composer.addEventListener('submit', async (e) => {
     endStreamingBubble();
     inputEl.focus();
   }
-});
+}
 
 function handleSSE(data) {
   switch (data.type) {
@@ -1353,10 +1448,17 @@ function handleSSE(data) {
 inputEl.addEventListener('input', resizeInput);
 inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.isComposing) {
-    // Shift+Enter 或 Ctrl+Enter 发送，Enter 换行
+    // 纯 Enter：加入气泡队列
+    if (!e.shiftKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      _crAddToQueue();
+      return;
+    }
+    // Shift+Enter 或 Ctrl+Enter：发送
     if (e.shiftKey || e.ctrlKey) {
       e.preventDefault();
-      composer.requestSubmit();
+      _crAddToQueue();
+      _crTriggerSend();
     }
   }
 });
@@ -1981,23 +2083,65 @@ function escWithTransfer(str) {
 /** 将文本中的 [[image:...]] 标记渲染为 <img>，[转账：N元] 渲染为卡片，其余部分转义 */
 function escWithImages(str) {
   if (!str) return '';
-  const imgRe = /\[\[image:(\S+?)\]\]/g;
+  // 合并正则：匹配 [STICKER:xxx]/[表情:xxx]、[[image:xxx]]、[转账给XXX：N元]/[转账：N元]（支持负数）
+  const re = /\[(?:STICKER|表情)[：:\s]*([^\]]+)\]|\[\[image:(\S+?)\]\]|\[转账(?:给([^\uff1a:]+?))?[：:]\s*(-?\d+(?:\.\d+)?)\s*元\]/g;
   let result = '';
   let lastIdx = 0;
   let match;
-  while ((match = imgRe.exec(str)) !== null) {
+  while ((match = re.exec(str)) !== null) {
     const before = str.slice(lastIdx, match.index);
     if (before) result += esc(before);
-    // Connor 端 /uploads/ 在聊天室对应 /cr-uploads/
-    let imgUrl = match[1];
-    if (imgUrl.startsWith('/uploads/')) imgUrl = '/cr-uploads/' + imgUrl.slice('/uploads/'.length);
-    const safeUrl = esc(imgUrl);
-    result += `<img class="cr-inline-img" src="${safeUrl}" onclick="openImageViewer(this.src)" loading="lazy">`;
-    lastIdx = imgRe.lastIndex;
+
+    if (match[1] !== undefined) {
+      // [STICKER:xxx] / [表情:xxx]
+      const n = match[1].trim();
+      const realFile = _stickerFuzzyFind(n);
+      if (realFile) {
+        const safeUrl = STICKER_BASE + encodeURIComponent(realFile);
+        result += `<span class="msg-sticker" onclick="openImageViewer('${safeUrl}')" title="${esc(n)}"><img src="${safeUrl}" onerror="this.onerror=null;this.style.display='none';this.parentElement.textContent='[表情: ${esc(n)}]'" alt="${esc(n)}"></span>`;
+      } else {
+        result += `<span style="font-size:13px;color:var(--text3,#b0a39a)">[表情: ${esc(n)}]</span>`;
+      }
+    } else if (match[2] !== undefined) {
+      // [[image:xxx]]
+      let imgUrl = match[2];
+      if (imgUrl.startsWith('/uploads/')) imgUrl = '/cr-uploads/' + imgUrl.slice('/uploads/'.length);
+      result += `<img class="cr-inline-img" src="${esc(imgUrl)}" onclick="openImageViewer(this.src)" loading="lazy">`;
+    } else if (match[4] !== undefined) {
+      // [转账给XXX：N元] 或 [转账：N元]
+      result += _buildTransferCardHtml(match[3], match[4]);
+    }
+    lastIdx = re.lastIndex;
   }
   const tail = str.slice(lastIdx);
   if (tail) result += esc(tail);
-  return renderTransferCards(result);
+  return result;
+}
+
+function _buildTransferCardHtml(recipient, amount) {
+  const val = parseFloat(amount);
+  const isNeg = val < 0;
+  const absVal = Math.abs(val);
+  const targetName = recipient ? recipient.trim() : '';
+  if (isNeg) {
+    return `<div class="transfer-card deduct"><div class="transfer-card-icon-wrap"><svg viewBox="0 0 40 40" width="28" height="28"><circle cx="20" cy="20" r="18" fill="none" stroke="#fff" stroke-width="2.5"/><line x1="14" y1="14" x2="26" y2="26" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><line x1="26" y1="14" x2="14" y2="26" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="transfer-card-body"><div class="transfer-card-amount">¥${absVal}</div><div class="transfer-card-desc">钱包扣除${targetName ? '（' + targetName + '）' : ''}</div></div><div class="transfer-card-footer">扣除</div></div>`;
+  } else {
+    const descText = targetName ? `转账给${targetName}` : '发起了一笔转账';
+    return `<div class="transfer-card"><div class="transfer-card-icon-wrap"><svg viewBox="0 0 40 40" width="28" height="28"><circle cx="20" cy="20" r="18" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M12 17h12M24 17l-3-3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M28 23H16M16 23l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><div class="transfer-card-body"><div class="transfer-card-amount">¥${absVal}</div><div class="transfer-card-desc">${descText}</div></div><div class="transfer-card-footer">转账</div></div>`;
+  }
+}
+
+/** 模糊匹配表情包名称 */
+function _stickerFuzzyFind(name) {
+  if (!name) return null;
+  if (_stickerFileMap[name]) return _stickerFileMap[name];
+  const cleaned = name.replace(/\s+/g, '');
+  if (_stickerFileMap[cleaned]) return _stickerFileMap[cleaned];
+  for (const [k, v] of Object.entries(_stickerFileMap)) {
+    if (k.replace(/\s+/g, '') === cleaned) return v;
+    if (k.includes(cleaned) || cleaned.includes(k)) return v;
+  }
+  return null;
 }
 
 // ══════════════════════════════════════════════════
@@ -2762,3 +2906,161 @@ function crToyCloseEditor() { document.getElementById('crToyEditorOverlay').clas
   connectWS();
   resizeInput();
 })();
+
+// ══════════════════════════════════════════════════
+//  表情包面板
+// ══════════════════════════════════════════════════
+
+const STICKER_CAT_RULES_CR = [
+  { cat: '开心', kw: ['开心','太开心','欢呼','活力','好','嘻嘻','OK','嚣张','得意','骄傲','傻乐','太可爱','可爱'] },
+  { cat: '伤心', kw: ['哭','泪','失落','孤单','委屈','心碎','难过','悲','泫然','失魂','抑郁','落泪'] },
+  { cat: '生气', kw: ['生气','气鼓','气到','怒','火冒','无语','挺无语','滚','嫌弃','判决','死刑','全都死','刀','打你','愤'] },
+  { cat: '撒娇', kw: ['撒娇','卖萌','贴贴','抱抱','蹭','哄我','快哄','要抱','宝宝','哦','想你','宝生'] },
+  { cat: '心动', kw: ['心动','心跳','眼冒爱心','亲亲','kiss','结婚','爱你','送你','赠你','献上','玫瑰','花花','脸红','面红','害羞','舔'] },
+  { cat: '惊讶', kw: ['惊','震惊','吓','惊掉','问号','懵','怎么回事','不明所以','呆住','呆滞','大吃'] },
+  { cat: '思考', kw: ['思考','停止思考','大脑','记','等待','在学','在干嘛','忙','慢'] },
+  { cat: '可爱', kw: ['小猫','小狗','猫','狗','小动物','萌','歪头','偏头','眨眼','wink','撒花'] },
+  { cat: '其他', kw: [] }
+];
+
+let _stickerPanelOpen = false;
+
+function _categorizeStickerName(name) {
+  for (const rule of STICKER_CAT_RULES_CR) {
+    if (rule.cat === '其他') continue;
+    if (rule.kw.some(k => name.includes(k))) return rule.cat;
+  }
+  return '其他';
+}
+
+async function _loadStickers() {
+  if (_stickerLoaded) return;
+  _stickerLoaded = true;
+  try {
+    const res = await fetch('/api/stickers/list');
+    if (!res.ok) throw new Error('404');
+    const data = await res.json();
+    _stickerList = data.stickers || [];
+    for (const s of _stickerList) {
+      _stickerFileMap[s.name] = s.file;
+    }
+  } catch(e) {
+    _stickerList = [];
+    console.warn('[Stickers] 无法从后端加载表情包列表');
+  }
+  _stickerCategories = {};
+  for (const s of _stickerList) {
+    const cat = _categorizeStickerName(s.name);
+    if (!_stickerCategories[cat]) _stickerCategories[cat] = [];
+    _stickerCategories[cat].push(s);
+  }
+  try { _recentStickers = JSON.parse(localStorage.getItem('aion_recent_stickers') || '[]'); } catch(e) { _recentStickers = []; }
+  _renderStickerTabs();
+  _renderStickerGrid(_activeStickerTab);
+}
+
+function _renderStickerTabs() {
+  const tabBar = document.getElementById('stickerTabBar');
+  if (!tabBar) return;
+  const cats = Object.keys(_stickerCategories).filter(c => _stickerCategories[c].length > 0);
+  const allTabs = ['recent', 'all', ...cats];
+  const tabLabels = { recent: '最近', all: '全部' };
+  tabBar.innerHTML = allTabs.map(t =>
+    `<button class="sticker-tab ${t === _activeStickerTab ? 'active' : ''}" onclick="event.stopPropagation(); switchStickerTab('${t}')">${tabLabels[t] || t}</button>`
+  ).join('');
+}
+
+function switchStickerTab(tab) {
+  _activeStickerTab = tab;
+  _renderStickerTabs();
+  _renderStickerGrid(tab);
+}
+
+function _renderStickerGrid(tab) {
+  const grid = document.getElementById('stickerGrid');
+  if (!grid) return;
+  let stickers;
+  if (tab === 'recent') stickers = _recentStickers;
+  else if (tab === 'all') stickers = _stickerList;
+  else stickers = _stickerCategories[tab] || [];
+
+  if (stickers.length === 0) {
+    grid.innerHTML = `<div class="sticker-empty">${tab === 'recent' ? '还没有最近使用的表情包' : '暂无表情包'}</div>`;
+    return;
+  }
+  grid.innerHTML = stickers.map(s =>
+    `<div class="sticker-item" onclick="event.stopPropagation(); sendSticker('${esc(s.file)}','${esc(s.name)}')" title="${esc(s.name)}">
+      <img src="${STICKER_BASE}${esc(s.file)}" alt="${esc(s.name)}" loading="lazy">
+      <span class="sticker-name">${esc(s.name)}</span>
+    </div>`
+  ).join('');
+}
+
+async function sendSticker(file, name) {
+  closeStickerPanel();
+  if (!currentRoom) return;
+
+  // 更新最近使用
+  const sticker = { file, name };
+  _recentStickers = [sticker, ..._recentStickers.filter(s => s.file !== file)].slice(0, 12);
+  try { localStorage.setItem('aion_recent_stickers', JSON.stringify(_recentStickers)); } catch(e) {}
+
+  // 如果输入框有内容，先把当前内容加入队列
+  const curText = inputEl.value.trim();
+  if (curText) {
+    _crBubbleQueue.push(curText);
+    inputEl.value = '';
+    resizeInput();
+  }
+  // 表情包作为独立一条加入队列（不直接发送）
+  _crBubbleQueue.push(`[STICKER:${name}]`);
+  _crRenderQueuePreview();
+  _crStartTimer();
+}
+
+function toggleStickerPanel() {
+  if (_stickerPanelOpen) { closeStickerPanel(); return; }
+  openStickerPanel();
+}
+
+function openStickerPanel() {
+  _stickerPanelOpen = true;
+  const panel = document.getElementById('stickerPanel');
+  if (panel) panel.classList.add('show');
+  if (!_stickerLoaded) _loadStickers();
+  const btn = document.getElementById('stickerBtn');
+  if (btn) btn.style.color = 'var(--accent, #e07850)';
+}
+
+function closeStickerPanel() {
+  _stickerPanelOpen = false;
+  const panel = document.getElementById('stickerPanel');
+  if (panel) panel.classList.remove('show');
+  const btn = document.getElementById('stickerBtn');
+  if (btn) btn.style.color = '';
+}
+
+// 点击其他地方关闭表情包面板
+document.addEventListener('click', function(e) {
+  if (!_stickerPanelOpen) return;
+  const panel = document.getElementById('stickerPanel');
+  const btn = document.getElementById('stickerBtn');
+  if (panel && panel.contains(e.target)) return;
+  if (btn && btn.contains(e.target)) return;
+  closeStickerPanel();
+});
+
+// 启动时预加载表情包文件名映射（用于渲染历史消息中的表情包）
+async function _preloadStickerMap() {
+  try {
+    const res = await fetch('/api/stickers/list');
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.stickers || [];
+    for (const s of list) {
+      _stickerFileMap[s.name] = s.file;
+    }
+    console.log('[StickerMap] 已加载', Object.keys(_stickerFileMap).length, '个表情包映射');
+  } catch(e) { console.warn('[StickerMap] 预加载失败:', e); }
+}
+_preloadStickerMap();

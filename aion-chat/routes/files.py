@@ -3,6 +3,7 @@
 """
 
 import json, time, re, mimetypes
+from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File
 from pydantic import BaseModel
@@ -15,6 +16,9 @@ from database import get_db
 from ws import manager
 
 router = APIRouter()
+
+# 表情包目录
+STICKERS_DIR = Path(__file__).parent.parent / "static" / "stickers"
 
 
 # ── 导出对话到 .md 文件 ───────────────────────────
@@ -195,3 +199,18 @@ async def save_chat_file(conv_id: str, body: FileContent):
     await manager.broadcast({"type": "conv_updated", "data": {"id": conv_id, "title": parsed["title"], "model": parsed["model"]}})
     await manager.broadcast({"type": "file_synced", "data": {"conv_id": conv_id}})
     return {"ok": True}
+
+
+# ── 表情包列表 ────────────────────────────────────
+@router.get("/api/stickers/list")
+async def list_stickers():
+    """扫描 static/stickers/ 目录，返回表情包列表"""
+    if not STICKERS_DIR.exists():
+        return {"stickers": []}
+    stickers = []
+    allowed_exts = {".gif", ".jpg", ".jpeg", ".png", ".webp"}
+    for f in sorted(STICKERS_DIR.iterdir()):
+        if f.suffix.lower() in allowed_exts and f.is_file():
+            name = f.stem  # 去掉扩展名的文件名即为表情包名
+            stickers.append({"name": name, "file": f.name, "ext": f.suffix.lower()})
+    return {"stickers": stickers}

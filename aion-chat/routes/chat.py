@@ -116,6 +116,15 @@ HOME_ABILITY_TEXT = (
     f"控制智能家居，仅限明确要求。别名：{HOME_ALIASES_HINT}。"
 )
 
+# ── 表情包提示词（仅主聊天/群聊注入） ──
+_STICKER_PROMPT_PATH = Path(__file__).parent.parent / "data" / "sticker_prompt.txt"
+
+def _load_sticker_prompt() -> str:
+    """加载表情包使用规则提示词"""
+    if _STICKER_PROMPT_PATH.exists():
+        return _STICKER_PROMPT_PATH.read_text(encoding="utf-8").strip()
+    return ""
+
 
 def _parse_home_args(parts: list[str]) -> dict[str, str]:
     args: dict[str, str] = {}
@@ -667,66 +676,51 @@ async def abort_generation(conv_id: str):
         return {"ok": True}
     return {"ok": False, "error": "no active generation"}
 
-# ── 编辑重新发送（更新消息 + 删后续 + AI 重新回复） ──
-@router.post("/api/messages/{msg_id}/edit-resend")
-async def edit_resend_message(msg_id: str, body: MsgEditResend):
-    """编辑用户消息后重新发送：更新内容 → 删除后续消息 → AI 重新回复"""
+# ── 发送新消息 ────────────────────────────────────
+@router.post("/api/conversations/{conv_id}/send")
+async def send_message(conv_id: str, body: MsgCreate):
+    now = time.time()
     if body.client_id:
         manager.set_last_sender(body.client_id)
-    # Aion 侧：用户在 Aion 私聊发消息
     manager.set_aion_last_active("private")
 
-    # 1. 查出原消息信息
+    # 1. 保存用户消息
+    user_msg_id = f"msg_{int(now * 1000)}"
+    att_json = json.dumps(body.attachments, ensure_ascii=False) if body.attachments else "[]"
     async with get_db() as db:
-        db.row_factory = __import__('aiosqlite').Row
-        cur = await db.execute("SELECT * FROM messages WHERE id=?", (msg_id,))
-        orig = await cur.fetchone()
-        if not orig:
-            return {"error": "message not found"}
-        conv_id = orig["conv_id"]
-        msg_created_at = orig["created_at"]
-
-        # 2. 更新消息内容
-        await db.execute("UPDATE messages SET content=? WHERE id=?", (body.content, msg_id))
-
-        # 3. 删除该消息之后的所有消息
-        cur2 = await db.execute(
-            "SELECT id FROM messages WHERE conv_id=? AND created_at>?",
-            (conv_id, msg_created_at)
+        await db.execute(
+            "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+            (user_msg_id, conv_id, "user", body.content, now, att_json),
         )
-        later_msgs = await cur2.fetchall()
-        if later_msgs:
-            await db.execute(
-                "DELETE FROM messages WHERE conv_id=? AND created_at>?",
-                (conv_id, msg_created_at)
-            )
+        await db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now, conv_id))
         await db.commit()
 
-    # 广播更新和删除事件
-    updated_d = dict(orig)
-    updated_d["content"] = body.content
-    try: updated_d["attachments"] = json.loads(updated_d.get("attachments") or "[]") if updated_d.get("attachments") else []
-    except: updated_d["attachments"] = []
-    await manager.broadcast({"type": "msg_updated", "data": updated_d})
-    for lm in later_msgs:
-        await manager.broadcast({"type": "msg_deleted", "data": {"id": lm["id"], "conv_id": conv_id}})
+    user_msg = {"id": user_msg_id, "conv_id": conv_id, "role": "user",
+                "content": body.content, "created_at": now, "attachments": body.attachments}
+    await manager.broadcast({"type": "msg_created", "data": user_msg})
+    await export_conversation(conv_id)
 
-    # 4. 重新构建上下文并调用 AI（复用 send_message 的逻辑）
+    # 2. 读取模型
     async with get_db() as db:
         db.row_factory = __import__('aiosqlite').Row
         cur = await db.execute("SELECT model FROM conversations WHERE id=?", (conv_id,))
         conv = await cur.fetchone()
         model_key = conv["model"] if conv else DEFAULT_MODEL
 
-    # ── 合并私聊 + 群聊消息为统一时间线 ──
+    # 3. 构建上下文
     merged = await fetch_merged_timeline("aion", body.context_limit, conv_id=conv_id)
     history = render_merged_timeline(merged, "aion")
 
-    # 只保留最后一条用户消息的图片附件 + 语音消息处理
-    _process_voice_attachments_in_history(history)
+    last_user_idx = -1
+    for i in range(len(history) - 1, -1, -1):
+        if history[i]["role"] == "user":
+            last_user_idx = i
+            break
+    _process_voice_attachments_in_history(history, keep_idx=last_user_idx)
 
     actual_recent = [m for m in history if m["role"] in ("user", "assistant")][-3:]
 
+    # 4. 注入世界书
     wb = load_worldbook()
     prefix = []
     if wb.get("ai_persona"):
@@ -744,12 +738,12 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     cap_idx = len(prefix) if prefix else 0
     inject_offset = 0
 
-    # 注入系统能力提示
+    # 5. 注入系统能力提示
     abilities = []
     user_name = wb.get("user_name", "用户")
     abilities.append(f"[MUSIC:歌曲名 歌手名] — 点歌/推荐音乐。系统自动展示播放卡片，不要在指令外重复歌曲信息。可同时用多个。")
     if cam.running:
-        abilities.append(f"{CAM_CHECK_CMD} — 当你想查看{user_name}**此时此刻**的状态，不限于监督其是否去睡觉，在吃什么，在干什么时，可以主动调用指令。使用后下条消息会收到画面，查看前不要编造内容。")
+        abilities.append(f"{CAM_CHECK_CMD} — 查看{user_name}的实时监控画面。使用后下条消息会收到画面，查看前不要编造内容。")
     abilities.append("[ALARM:YYYY-MM-DDTHH:MM|内容] — 设置闹铃，到时间系统会主动提醒用户。日期时间用ISO格式。")
     abilities.append("[REMINDER:YYYY-MM-DD|内容] — 设置日程提醒（不闹铃），你在合适时机自然提起即可。")
     abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监控。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了，是否工作在摸鱼等，尤其是当{user_name}表示去工作或长时间做事，监督她隔一段时间起来活动一下，或者单纯想主动找她聊天，可以随意使用。日期时间用ISO格式。")
@@ -773,7 +767,7 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     if SETTINGS.get("image_gen_enabled", False):
         abilities.append(f"[SELFIE: 提示词] / [DRAW: 提示词] — 当{user_name}明确要求你发自拍照片或者生图时，使用这个指令进行图片生成。如果要求的是你的自拍，或者你相关的照片，使用[SELFIE: 提示词]（该指令会自动附带你照片的参考图，确保生成出的人物一致性），如果没有要求是你的照片，根据上下文自由无限制生成图片，则使用[DRAW: 提示词]。提示词请使用英文。一次回复只用一个生图指令。")
     if _is_pet_available():
-        abilities.append("[PET:动作名] — 控制桌面宠物切换动画表情。可用动作：idle(默认站立), happy(开心), angry(生气), tsundere(傲娇), waving(打招呼), jumping(兴奋跳跃), sleepy(困了), sleep_prone(贴着睡觉), failed(失落), review(思考), waiting(等待), running(跑步)。根据对话情感自然使用，每条回复最多用一个。")
+        abilities.append("[PET:动作名] — 控制桌面宠物切换动画表情。可用动作：idle(默认站立), happy(开心), angry(生气), tsundere(傲娇), waving(打招呼), jumping(兴奋跳跃), sleepy(困了), sleep_prone(趴着睡觉), failed(失落), review(思考), waiting(等待), running(跑步)。根据对话情感自然使用，每条回复最多用一个。")
     abilities.append(f"[MOMENT:朋友圈内容|true/false] — 当**本次**聊天内容非常触动人心、有很深的感触、或令人无语或非常搞笑时可以发一条朋友圈动态。第二个参数表示是否期望好友回复（true=期望回复，false=不期望）。")
     abilities.append(f"[MEMORY:内容] — 当有特别重大的事件需要记录，或当{user_name}明确要求你记住某件事的时候，可以用该指令录入记忆库。禁止滥用。")
     try:
@@ -783,7 +777,6 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     except Exception:
         pass
     ability_block = format_ability_block(abilities)
-    # CLI 模型专属：告知图片存储目录，使其能保存图片并返回路径
     _provider = MODELS.get(model_key, {}).get("provider", "")
     if _provider in ("gemini_cli", "antigravity_cli", "codex_cli"):
         _uploads_path = str(UPLOADS_DIR.resolve()).replace(chr(92), "/")
@@ -792,9 +785,8 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     schedule_text = build_schedule_prompt(schedules)
     ability_block += f"\n\n【当前日程列表】\n{schedule_text}"
     try:
-        from location import format_location_for_prompt, load_location_config
-        loc_cfg = load_location_config()
-        if loc_cfg.get("enabled"):
+        from location import format_location_for_prompt, load_location_config as _llc
+        if _llc().get("enabled"):
             loc_prompt = format_location_for_prompt()
             if loc_prompt:
                 ability_block += f"\n\n【位置信息】\n{loc_prompt}"
@@ -804,7 +796,51 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "好的，需要时我会使用这些指令。"})
     inject_offset += 2
 
-    # RAG 记忆召回
+    # 6. 注入表情包提示词
+    _sticker_prompt = _load_sticker_prompt()
+    if _sticker_prompt:
+        history.insert(cap_idx + inject_offset, {"role": "user", "content": f"[表情包使用规则]\n{_sticker_prompt}"})
+        history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会在合适的时候自然地使用表情包。"})
+        inject_offset += 2
+
+    # 7. 注入剧场·场外求助上下文（如果有）
+    theater_session = None
+    if body.theater_session_id:
+        from ghost_forest import load_session as gf_load_session, build_game_state_summary, save_session as gf_save_session, STAT_LABELS
+        theater_session = gf_load_session(body.theater_session_id)
+        if theater_session:
+            state_summary = build_game_state_summary(theater_session)
+            story = theater_session.get("story", [])
+            recent_narration = ""
+            for entry in story[-2:]:
+                recent_narration += f"【第{entry['round']}轮】\n{entry.get('narration', '')}\n\n"
+            last_story = story[-1] if story else None
+            options_text = ""
+            if last_story and last_story.get("options") and not last_story.get("chosen"):
+                opts = []
+                for opt in last_story["options"]:
+                    stat_name = STAT_LABELS.get(opt.get("stat", ""), opt.get("stat", ""))
+                    dc = opt.get("dc", 0)
+                    opts.append(f"{opt['key']}. {opt['text']}（{stat_name} DC{dc}）" if dc > 0 else f"{opt['key']}. {opt['text']}（幸运裸骰）")
+                options_text = "\n".join(opts)
+            theater_block = f"""[剧场·场外求助]
+你的伴侣正在玩「奥罗斯幽林」TRPG游戏，以下是当前状态：
+{state_summary}
+
+【当前剧情】
+{recent_narration.strip()}"""
+            if options_text:
+                theater_block += f"\n\n【当前面临的选项】\n{options_text}"
+            theater_block += """
+
+如果你愿意帮助，可以在回复中使用以下指令（可多个）：
+- [剧场属性：属性名 +N] 或 [剧场属性：属性名 -N]  修改属性（属性名可以是：hp、力量、敏捷、智力、魅力、幸运）
+- [剧场道具：道具名]  赠送道具"""
+            history.insert(cap_idx + inject_offset, {"role": "user", "content": theater_block})
+            history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我了解当前的游戏状况了。"})
+            inject_offset += 2
+
+    # 8. 即时哨兵 + 记忆召回
     recall_keywords_str = ""
     recalled = []
     detail_text = ""
@@ -815,58 +851,68 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     debug_top6_data = []
     debug_recalled = []
 
-    digest_result = await instant_digest(actual_recent)
-    recall_keywords = digest_result.get("keywords", [])
-    recall_keywords_str = "、".join(recall_keywords) if recall_keywords else ""
-    topic = digest_result.get("topic", "")
-    is_search_needed = digest_result.get("is_search_needed", False)
+    if body.fast_mode:
+        now_str = datetime.now().strftime("%Y年%m月%d日  %H:%M:%S")
+        bg_block = f"系统当前的准确时间是 {now_str}"
+        health_text = await build_health_summary()
+        if health_text:
+            bg_block += health_text
+        history.insert(cap_idx + inject_offset, {"role": "user", "content": bg_block})
+        history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到。"})
+        inject_offset += 2
+    else:
+        digest_result = await instant_digest(actual_recent)
+        recall_keywords = digest_result.get("keywords", [])
+        recall_keywords_str = "、".join(recall_keywords) if recall_keywords else ""
+        topic = digest_result.get("topic", "")
+        is_search_needed = digest_result.get("is_search_needed", False)
 
-    recall_query = f"{topic} {' '.join(recall_keywords)}" if topic else f"{body.content[:200]} {' '.join(recall_keywords)}"
-    recall_query = recall_query.strip()
+        recall_query = f"{topic} {' '.join(recall_keywords)}" if topic else f"{body.content[:200]} {' '.join(recall_keywords)}"
+        recall_query = recall_query.strip()
 
-    async def _do_surfacing():
-        return await build_surfacing_memories(topic, recall_keywords)
-    async def _do_recall():
-        if recall_query:
-            return await recall_memories(recall_query, query_keywords=recall_keywords)
-        return [], []
+        async def _do_surfacing():
+            return await build_surfacing_memories(topic, recall_keywords)
+        async def _do_recall():
+            if recall_query:
+                return await recall_memories(recall_query, query_keywords=recall_keywords)
+            return [], []
 
-    (surfaced, surfaced_ids), (_, debug_top6) = await asyncio.gather(
-        _do_surfacing(), _do_recall()
-    )
+        (surfaced, surfaced_ids), (_, debug_top6) = await asyncio.gather(
+            _do_surfacing(), _do_recall()
+        )
 
-    now_str = datetime.now().strftime("%Y年%m月%d日  %H:%M:%S")
-    bg_block = f"系统当前的准确时间是 {now_str}"
-    health_text = await build_health_summary()
-    if health_text:
-        bg_block += health_text
-    if surfaced:
-        unresolved_lines = [f"📌 {m['content']}（还没做/还没去）" for m in surfaced if m.get("unresolved")]
-        normal_lines = [f"- {m['content']}" for m in surfaced if not m.get("unresolved")]
-        mem_text = "\n".join(unresolved_lines + normal_lines)
-        bg_block += f"\n\n[背景记忆]\n以下是你记得的近期事件和需要关注的事项，在对话中如果有关联可以自然提起：\n{mem_text}"
-    history.insert(cap_idx + inject_offset, {"role": "user", "content": bg_block})
-    history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会在合适的时候自然提及。"})
-    inject_offset += 2
+        now_str = datetime.now().strftime("%Y年%m月%d日  %H:%M:%S")
+        bg_block = f"系统当前的准确时间是 {now_str}"
+        health_text = await build_health_summary()
+        if health_text:
+            bg_block += health_text
+        if surfaced:
+            unresolved_lines = [f"📌 {m['content']}（还没做/还没去）" for m in surfaced if m.get("unresolved")]
+            normal_lines = [f"- {m['content']}" for m in surfaced if not m.get("unresolved")]
+            mem_text = "\n".join(unresolved_lines + normal_lines)
+            bg_block += f"\n\n[背景记忆]\n以下是你记得的近期事件和需要关注的事项，在对话中如果有关联可以自然提起：\n{mem_text}"
+        history.insert(cap_idx + inject_offset, {"role": "user", "content": bg_block})
+        history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会在合适的时候自然提及。"})
+        inject_offset += 2
 
-    if is_search_needed and recall_query:
-        recalled = [r for r in debug_top6 if r["score"] >= 0.45 and r["id"] not in surfaced_ids][:5]
-        if digest_result.get("require_detail") and recalled:
-            detail_text = await fetch_source_details(recalled, recall_keywords)
+        if is_search_needed and recall_query:
+            recalled = [r for r in debug_top6 if r["score"] >= 0.45 and r["id"] not in surfaced_ids][:5]
+            if digest_result.get("require_detail") and recalled:
+                detail_text = await fetch_source_details(recalled, recall_keywords)
 
-    debug_recalled = [{"content": m["content"], "type": m["type"], "score": m["score"],
-                       "vec_sim": m.get("vec_sim"), "kw_score": m.get("kw_score"),
-                       "importance": m.get("importance")} for m in recalled] if recalled else []
-    debug_top6_data = [{"content": m["content"][:100], "score": m["score"],
-                        "vec_sim": m.get("vec_sim"), "kw_score": m.get("kw_score"),
-                        "importance": m.get("importance")} for m in debug_top6] if debug_top6 else []
-    if recalled:
-        mem_lines = "\n".join([f"- {m['content']}" for m in recalled])
-        mem_block = f"[相关记忆]\n你脑海中与当前话题相关的记忆：\n{mem_lines}"
-        if detail_text:
-            mem_block += f"\n\n[原文细节]\n以下是相关的具体对话记录：\n{detail_text}"
-        history.insert(cap_idx + inject_offset, {"role": "user", "content": mem_block})
-        history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会自然地参考这些记忆。"})
+        debug_recalled = [{"content": m["content"], "type": m["type"], "score": m["score"],
+                           "vec_sim": m.get("vec_sim"), "kw_score": m.get("kw_score"),
+                           "importance": m.get("importance")} for m in recalled] if recalled else []
+        debug_top6_data = [{"content": m["content"][:100], "score": m["score"],
+                            "vec_sim": m.get("vec_sim"), "kw_score": m.get("kw_score"),
+                            "importance": m.get("importance")} for m in debug_top6] if debug_top6 else []
+        if recalled:
+            mem_lines = "\n".join([f"- {m['content']}" for m in recalled])
+            mem_block = f"[相关记忆]\n你脑海中与当前话题相关的记忆：\n{mem_lines}"
+            if detail_text:
+                mem_block += f"\n\n[原文细节]\n以下是相关的具体对话记录：\n{detail_text}"
+            history.insert(cap_idx + inject_offset, {"role": "user", "content": mem_block})
+            history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会自然地参考这些记忆。"})
 
     debug_prompt = [{"role": m["role"], "content": m["content"][:500]} for m in history]
 
@@ -874,15 +920,19 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     usage_meta: dict = {}
 
     _q: asyncio.Queue = asyncio.Queue()
-
-    # 取消事件
     cancel_event = asyncio.Event()
     active_generations[conv_id] = cancel_event
 
-    tts_streamer = None
-    if body.tts_enabled and body.tts_voice:
-        tts_streamer = TTSStreamer(ai_msg_id, body.tts_voice, manager)
-    manager.set_tts_fallback(body.tts_enabled, body.tts_voice)
+    temperature = body.temperature
+
+    # 创建 TTS streamer（如果请求方开了 TTS）
+    tts_enabled = body.tts_enabled
+    tts_voice = body.tts_voice
+    regen_tts = None
+    if tts_enabled and tts_voice:
+        regen_tts = TTSStreamer(ai_msg_id, tts_voice, manager)
+    # 同步备用 TTS 状态，供 cam_check / schedule 等服务端触发场景使用
+    manager.set_tts_fallback(tts_enabled, tts_voice)
 
     async def _bg_generate():
         full_text = ""
@@ -890,17 +940,17 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
         try:
             await _q.put({"id": ai_msg_id, "type": "start"})
             try:
-                async for chunk in stream_ai(history, model_key, usage_meta, max_tokens=body.max_tokens, cancel_event=cancel_event):
+                async for chunk in stream_ai(history, model_key, usage_meta, temperature, max_tokens=body.max_tokens, cancel_event=cancel_event):
                     if chunk.startswith(CLI_STATUS_PREFIX):
                         await _q.put({"type": "cli_status", "text": chunk[len(CLI_STATUS_PREFIX):]})
                         continue
                     full_text += chunk
+                    if regen_tts:
+                        regen_tts.feed(chunk)
                     if _provider == "antigravity_cli":
                         await _q.put({"type": "replace", "content": full_text})
                     else:
                         await _q.put({"type": "chunk", "content": chunk})
-                    if tts_streamer:
-                        tts_streamer.feed(chunk)
             except Exception as e:
                 has_error = True
                 error_text = f"\n[请求出错: {str(e)}]"
@@ -1022,10 +1072,8 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
                         mr_data = {'type': 'memory_record', 'msg_id': ai_msg_id, 'content': mem_content, 'mem_id': mem_id}
                         await _q.put(mr_data)
                         await manager.broadcast({"type": "memory_record", "data": mr_data})
+                        print(f"[MEMORY] AI 主动录入记忆: {mem_content[:50]}")
 
-            full_text = META_TAG_PATTERN.sub("", full_text).strip()
-
-            # 检测 [转账：N元] 指令 — AI 转账入账（不从 full_text 中剥离，前端渲染卡片需要）
             transfer_matches = TRANSFER_CMD_PATTERN.findall(full_text)
             for t_amount_str in transfer_matches:
                 try:
@@ -1045,6 +1093,31 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
                         print(f"[WALLET] AI 转账: -{t_val}元")
                 except (ValueError, Exception):
                     pass
+
+            theater_updates = []
+            if theater_session:
+                stat_name_map = {"hp": "hp", "HP": "hp", "力量": "str", "敏捷": "dex", "智力": "int", "魅力": "cha", "幸运": "lck"}
+                theater_stat_matches = THEATER_STAT_PATTERN.findall(full_text)
+                for stat_name, val_str in theater_stat_matches:
+                    stat_name = stat_name.strip()
+                    val = int(val_str.replace('＋', '+').replace('－', '-'))
+                    stat_key = stat_name_map.get(stat_name)
+                    if stat_key and val != 0:
+                        ts = gf_load_session(body.theater_session_id)
+                        if ts:
+                            if stat_key == "hp":
+                                ts["player"]["hp"] = max(0, min(ts["player"]["max_hp"], ts["player"]["hp"] + val))
+                            else:
+                                ts["player"]["stats"][stat_key] = max(1, ts["player"]["stats"].get(stat_key, 0) + val)
+                            gf_save_session(ts)
+                            label = stat_name if stat_name != "hp" else "HP"
+                            theater_updates.append({"type": "stat", "name": label, "value": val})
+                            print(f"[剧场] 属性变更: {label} {'+' if val > 0 else ''}{val}")
+                theater_item_matches = THEATER_ITEM_PATTERN.findall(full_text)
+                for item_name in theater_item_matches:
+                    item_name = item_name.strip()
+
+            full_text = META_TAG_PATTERN.sub("", full_text).strip()
 
             music_atts = [{"type": "music", "name": s["name"], "artist": s["artist"], "id": s["id"]} for s in music_cards] if music_cards else []
             full_text, image_atts = _extract_reply_image_attachments(full_text)
@@ -1069,10 +1142,8 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
                 await _q.put(toy_data)
                 await manager.broadcast({"type": "toy_command", "data": toy_data})
                 await _toy_sys_msg(conv_id, toy_matches)
-
             if pet_matches and _is_pet_available():
                 await manager.broadcast({"type": "pet_command", "data": {"action": pet_matches[-1].lower()}})
-
             if cam_triggered:
                 if cam.running:
                     cam_data = {'type': 'cam_check', 'conv_id': conv_id, 'model_key': model_key, 'msg_id': ai_msg_id}
@@ -1081,31 +1152,26 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
                     asyncio.create_task(_delayed_cam_check(conv_id, model_key))
                 else:
                     await _q.put({'type': 'cam_offline'})
-
             if poi_matches:
                 poi_data = {'type': 'poi_search', 'conv_id': conv_id, 'categories': poi_matches, 'msg_id': ai_msg_id}
                 await _q.put(poi_data)
                 await manager.broadcast({"type": "poi_search", "data": poi_data})
                 asyncio.create_task(perform_poi_check(conv_id, model_key, poi_matches))
-
             if activity_n > 0:
                 activity_data = {'type': 'activity_check', 'conv_id': conv_id, 'n': activity_n, 'msg_id': ai_msg_id}
                 await _q.put(activity_data)
                 await manager.broadcast({"type": "activity_check", "data": activity_data})
                 asyncio.create_task(perform_activity_check(conv_id, model_key, activity_n))
-
             if video_call_triggered:
                 vc_data = {'type': 'video_call_incoming', 'conv_id': conv_id, 'msg_id': ai_msg_id}
                 await _q.put(vc_data)
                 await _video_call_incoming_sys_msg(conv_id)
                 asyncio.create_task(_delayed_video_call(vc_data))
-
             if music_cards:
                 music_data = {'type': 'music', 'msg_id': ai_msg_id, 'cards': music_cards}
                 await _q.put(music_data)
                 await manager.broadcast({"type": "music", "data": music_data})
                 await _music_sys_msg(conv_id, music_cards)
-
             if image_gen_prompt:
                 ig_data = {'type': 'image_gen_start', 'conv_id': conv_id, 'msg_id': ai_msg_id, 'is_selfie': image_gen_is_selfie}
                 await _q.put(ig_data)
@@ -1135,9 +1201,9 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
             traceback.print_exc()
         finally:
             active_generations.pop(conv_id, None)
-            if tts_streamer:
+            if regen_tts:
                 try:
-                    await tts_streamer.flush()
+                    await regen_tts.flush()
                 except Exception:
                     pass
             await _q.put({"type": "done"})
@@ -1153,54 +1219,51 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
-# ── 发送消息 + AI 回复（SSE 流式） ────────────────
-@router.post("/api/conversations/{conv_id}/send")
-async def send_message(conv_id: str, body: MsgCreate):
-    # 记录最后发消息的客户端 ID
+# ── 编辑重新发送（更新消息 + 删后续 + AI 重新回复） ──
+@router.post("/api/messages/{msg_id}/edit-resend")
+async def edit_resend_message(msg_id: str, body: MsgEditResend):
+    """编辑用户消息后重新发送：更新内容 → 删除后续消息 → AI 重新回复"""
     if body.client_id:
         manager.set_last_sender(body.client_id)
     # Aion 侧：用户在 Aion 私聊发消息
     manager.set_aion_last_active("private")
-    now = time.time()
-    msg_id = f"msg_{int(now*1000)}"
 
-    att_json = json.dumps(body.attachments, ensure_ascii=False) if body.attachments else "[]"
+    # 1. 查出原消息信息
     async with get_db() as db:
-        await db.execute(
-            "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-            (msg_id, conv_id, "user", body.content, now, att_json)
+        db.row_factory = __import__('aiosqlite').Row
+        cur = await db.execute("SELECT * FROM messages WHERE id=?", (msg_id,))
+        orig = await cur.fetchone()
+        if not orig:
+            return {"error": "message not found"}
+        conv_id = orig["conv_id"]
+        msg_created_at = orig["created_at"]
+
+        # 2. 更新消息内容
+        await db.execute("UPDATE messages SET content=? WHERE id=?", (body.content, msg_id))
+
+        # 3. 删除该消息之后的所有消息
+        cur2 = await db.execute(
+            "SELECT id FROM messages WHERE conv_id=? AND created_at>?",
+            (conv_id, msg_created_at)
         )
-        await db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now, conv_id))
+        later_msgs = await cur2.fetchall()
+        if later_msgs:
+            await db.execute(
+                "DELETE FROM messages WHERE conv_id=? AND created_at>?",
+                (conv_id, msg_created_at)
+            )
         await db.commit()
 
-    user_msg = {"id": msg_id, "conv_id": conv_id, "role": "user", "content": body.content,
-                "created_at": now, "attachments": body.attachments}
-    await manager.broadcast({"type": "msg_created", "data": user_msg})
+    # 广播更新和删除事件
+    updated_d = dict(orig)
+    updated_d["content"] = body.content
+    try: updated_d["attachments"] = json.loads(updated_d.get("attachments") or "[]") if updated_d.get("attachments") else []
+    except: updated_d["attachments"] = []
+    await manager.broadcast({"type": "msg_updated", "data": updated_d})
+    for lm in later_msgs:
+        await manager.broadcast({"type": "msg_deleted", "data": {"id": lm["id"], "conv_id": conv_id}})
 
-    # 用户发消息时重置哨兵巡逻计时器
-    cam.reset_patrol_timer()
-
-    # 检测用户消息中的 [转账：N元] → 入账
-    user_transfer_matches = TRANSFER_CMD_PATTERN.findall(body.content)
-    for t_amount_str in user_transfer_matches:
-        try:
-            t_val = float(t_amount_str)
-            _wb_t = load_worldbook()
-            _u_name = _wb_t.get('user_name', '用户')
-            _a_name = _wb_t.get('ai_name', 'AI')
-            async with get_db() as t_db:
-                t_now = time.time()
-                t_id = f"wt_{int(t_now*1000)}"
-                await t_db.execute(
-                    "INSERT INTO bookkeeping (id, record_type, amount, description, created_at) VALUES (?,?,?,?,?)",
-                    (t_id, 'wallet_user', t_val, f'{_u_name}转账 {t_val}元', t_now)
-                )
-                await t_db.commit()
-            await manager.broadcast({"type": "wallet_update"})
-            print(f"[WALLET] 用户转账: {t_val}元")
-        except (ValueError, Exception):
-            pass
-
+    # 4. 重新构建上下文并调用 AI（复用 send_message 的逻辑）
     async with get_db() as db:
         db.row_factory = __import__('aiosqlite').Row
         cur = await db.execute("SELECT model FROM conversations WHERE id=?", (conv_id,))
@@ -1211,12 +1274,9 @@ async def send_message(conv_id: str, body: MsgCreate):
     merged = await fetch_merged_timeline("aion", body.context_limit, conv_id=conv_id)
     history = render_merged_timeline(merged, "aion")
 
-    # 只保留当前（最后一条）用户消息的图片附件，历史图片不带入上下文
-    # 语音消息处理：历史语音消息用转写文本替代音频文件，当前消息保留音频原件
+    # 只保留最后一条用户消息的图片附件 + 语音消息处理
     _process_voice_attachments_in_history(history)
 
-    # 即时哨兵：取最近实际对话用于状态更新 + 关键词提取
-    # 语音消息此时 content 已包含转写文本，哨兵直接分析文本
     actual_recent = [m for m in history if m["role"] in ("user", "assistant")][-3:]
 
     wb = load_worldbook()
@@ -1285,15 +1345,13 @@ async def send_message(conv_id: str, body: MsgCreate):
     if _provider in ("gemini_cli", "antigravity_cli", "codex_cli"):
         _uploads_path = str(UPLOADS_DIR.resolve()).replace(chr(92), "/")
         ability_block += f"\n\n【文件存储】当需要下载或保存图片/文件时，请保存到此目录：{_uploads_path}/ ，保存后在回复中给出完整路径即可，系统会自动识别并展示图片。"
-    # 注入当前日程列表
     schedules = await get_active_schedules()
     schedule_text = build_schedule_prompt(schedules)
     ability_block += f"\n\n【当前日程列表】\n{schedule_text}"
-    # 注入位置和天气信息（不注入 POI 列表，由 Core 按需搜索）
+    # 注入位置和天气信息（不注入 POI 列表）
     try:
-        from location import format_location_for_prompt, load_location_config
-        loc_cfg = load_location_config()
-        if loc_cfg.get("enabled"):
+        from location import format_location_for_prompt, load_location_config as _llc
+        if _llc().get("enabled"):
             loc_prompt = format_location_for_prompt()
             if loc_prompt:
                 ability_block += f"\n\n【位置信息】\n{loc_prompt}"
@@ -1302,6 +1360,13 @@ async def send_message(conv_id: str, body: MsgCreate):
     history.insert(cap_idx + inject_offset, {"role": "user", "content": ability_block})
     history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "好的，需要时我会使用这些指令。"})
     inject_offset += 2
+
+    # 注入表情包提示词
+    _sticker_prompt = _load_sticker_prompt()
+    if _sticker_prompt:
+        history.insert(cap_idx + inject_offset, {"role": "user", "content": f"[表情包使用规则]\n{_sticker_prompt}"})
+        history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会在合适的时候自然地使用表情包。"})
+        inject_offset += 2
 
     # 1.5 注入剧场·场外求助上下文（如果有）
     theater_session = None
@@ -1439,11 +1504,11 @@ async def send_message(conv_id: str, body: MsgCreate):
     active_generations[conv_id] = cancel_event
 
     # 创建 TTS streamer（如果请求方开了 TTS）
-    tts_streamer = None
-    if body.tts_enabled and body.tts_voice:
-        tts_streamer = TTSStreamer(ai_msg_id, body.tts_voice, manager)
+    regen_tts = None
+    if tts_enabled and tts_voice:
+        regen_tts = TTSStreamer(ai_msg_id, tts_voice, manager)
     # 同步备用 TTS 状态，供 cam_check / schedule 等服务端触发场景使用
-    manager.set_tts_fallback(body.tts_enabled, body.tts_voice)
+    manager.set_tts_fallback(tts_enabled, tts_voice)
 
     async def _bg_generate():
         """后台任务：AI 流式生成 → 后处理 → 存 DB → WS 广播。始终运行到结束。"""
@@ -1452,7 +1517,7 @@ async def send_message(conv_id: str, body: MsgCreate):
         try:
             await _q.put({"id": ai_msg_id, "type": "start"})
             try:
-                async for chunk in stream_ai(history, model_key, usage_meta, max_tokens=body.max_tokens, cancel_event=cancel_event):
+                async for chunk in stream_ai(history, model_key, usage_meta, temperature, max_tokens=max_tokens, cancel_event=cancel_event):
                     if chunk.startswith(CLI_STATUS_PREFIX):
                         await _q.put({"type": "cli_status", "text": chunk[len(CLI_STATUS_PREFIX):]})
                         continue
@@ -1461,8 +1526,8 @@ async def send_message(conv_id: str, body: MsgCreate):
                         await _q.put({"type": "replace", "content": full_text})
                     else:
                         await _q.put({"type": "chunk", "content": chunk})
-                    if tts_streamer:
-                        tts_streamer.feed(chunk)
+                    if regen_tts:
+                        regen_tts.feed(chunk)
             except Exception as e:
                 has_error = True
                 error_text = f"\n[请求出错: {str(e)}]"
@@ -1517,7 +1582,7 @@ async def send_message(conv_id: str, body: MsgCreate):
                 activity_n = max(1, min(12, activity_n)) if activity_n > 0 else 6
                 full_text = ACTIVITY_CHECK_PATTERN.sub("", full_text).strip()
 
-            # 检测 [POI_SEARCH:xxx] 指令 → 标记，后续触发自动搜索+追加回复
+            # 检测 [POI_SEARCH:xxx] 指令
             poi_matches = POI_SEARCH_PATTERN.findall(full_text)
             if poi_matches:
                 full_text = POI_SEARCH_PATTERN.sub("", full_text).strip()
@@ -1540,7 +1605,7 @@ async def send_message(conv_id: str, body: MsgCreate):
                 image_gen_prompt = draw_match.group(1).strip()
                 full_text = DRAW_CMD_PATTERN.sub("", full_text).strip()
 
-            # 检测日程指令（[ALARM:...], [REMINDER:...], [Monitor:...], [SCHEDULE_DEL:...], [SCHEDULE_LIST]）
+            # 检测日程指令
             full_text = await process_schedule_commands(full_text, conv_id)
             full_text = await _process_home_commands(full_text)
 
@@ -1597,7 +1662,6 @@ async def send_message(conv_id: str, body: MsgCreate):
                         await _q.put(mr_data)
                         await manager.broadcast({"type": "memory_record", "data": mr_data})
                         print(f"[MEMORY] AI 主动录入记忆: {mem_content[:50]}")
-
 
             # 检测 [转账：N元] 指令 — AI 转账入账
             transfer_matches = TRANSFER_CMD_PATTERN.findall(full_text)
@@ -1752,12 +1816,6 @@ async def send_message(conv_id: str, body: MsgCreate):
                 "has_error": has_error,
                 "error_text": stripped if has_error else None,
             }
-
-            # 推送剧场指令结果到前端
-            if theater_updates:
-                tu_data = {'type': 'theater_update', 'updates': theater_updates, 'session_id': body.theater_session_id, 'msg_id': ai_msg_id}
-                await _q.put(tu_data)
-
             await _q.put(debug_data)
             await manager.broadcast({"type": "debug", "data": debug_data})
         except Exception:
@@ -1765,9 +1823,9 @@ async def send_message(conv_id: str, body: MsgCreate):
             traceback.print_exc()
         finally:
             active_generations.pop(conv_id, None)
-            if tts_streamer:
+            if regen_tts:
                 try:
-                    await tts_streamer.flush()
+                    await regen_tts.flush()
                 except Exception:
                     pass
             await _q.put({"type": "done"})
@@ -2282,6 +2340,13 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
     history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "好的，需要时我会使用这些指令。"})
     inject_offset += 2
 
+    # 注入表情包提示词
+    _sticker_prompt = _load_sticker_prompt()
+    if _sticker_prompt:
+        history.insert(cap_idx + inject_offset, {"role": "user", "content": f"[表情包使用规则]\n{_sticker_prompt}"})
+        history.insert(cap_idx + inject_offset + 1, {"role": "assistant", "content": "收到，我会在合适的时候自然地使用表情包。"})
+        inject_offset += 2
+
     # 2. 即时哨兵 + 记忆召回（fast_mode 时跳过）
     recall_keywords_str = ""
     recalled = []
@@ -2379,6 +2444,7 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
     regen_tts = None
     if tts_enabled and tts_voice:
         regen_tts = TTSStreamer(ai_msg_id, tts_voice, manager)
+    # 同步备用 TTS 状态，供 cam_check / schedule 等服务端触发场景使用
     manager.set_tts_fallback(tts_enabled, tts_voice)
 
     async def _bg_generate():

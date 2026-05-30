@@ -246,6 +246,10 @@
     <div class="messages" id="messages"></div>
     <div class="input-area">
       <div class="preview-area" id="previewArea"></div>
+      <!-- ★ 新增：气泡队列提示 -->
+      <div class="bubble-queue-hint" id="bubbleQueueHint" style="display:none">已暂存 <span id="bubbleQueueCount">0</span> 条气泡，再按发送键触发AI回复</div>
+      <div class="bubble-queue-preview" id="bubbleQueuePreview"></div>
+      <div class="send-countdown-bar" id="sendCountdownBar"><div class="send-countdown-bar-inner" id="sendCountdownBarInner"></div></div>
       <div class="input-row" id="inputRow">
         <div class="plus-menu-wrap">
           <button class="upload-btn" onclick="togglePlusMenu()" title="更多功能">＋</button>
@@ -257,6 +261,8 @@
         </div>
         <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleFileSelect(this)">
         <textarea id="input" rows="1" placeholder="输入消息..." onkeydown="handleKey(event)" oninput="autoResize(this); _updateSendBtnState()"></textarea>
+        <!-- ★ 新增：表情包按钮 -->
+        <button class="sticker-btn" id="stickerBtn" onclick="event.stopPropagation(); toggleStickerPanel()" title="发表情包">☻</button>
         <button class="send-btn" id="sendBtn" onclick="handleSendBtn()" disabled>➤</button>
       </div>
       <div class="voice-mode-row" id="voiceModeRow">
@@ -266,6 +272,16 @@
     </div>
     <div class="bottom-fade-overlay"></div>
   </main>
+</div>
+
+<!-- ★ 新增：表情包面板 -->
+<div class="sticker-panel" id="stickerPanel" onclick="event.stopPropagation()">
+  <div class="sticker-tab-bar" id="stickerTabBar"></div>
+  <div class="sticker-grid-wrap">
+    <div class="sticker-grid" id="stickerGrid">
+      <div class="sticker-loading">表情包加载中...</div>
+    </div>
+  </div>
 </div>
 
 <!-- ── 子页面 iframe 浮层（保持聊天页存活，SSE/TTS 不中断） ── -->

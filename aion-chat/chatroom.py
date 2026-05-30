@@ -15,6 +15,15 @@ from ai_providers import call_codex_cli, CLI_STATUS_PREFIX, _build_cli_prompt
 from context_builder import build_ability_block, build_memory_blocks, fetch_merged_timeline, render_merged_timeline
 from ws import manager
 
+# ── 表情包提示词（仅聊天/群聊使用，不注入世界书） ──
+_STICKER_PROMPT_PATH = Path(__file__).parent / "data" / "sticker_prompt.txt"
+
+def _load_sticker_prompt() -> str:
+    """加载表情包使用规则提示词"""
+    if _STICKER_PROMPT_PATH.exists():
+        return _STICKER_PROMPT_PATH.read_text(encoding="utf-8").strip()
+    return ""
+
 # ── Connor-Codex 服务配置 ──
 CHATROOM_CONFIG_PATH = DATA_DIR / "chatroom_config.json"
 
@@ -177,7 +186,8 @@ def _build_connor_messages(prompt: str) -> list[dict]:
 
 
 async def stream_connor_cli(prompt: str = None, *, messages: list[dict] = None):
-    """流式调用 Codex CLI 获取 Connor 回复，yield text chunks 和 CLI_STATUS_PREFIX 状态。
+    """流式调用 Connor 模型，yield text chunks 和 CLI_STATUS_PREFIX 状态。
+    根据 chatroom_config 中的 connor_model 决定走 Codex CLI 还是通用 API。
     可传入纯文本 prompt（旧方式）或完整 messages 列表（保留附件图片）。"""
     if messages is None:
         messages = _build_connor_messages(prompt)
@@ -187,6 +197,14 @@ async def stream_connor_cli(prompt: str = None, *, messages: list[dict] = None):
             persona = _read_connor_persona()
             if persona:
                 messages = [{"role": "system", "content": persona}] + messages
+
+    key = (load_chatroom_config().get("connor_model") or "Codex").strip() or "Codex"
+    if key != "Codex":
+        from ai_providers import stream_ai
+        async for chunk in stream_ai(messages, key, {}):
+            yield chunk
+        return
+
     async for chunk in call_codex_cli(messages, "", None):
         yield chunk
 
@@ -811,7 +829,13 @@ async def build_aion_group_context(
         history.append({"role": "user", "content": mem_result["memory_block"]})
         history.append({"role": "assistant", "content": "收到，我会自然地参考这些记忆。"})
 
-    # 5. 群聊说明
+    # 5. 表情包提示词
+    sticker_prompt = _load_sticker_prompt()
+    if sticker_prompt:
+        history.append({"role": "user", "content": f"[表情包使用规则]\n{sticker_prompt}"})
+        history.append({"role": "assistant", "content": "收到，我会在合适的时候自然地使用表情包。"})
+
+    # 6. 群聊说明
     history.append({"role": "user", "content": (
         "[群聊说明]\n"
         f"你现在在一个三人群聊中，参与者：用户（{user_name}）、你（{ai_name}）、{connor_name}。\n"
@@ -903,7 +927,13 @@ async def build_connor_group_context(
         history.append({"role": "user", "content": mem_result["memory_block"]})
         history.append({"role": "assistant", "content": "收到，我会自然地参考这些记忆。"})
 
-    # 4. 群聊说明
+    # 4. 表情包提示词
+    sticker_prompt = _load_sticker_prompt()
+    if sticker_prompt:
+        history.append({"role": "user", "content": f"[表情包使用规则]\n{sticker_prompt}"})
+        history.append({"role": "assistant", "content": "收到，我会在合适的时候自然地使用表情包。"})
+
+    # 5. 群聊说明
     history.append({"role": "user", "content": (
         "[群聊说明]\n"
         f"你现在在一个三人群聊中，参与者：用户（{user_name}）、{ai_name}（另一个AI）、你（{connor_name}）。\n"
@@ -988,6 +1018,12 @@ async def build_connor_1v1_context(
     if mem_result["memory_block"]:
         messages.append({"role": "user", "content": mem_result["memory_block"]})
         messages.append({"role": "assistant", "content": "收到，我会自然地参考这些记忆。"})
+
+    # 表情包提示词
+    sticker_prompt = _load_sticker_prompt()
+    if sticker_prompt:
+        messages.append({"role": "user", "content": f"[表情包使用规则]\n{sticker_prompt}"})
+        messages.append({"role": "assistant", "content": "收到，我会在合适的时候自然地使用表情包。"})
 
     messages.append({"role": "user", "content": (
         "[私聊说明]\n"

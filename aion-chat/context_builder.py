@@ -34,6 +34,7 @@ PET_CMD_PATTERN = re.compile(r'\[PET:([a-z_\-]+)\]', re.IGNORECASE)
 HOME_CMD_PATTERN = re.compile(r'\[HOME:([^\]]+)\]', re.IGNORECASE)
 TRANSFER_CMD_PATTERN = re.compile(r'\[转账[：:]\s*(-?\d+(?:\.\d+)?)\s*元\]')
 PRIVATE_WHISPER_CMD_PATTERN = re.compile(r'\[悄悄话[：:]\s*([^\]]+)\]')
+STICKER_CMD_PATTERN = re.compile(r'\[STICKER:([^\]]+)\]')
 VIDEO_CALL_CMD = '[视频电话]'
 META_TAG_PATTERN = re.compile(r'\s*<meta\b[^>]*>.*?</meta\s*>', re.DOTALL | re.IGNORECASE)
 
@@ -43,13 +44,14 @@ _ALL_CMD_PATTERNS = [
     ACTIVITY_CHECK_PATTERN, SELFIE_CMD_PATTERN, DRAW_CMD_PATTERN,
     POI_SEARCH_PATTERN, TOY_CMD_PATTERN, PET_CMD_PATTERN,
     HOME_CMD_PATTERN, TRANSFER_CMD_PATTERN, PRIVATE_WHISPER_CMD_PATTERN,
+    STICKER_CMD_PATTERN,
 ]
 
 HOME_ALIASES_HINT = (
     "所有灯、大灯、小灯、空调开机、空调关机、空调温度加、空调温度减、风扇、"
 )
 HOME_ABILITY_TEXT = (
-    "[HOME:on/off/state|别名] 或 [HOME:climate|别名|mode=cool|temperature=26] "
+    "[HOME:on/off/state|别名]  "
     f"控制智能家居，仅限明确要求。别名：{HOME_ALIASES_HINT}。"
 )
 

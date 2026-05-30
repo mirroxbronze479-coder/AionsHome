@@ -1459,6 +1459,7 @@ public class AionPushService extends Service {
                 "android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED);
         if (!hasPermission) {
             Log.d(TAG, "♻️ No WRITE_SECURE_SETTINGS, cannot auto-recover accessibility");
+            showNotif(CH_ALARM, "无障碍服务已关闭", "请手动前往设置重新开启 Aion 无障碍服务", true);
             return;
         }
 

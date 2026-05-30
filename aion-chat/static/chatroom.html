@@ -65,6 +65,7 @@
       </div>
 
       <div class="preview-area" id="previewArea"></div>
+      <div class="cr-queue-preview" id="crQueuePreview" style="display:none"></div>
       <form class="composer" id="composer" style="display:none">
         <input type="file" id="fileInput" accept="image/*,audio/*" multiple hidden>
         <div class="plus-menu-wrap">
@@ -78,6 +79,7 @@
           </div>
         </div>
         <textarea id="input" rows="1" maxlength="4000" placeholder="发消息..."></textarea>
+        <button type="button" class="sticker-btn" id="stickerBtn" onclick="event.stopPropagation(); toggleStickerPanel()" title="发表情包">☻</button>
         <button type="submit" class="send-btn" id="sendBtn">➤</button>
       </form>
       <div class="voice-mode-row" id="crVoiceModeRow">
@@ -293,6 +295,16 @@
       </div>
       <div class="wallet-tx-header">转账记录</div>
       <div class="wallet-tx-list" id="crWalletTxList"></div>
+    </div>
+  </div>
+
+  <!-- 表情包面板 -->
+  <div class="sticker-panel" id="stickerPanel" onclick="event.stopPropagation()">
+    <div class="sticker-tab-bar" id="stickerTabBar"></div>
+    <div class="sticker-grid-wrap">
+      <div class="sticker-grid" id="stickerGrid">
+        <div class="sticker-loading">表情包加载中...</div>
+      </div>
     </div>
   </div>
 

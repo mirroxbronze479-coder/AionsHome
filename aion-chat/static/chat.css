@@ -138,6 +138,11 @@ body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-se
 .cam-check-indicator .cam-dots span:nth-child(3) { animation-delay: 0.32s; }
 @keyframes camDotBounce { 0%,80%,100% { transform: scale(0.4); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
 
+/* ── 表情包消息样式 ── */
+.msg-sticker { display:inline-block; vertical-align:middle; }
+.msg-sticker img { display:block; width:120px; height:120px; object-fit:contain; border-radius:8px; cursor:pointer; }
+.msg-bubble.sticker-only { background:transparent !important; border:none !important; box-shadow:none !important; padding:4px !important; }
+
 /* ── [POI_SEARCH] 周边搜索加载指示器 ── */
 .poi-search-indicator { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 12px; background: rgba(25,118,210,0.08); border: 1px solid rgba(25,118,210,0.2); border-radius: 10px; font-size: 13px; color: #1976d2; }
 .poi-search-indicator .poi-dots { display: inline-flex; gap: 3px; }
@@ -1772,6 +1777,186 @@ body[data-theme="light"] .plus-menu-item { text-shadow: none; }
   -webkit-backdrop-filter: none !important;
   text-shadow: none !important;
 }
+
+/* 表情包按钮 - 暗色模式 */
+body[data-theme="dark"] .sticker-btn { background: transparent; border-color: transparent; color: #c5c0bb; font-size: 30px; }
+.sticker-btn { font-size: 28px; }
+
+@media (max-width: 768px) {
+  .sticker-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* ── 多气泡暂存预览 ── */
+.bubble-queue-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+  width: 100%;
+}
+.bubble-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(142, 108, 255, 0.12);
+  border: 1px solid rgba(142, 108, 255, 0.3);
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text);
+  position: relative;
+}
+.bubble-queue-item .bq-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bubble-queue-item .bq-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; padding: 0 2px; flex-shrink: 0; }
+.bubble-queue-item .bq-del:hover { color: var(--danger); }
+.bubble-queue-hint {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 2px;
+  padding: 0 2px;
+}
+/* 20秒倒计时进度条 */
+.send-countdown-bar {
+  height: 2px;
+  background: rgba(142, 108, 255, 0.3);
+  border-radius: 1px;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 2px;
+  display: none;
+}
+.send-countdown-bar.active { display: block; }
+.send-countdown-bar-inner {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.1s linear;
+  width: 100%;
+}
+
+/* ── 表情包按钮 ── */
+.sticker-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+.sticker-btn:hover { color: var(--text); border-color: var(--text2); }
+@media (max-width: 768px) {
+  .sticker-btn { width: 38px; height: 38px; font-size: 24px; }
+}
+
+/* ── 表情包面板 ── */
+.sticker-panel {
+  display: none;
+  position: fixed;
+  left: 0; right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.22);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  flex-direction: column;
+  max-height: 50vh;
+  animation: stickerPanelIn 0.22s cubic-bezier(.4,0,.2,1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.sticker-panel.show { display: flex; }
+@keyframes stickerPanelIn { from { transform: translateY(100%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+
+.sticker-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 8px 8px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.sticker-tab-bar::-webkit-scrollbar { display: none; }
+.sticker-tab {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 8px 8px 0 0;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.sticker-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.sticker-tab:hover { color: var(--text); }
+
+.sticker-grid-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.sticker-item {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s, background 0.12s;
+  position: relative;
+}
+.sticker-item:hover { transform: scale(1.06); background: var(--surface3, rgba(80,80,160,0.15)); }
+.sticker-item:active { transform: scale(0.94); }
+.sticker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.sticker-item .sticker-name {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  font-size: 9px;
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.35);
+  padding: 2px 3px;
+  text-align: center;
+  line-height: 1.2;
+  display: none;
+}
+.sticker-item:hover .sticker-name { display: block; }
+.sticker-empty { padding: 24px; text-align: center; color: var(--text3); font-size: 13px; grid-column: 1/-1; }
+.sticker-loading { padding: 24px; text-align: center; color: var(--text3); font-size: 13px; grid-column: 1/-1; }
 .msg-bubble:has(.transfer-card)::after {
   display: none !important;
 }

@@ -30,6 +30,9 @@ let _suppressScrollBottom = false; // 星标跳转时抑制自动滚底
 const MSG_PAGE_SIZE = 50;
 const $ = id => document.getElementById(id);
 
+// 全局表情包文件名映射（加载后填充）：{ "抱抱": "抱抱.jpeg", "贴贴": "贴贴.gif", ... }
+let _stickerFileMap = {};
+
 // ── 收发消息音效 ──
 const sndSend = new Audio('/public/发送消息.mp3');
 const sndRecv = new Audio('/public/收到消息.mp3');
@@ -128,6 +131,17 @@ function formatMsg(s) {
       return `<div class="transfer-card"><div class="transfer-card-icon-wrap"><svg viewBox="0 0 40 40" width="28" height="28"><circle cx="20" cy="20" r="18" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M12 17h12M24 17l-3-3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M28 23H16M16 23l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><div class="transfer-card-body"><div class="transfer-card-amount">¥${absVal}</div><div class="transfer-card-desc">${descText}</div></div><div class="transfer-card-footer">转账</div></div>`;
     }
   });
+  // 处理表情包指令：[STICKER:名称] / [表情：名称] / [表情:名称] / [表情: :名称]
+  processed = processed.replace(/\[(?:STICKER|表情)[：:\s]*([^\]]+)\]/g, (match, name) => {
+    // 清理名称：去掉开头的冒号、空格等
+    let n = name.trim().replace(/^[:：\s]+/, '').trim();
+    let realFile = _stickerFuzzyFind(n);
+    if (realFile) {
+      return `<span class="msg-sticker" onclick="viewStickerFull('/static/stickers/${encodeURIComponent(realFile)}')" title="${escHtml(n)}"><img src="/static/stickers/${encodeURIComponent(realFile)}" onerror="this.onerror=null;this.style.display='none';this.parentElement.textContent='[表情: ${escHtml(n)}]'" alt="${escHtml(n)}" style="max-width:120px;max-height:120px;border-radius:8px;display:block;cursor:pointer"></span>`;
+    }
+    // 没有找到对应文件，显示文字（不发任何请求）
+    return `<span style="font-size:13px;color:var(--text3)">[表情: ${escHtml(n)}]</span>`;
+  });
   // 渲染 [[image:path]]
   const imgRe = /\[\[image:(\S+?)\]\]/g;
   let result = '', lastIdx = 0, match;
@@ -156,6 +170,60 @@ async function syncTemperature() {
   const t = parseFloat($("tempSlider").value);
   await api("PUT", "/api/settings/temperature", { temperature: t });
 }
+
+// ── 表情包工具函数 ──
+
+// 模糊匹配表情包名称
+function _stickerFuzzyFind(name) {
+  if (!name) return null;
+  // 1. 精确匹配
+  if (_stickerFileMap[name]) return _stickerFileMap[name];
+  // 2. 去掉所有空格、标点、省略号后匹配
+  const cleaned = name.replace(/[\s\.。…,，!！?？、·~～\-—_]+/g, '');
+  if (_stickerFileMap[cleaned]) return _stickerFileMap[cleaned];
+  // 3. 在所有key中找：key包含name，或name包含key（取最长匹配）
+  let bestMatch = null, bestLen = 0;
+  for (const [k, v] of Object.entries(_stickerFileMap)) {
+    const kc = k.replace(/[\s\.。…,，!！?？、·~～\-—_]+/g, '');
+    // 完全一致（清理后）
+    if (kc === cleaned) return v;
+    // name包含key（AI多写了字）：如"捏捏脸"包含"捏脸"
+    if (cleaned.includes(kc) && kc.length > bestLen) {
+      bestMatch = v; bestLen = kc.length;
+    }
+    // key包含name（AI少写了字）：如"蹭蹭蹭"包含"蹭蹭"
+    if (kc.includes(cleaned) && cleaned.length >= 2 && kc.length > bestLen) {
+      bestMatch = v; bestLen = kc.length;
+    }
+  }
+  return bestMatch;
+}
+
+function viewStickerFull(url) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:20000;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  overlay.onclick = () => overlay.remove();
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'max-width:80vw;max-height:80vh;border-radius:12px';
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
+}
+
+// 启动时预加载表情包文件名映射
+async function _preloadStickerMap() {
+  try {
+    const res = await fetch('/api/stickers/list');
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.stickers || [];
+    for (const s of list) {
+      _stickerFileMap[s.name] = s.file; // "抱抱" → "抱抱.jpeg"
+    }
+    console.log('[StickerMap] 已加载', Object.keys(_stickerFileMap).length, '个表情包映射');
+  } catch(e) { console.warn('[StickerMap] 预加载失败:', e); }
+}
+_preloadStickerMap();
 
 // ── 语音唤醒通话模式 ──
 let voiceEnabled = false;
@@ -1934,9 +2002,199 @@ function renameCurrent() {
   if (currentConvId) renameConv(currentConvId);
 }
 
+// ── 多气泡发送逻辑 ──
+// 回车 = 把当前输入加入气泡队列
+// 单击小飞机（输入框有内容）= 把当前输入加入气泡队列
+// 单击小飞机（输入框为空，且队列有内容）= 触发API
+// 双击小飞机（任何时候）= 触发API（发送队列中所有内容）
+// 10秒内无新操作 → 自动触发API
+let _bubbleQueue = [];           // 暂存的气泡文字数组
+let _bubbleAttachQueue = [];     // 暂存的附件数组 [{url,...}]
+let _autoSendTimer = null;       // 10秒自动触发定时器
+let _autoSendStartTime = null;   // 倒计时开始时间
+let _autoSendAnimFrame = null;
+let _sendBtnClickTime = 0;       // 双击检测
+
+function _resetAutoSendTimer() {
+  if (_autoSendTimer) { clearTimeout(_autoSendTimer); _autoSendTimer = null; }
+  if (_autoSendAnimFrame) { cancelAnimationFrame(_autoSendAnimFrame); _autoSendAnimFrame = null; }
+  const bar = $('sendCountdownBar');
+  const inner = $('sendCountdownBarInner');
+  if (bar) bar.classList.remove('active');
+  if (inner) inner.style.width = '100%';
+  _autoSendStartTime = null;
+}
+
+function _startAutoSendTimer() {
+  _resetAutoSendTimer();
+  if (_bubbleQueue.length === 0 && _bubbleAttachQueue.length === 0) return;
+  _autoSendStartTime = Date.now();
+  const TOTAL = 20000;
+  const bar = $('sendCountdownBar');
+  const inner = $('sendCountdownBarInner');
+  if (bar) bar.classList.add('active');
+  function _tick() {
+    const elapsed = Date.now() - _autoSendStartTime;
+    const pct = Math.max(0, 100 - (elapsed / TOTAL * 100));
+    if (inner) inner.style.width = pct + '%';
+    if (elapsed < TOTAL) { _autoSendAnimFrame = requestAnimationFrame(_tick); }
+  }
+  _autoSendAnimFrame = requestAnimationFrame(_tick);
+  _autoSendTimer = setTimeout(() => { _triggerApiSend(); }, TOTAL);
+}
+
+function _addToBubbleQueue() {
+  const input = $('input');
+  const text = input.value.trim();
+  const hasAtts = pendingAttachments.length > 0;
+  if (!text && !hasAtts) return false;
+  if (text) _bubbleQueue.push(text);
+  if (hasAtts) {
+    _bubbleAttachQueue.push(...pendingAttachments);
+    pendingAttachments = [];
+    renderPreview();
+  }
+  input.value = '';
+  autoResize(input);
+  _updateSendBtnState();
+  _renderBubbleQueue();
+  _startAutoSendTimer();
+  _updateSendBtnState();
+  return true;
+}
+
+function _renderBubbleQueue() {
+  const preview = $('bubbleQueuePreview');
+  const hint = $('bubbleQueueHint');
+  const countEl = $('bubbleQueueCount');
+  if (!preview) return;
+  const total = _bubbleQueue.length + _bubbleAttachQueue.length;
+  if (total === 0) {
+    preview.innerHTML = '';
+    if (hint) hint.style.display = 'none';
+    _resetAutoSendTimer();
+    const btn = $('sendBtn');
+    if (btn) btn.classList.remove('ready-to-send');
+    return;
+  }
+  if (hint) { hint.style.display = ''; }
+  if (countEl) countEl.textContent = total;
+  preview.innerHTML = _bubbleQueue.map((t, i) =>
+    `<div class="bubble-queue-item">
+      <span class="bq-text">${escHtml(t)}</span>
+      <button class="bq-del" onclick="_removeBubbleQueueItem(${i})">✕</button>
+    </div>`
+  ).join('') + _bubbleAttachQueue.map((a, i) =>
+    `<div class="bubble-queue-item">
+      <span class="bq-text">📎 ${escHtml(a.name || '附件')}</span>
+      <button class="bq-del" onclick="_removeAttachQueueItem(${i})">✕</button>
+    </div>`
+  ).join('');
+  const btn = $('sendBtn');
+  if (btn) btn.classList.add('ready-to-send');
+}
+
+function _removeBubbleQueueItem(idx) {
+  _bubbleQueue.splice(idx, 1);
+  _renderBubbleQueue();
+  if (_bubbleQueue.length === 0 && _bubbleAttachQueue.length === 0) _resetAutoSendTimer();
+  else _startAutoSendTimer();
+}
+function _removeAttachQueueItem(idx) {
+  _bubbleAttachQueue.splice(idx, 1);
+  _renderBubbleQueue();
+  if (_bubbleQueue.length === 0 && _bubbleAttachQueue.length === 0) _resetAutoSendTimer();
+  else _startAutoSendTimer();
+}
+
+async function _triggerApiSend() {
+  _resetAutoSendTimer();
+  const btn = $('sendBtn');
+  if (btn) btn.classList.remove('ready-to-send');
+  const input = $('input');
+  // 如果输入框还有内容，先加入队列
+  const leftover = input.value.trim();
+  if (leftover || pendingAttachments.length > 0) {
+    if (leftover) _bubbleQueue.push(leftover);
+    if (pendingAttachments.length > 0) { _bubbleAttachQueue.push(...pendingAttachments); pendingAttachments = []; renderPreview(); }
+    input.value = '';
+    autoResize(input);
+  }
+  if (_bubbleQueue.length === 0 && _bubbleAttachQueue.length === 0) return;
+  // 把多条气泡合并成一条消息（用换行分隔，后端保存时会分成多个气泡显示）
+  const combinedText = _bubbleQueue.join('\n');
+  const attachmentsList = _bubbleAttachQueue.map(a => a.url);
+  _bubbleQueue = [];
+  _bubbleAttachQueue = [];
+  _renderBubbleQueue();
+  // 直接调用 _doSend 发送合并后的文本和附件
+  await _doSend(combinedText, attachmentsList);
+}
+
+async function _doSend(text, attachments) {
+  if ((!text && !attachments.length) || !currentConvId || sending) return;
+  sending = true;
+  _showStopBtn();
+  const attachmentUrls = attachments || [];
+  const input = $('input');
+  input.value = '';
+  autoResize(input);
+  playSend();
+  const tempUserMsg = { id: 'temp_user', conv_id: currentConvId, role: 'user', content: text, created_at: Date.now()/1000, attachments: attachmentUrls };
+  currentMessages.push(tempUserMsg);
+  renderMessages();
+  _abortController = new AbortController();
+  try {
+    const contextLimit = parseInt($('contextSlider').value) || 30;
+    const temperature = parseFloat($('tempSlider').value);
+    const maxTokens = _getMaxTokens();
+    const res = await fetch(`/api/conversations/${currentConvId}/send`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ content: text, context_limit: contextLimit, attachments: attachmentUrls, whisper_mode: whisperMode, temperature, max_tokens: maxTokens, tts_enabled: ttsEnabled, tts_voice: ttsVoiceId, client_id: _clientId }),
+      signal: _abortController.signal
+    });
+    await _processSSEStream(res);
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('发送失败:', err);
+      _stopTypingAnim();
+      addErrorToSystemLog(`发送失败: ${err.message || err}`, $('modelSelect')?.value);
+    }
+  } finally {
+    sending = false;
+    streamingAiId = null;
+    _abortController = null;
+    _showSendBtn();
+  }
+}
+
 // ── 发送/停止按钮切换 ──
 function handleSendBtn() {
-  if (sending) { stopGeneration(); } else { send(); }
+  if (sending) { stopGeneration(); return; }
+  const now = Date.now();
+  const input = $('input');
+  const hasInput = input.value.trim() || pendingAttachments.length > 0;
+  const hasQueue = _bubbleQueue.length > 0 || _bubbleAttachQueue.length > 0;
+
+  // 双击检测（500ms内两次点击）
+  const isDblClick = (now - _sendBtnClickTime) < 500;
+  _sendBtnClickTime = now;
+
+  if (isDblClick) {
+    // 双击：无论如何都触发API
+    _triggerApiSend();
+    return;
+  }
+
+  if (hasInput) {
+    // 有输入内容：先加入气泡队列
+    _addToBubbleQueue();
+  } else if (hasQueue) {
+    // 输入框空但有队列：触发API
+    _triggerApiSend();
+  }
+  // 都没有：什么也不做
 }
 
 function _showStopBtn() {
@@ -1956,7 +2214,9 @@ function _showSendBtn() {
 function _updateSendBtnState() {
   if (sending) return;
   const btn = $("sendBtn");
-  btn.disabled = !$("input").value.trim() && !pendingAttachments.length;
+  const hasInput = $("input").value.trim() || pendingAttachments.length;
+  const hasQueue = _bubbleQueue.length > 0 || _bubbleAttachQueue.length > 0;
+  btn.disabled = !hasInput && !hasQueue;
 }
 
 async function stopGeneration() {
@@ -2709,7 +2969,18 @@ function handlePoiSearch(categories, msgId) {
 }
 
 // ── UI ──
-function handleKey(e) { if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); send(); } }
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+    e.preventDefault();
+    // 回车：把当前输入加入气泡队列
+    _addToBubbleQueue();
+  }
+  // Ctrl+Enter：直接触发API发送
+  if (e.key === 'Enter' && e.ctrlKey) {
+    e.preventDefault();
+    _triggerApiSend();
+  }
+}
 
 function renderAttachments(atts) {
   if (!atts || !atts.length) return '';
@@ -4093,3 +4364,159 @@ async function openWalletPanel() {
 function closeWalletPanel() {
   $('walletPanelOverlay').classList.remove('show');
 }
+
+// ══════════════════════════════════════════════════
+// ── 表情包面板 ──
+// ══════════════════════════════════════════════════
+const STICKER_BASE = '/static/stickers/';
+let _stickerList = [];          // [{name, file, ext}]
+let _recentStickers = [];       // 最近使用（最多12个）
+let _stickerCategories = {};    // {分类名: [sticker,...]}
+let _activeStickerTab = 'recent';
+let _stickerLoaded = false;
+let _stickerPanelOpen = false;
+
+// 表情包分类关键词映射
+const STICKER_CAT_RULES = [
+  { cat: '开心', kw: ['开心','太开心','欢呼','活力','好','嘻嘻','OK','嚣张','得意','骄傲','傻乐','太可爱','可爱'] },
+  { cat: '伤心', kw: ['哭','泪','失落','孤单','委屈','心碎','难过','悲','泫然','失魂','抑郁','落泪'] },
+  { cat: '生气', kw: ['生气','气鼓','气到','怒','火冒','无语','挺无语','滚','嫌弃','判决','死刑','全都死','刀','打你','愤'] },
+  { cat: '撒娇', kw: ['撒娇','卖萌','贴贴','抱抱','蹭','哄我','快哄','要抱','宝宝','哦','想你','宝生'] },
+  { cat: '心动', kw: ['心动','心跳','眼冒爱心','亲亲','kiss','结婚','爱你','送你','赠你','献上','玫瑰','花花','脸红','面红','害羞','舔'] },
+  { cat: '惊讶', kw: ['惊','震惊','吓','惊掉','问号','懵','怎么回事','不明所以','呆住','呆滞','大吃'] },
+  { cat: '思考', kw: ['思考','停止思考','大脑','记','等待','在学','在干嘛','忙','慢'] },
+  { cat: '可爱', kw: ['小猫','小狗','猫','狗','小动物','萌','歪头','偏头','眨眼','wink','撒花'] },
+  { cat: '其他', kw: [] }
+];
+
+function _categorizeStickerName(name) {
+  for (const rule of STICKER_CAT_RULES) {
+    if (rule.cat === '其他') continue;
+    if (rule.kw.some(k => name.includes(k))) return rule.cat;
+  }
+  return '其他';
+}
+
+async function _loadStickers() {
+  if (_stickerLoaded) return;
+  _stickerLoaded = true;
+  try {
+    const res = await fetch('/api/stickers/list');
+    if (!res.ok) throw new Error('404');
+    const data = await res.json();
+    _stickerList = data.stickers || [];
+    // 同步到全局文件名映射
+    for (const s of _stickerList) {
+      _stickerFileMap[s.name] = s.file;
+    }
+  } catch(e) {
+    _stickerList = [];
+    console.warn('[Stickers] 无法从后端加载表情包列表');
+  }
+  // 分类
+  _stickerCategories = {};
+  for (const s of _stickerList) {
+    const cat = _categorizeStickerName(s.name);
+    if (!_stickerCategories[cat]) _stickerCategories[cat] = [];
+    _stickerCategories[cat].push(s);
+  }
+  // 加载最近使用
+  try { _recentStickers = JSON.parse(localStorage.getItem('aion_recent_stickers') || '[]'); } catch(e) { _recentStickers = []; }
+  _renderStickerTabs();
+  _renderStickerGrid(_activeStickerTab);
+}
+
+function _renderStickerTabs() {
+  const tabBar = $('stickerTabBar');
+  if (!tabBar) return;
+  const cats = Object.keys(_stickerCategories).filter(c => _stickerCategories[c].length > 0);
+  const allTabs = ['recent', 'all', ...cats];
+  const tabLabels = { recent: '最近', all: '全部' };
+  tabBar.innerHTML = allTabs.map(t =>
+    `<button class="sticker-tab ${t === _activeStickerTab ? 'active' : ''}" onclick="event.stopPropagation(); switchStickerTab('${t}')">${tabLabels[t] || t}</button>`
+  ).join('');
+}
+
+function switchStickerTab(tab) {
+  _activeStickerTab = tab;
+  _renderStickerTabs();
+  _renderStickerGrid(tab);
+}
+
+function _renderStickerGrid(tab) {
+  const grid = $('stickerGrid');
+  if (!grid) return;
+  let stickers;
+  if (tab === 'recent') stickers = _recentStickers;
+  else if (tab === 'all') stickers = _stickerList;
+  else stickers = _stickerCategories[tab] || [];
+
+  if (stickers.length === 0) {
+    grid.innerHTML = `<div class="sticker-empty">${tab === 'recent' ? '还没有最近使用的表情包' : '暂无表情包'}</div>`;
+    return;
+  }
+  grid.innerHTML = stickers.map(s =>
+    `<div class="sticker-item" onclick="event.stopPropagation(); sendSticker('${escHtml(s.file)}','${escHtml(s.name)}')" title="${escHtml(s.name)}">
+      <img src="${STICKER_BASE}${escHtml(s.file)}" alt="${escHtml(s.name)}" loading="lazy">
+      <span class="sticker-name">${escHtml(s.name)}</span>
+    </div>`
+  ).join('');
+}
+
+async function sendSticker(file, name) {
+  closeStickerPanel();
+  if (!currentConvId) return;
+  // 更新最近使用
+  const sticker = { file, name };
+  _recentStickers = [sticker, ..._recentStickers.filter(s => s.file !== file)].slice(0, 12);
+  try { localStorage.setItem('aion_recent_stickers', JSON.stringify(_recentStickers)); } catch(e) {}
+
+  // 以 [STICKER:name] 文本指令加入气泡队列
+  // formatMsg 会将其渲染为表情包图片
+  // 这样表情包可以保持在文字之间的正确位置，而不是被挤到最后面
+  const input = $('input');
+  // 如果输入框有内容，先把当前内容加入队列
+  if (input.value.trim()) {
+    _bubbleQueue.push(input.value.trim());
+    input.value = '';
+    autoResize(input);
+  }
+  // 表情包作为独立的一条加入队列
+  _bubbleQueue.push(`[STICKER:${name}]`);
+  _updateSendBtnState();
+  _renderBubbleQueue();
+  _startAutoSendTimer();
+}
+
+function toggleStickerPanel() {
+  if (_stickerPanelOpen) { closeStickerPanel(); return; }
+  openStickerPanel();
+}
+
+function openStickerPanel() {
+  _stickerPanelOpen = true;
+  const panel = $('stickerPanel');
+  if (panel) panel.classList.add('show');
+  closePlusMenu();
+  if (!_stickerLoaded) _loadStickers();
+  const btn = $('stickerBtn');
+  if (btn) btn.style.color = 'var(--accent)';
+}
+
+function closeStickerPanel() {
+  _stickerPanelOpen = false;
+  const panel = $('stickerPanel');
+  if (panel) panel.classList.remove('show');
+  const btn = $('stickerBtn');
+  if (btn) btn.style.color = '';
+}
+
+// 点击其他地方关闭表情包面板（注意：点tab/grid内部不关闭）
+document.addEventListener('click', function(e) {
+  if (!_stickerPanelOpen) return;
+  const panel = $('stickerPanel');
+  const btn = $('stickerBtn');
+  if (panel && panel.contains(e.target)) return; // 点的是面板内部，不关
+  if (btn && btn.contains(e.target)) return;      // 点的是按钮，toggleStickerPanel自己处理
+  closeStickerPanel();
+});

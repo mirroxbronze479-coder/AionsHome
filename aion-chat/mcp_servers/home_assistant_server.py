@@ -27,7 +27,7 @@ ALIASES_PATH = BASE_DIR / "data" / "home_assistant_aliases.json"
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "ha_url": "http://homeassistant.local:8123",
-    "ha_token": "",
+    "ha_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmMTg2ZDgxMTI1OGQ0NmU3YjcxNzkzOTEwNDdhOWYyOSIsImlhdCI6MTc4MDA1MjQ4NSwiZXhwIjoyMDk1NDEyNDg1fQ.UNKywhOFS8rDeBTrlxb7eMd1tOUhdZjzwinB7riFlzE",
     "dry_run": True,
     "allowed_domains": [
         "light",
@@ -38,6 +38,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "humidifier",
         "scene",
         "script",
+        "button",
     ],
 }
 
