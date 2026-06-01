@@ -55,6 +55,22 @@
       </div>
     </div>
 
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08)">
+      <label class="form-label" style="font-size:15px;color:#ff8359">🔌 OpenAI 兼容中转站</label>
+      <p style="font-size:12px;color:#aaa;margin:2px 0 10px 0">配置后，选中的模型将以「自定义/模型名」出现在所有聊天页面的模型下拉中</p>
+      <label class="form-label">API 地址（Base URL）</label>
+      <input class="form-input" type="text" id="customEndpointUrlInput" placeholder="例：https://api.openai.com" autocomplete="off" style="font-family:monospace">
+      <label class="form-label">API Key</label>
+      <input class="form-input" type="text" id="customEndpointKeyInput" placeholder="sk-..." autocomplete="off" style="font-family:monospace">
+      <div class="btn-row" style="justify-content:flex-start;margin-top:4px">
+        <button class="btn-save" type="button" onclick="fetchCustomModels()">拉取模型列表</button>
+      </div>
+      <label class="form-label">选择模型（勾选即选中）</label>
+      <div id="customModelCheckList" style="max-height:180px;overflow-y:auto;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 0">
+        <div style="padding:10px 14px;font-size:13px;color:#666">请先填写地址和密钥，然后点"拉取模型列表"</div>
+      </div>
+    </div>
+
     <label class="form-label">硅基流动 API Key</label>
     <input class="form-input" type="text" id="sfKeyInput" placeholder="输入硅基流动 API Key..." autocomplete="off" style="font-family:monospace">
     <label class="form-label">中转站 API Key</label>
@@ -84,6 +100,11 @@ connectCommonWS();
   $("sfKeyInput").value = s.siliconflow_key || "";
   $("aiproKeyInput").value = s.aipro_key || "";
   $("neteaseMusicUInput").value = s.netease_music_u || "";
+  $("customEndpointUrlInput").value = s.custom_endpoint_url || "";
+  $("customEndpointKeyInput").value = s.custom_endpoint_key || "";
+  if (s.custom_endpoint_models && s.custom_endpoint_models.length > 0) {
+    _renderCustomCheckList(s.custom_endpoint_models, s.custom_endpoint_models);
+  }
   refreshPhoneScreenStatus();
 })();
 
@@ -99,7 +120,10 @@ async function saveSettings() {
     embedding_model: $("embeddingModelInput").value.trim(),
     siliconflow_key: $("sfKeyInput").value.trim(),
     aipro_key: $("aiproKeyInput").value.trim(),
-    netease_music_u: $("neteaseMusicUInput").value.trim()
+    netease_music_u: $("neteaseMusicUInput").value.trim(),
+    custom_endpoint_url: $("customEndpointUrlInput").value.trim(),
+    custom_endpoint_key: $("customEndpointKeyInput").value.trim(),
+    custom_endpoint_models: _getCheckedCustomModels(),
   });
   showToast("✅ 已保存");
 }
@@ -135,6 +159,39 @@ function testPhoneAccessibilityCapture() {
     return;
   }
   window.AionPhoneScreen.testAccessibilityCapture();
+}
+
+async function fetchCustomModels() {
+  const url = $("customEndpointUrlInput").value.trim();
+  const key = $("customEndpointKeyInput").value.trim();
+  if (!url || !key) { showToast("请先填写端点地址和密钥"); return; }
+  const result = await api("GET", `/api/custom-endpoint/models?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`);
+  if (result.error) { showToast("拉取失败: " + result.error); return; }
+  const prev = _getCheckedCustomModels();
+  _renderCustomCheckList(result.models, prev);
+  showToast(`✅ 拉取到 ${result.models.length} 个模型`);
+}
+
+function _renderCustomCheckList(allModels, checkedModels) {
+  const container = $("customModelCheckList");
+  if (!allModels || allModels.length === 0) {
+    container.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:#666">未拉取到模型</div>';
+    return;
+  }
+  const checked = new Set(checkedModels || []);
+  container.innerHTML = allModels.map(m => {
+    const ck = checked.has(m) ? ' checked' : '';
+    return `<label style="display:flex;align-items:center;padding:8px 14px;cursor:pointer;font-size:13px;color:#ccc;gap:8px">
+      <input type="checkbox" value="${escHtml(m)}"${ck} style="accent-color:#ff8359;width:16px;height:16px;flex-shrink:0">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m)}</span>
+    </label>`;
+  }).join('');
+}
+
+function _getCheckedCustomModels() {
+  const container = $("customModelCheckList");
+  if (!container) return [];
+  return [...container.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value).filter(v => v);
 }
 
 function refreshPhoneScreenStatus() {

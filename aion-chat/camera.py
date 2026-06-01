@@ -942,7 +942,7 @@ class CameraMonitor:
 {{"monitoringlog":"这是用户的当前状态{user_name}以及电脑的桌面，用恋人的视角分析{user_name}当前在做什么，所处的状态，位置，例如：{user_name}穿着毛绒睡衣，正在电脑桌前，看起来有些困。电脑屏幕上播放着一部小动物电影。","summary":"根据历史日志，概括{user_name}这段时间以来的整体状况，去掉重复无用的信息，保留关键事件和状态变化，一两句话即可。注意力重点应当放在截图上半部分的摄像头内容","call_core":false,"core_reason":""}}
 
 字段说明：
-- monitoringlog: 当前画面的客观描述，禁止胡编猜测。没有看到人就说没看到，如果最后状态没有说去睡觉，则不能推测{user_name}可能去睡觉了。
+- monitoringlog: 当前画面的客观描述，禁止胡编猜测。没有看到人就说没看到，如果最后状态没有说去睡觉，则不能推测{user_name}可能去睡觉了。如果截图左下角有手机投屏画面，必须描述手机屏幕上显示的具体内容。
 - summary: 综合最后的聊天状态和上下文内容，概括{user_name}这段时间的整体状态变化和关键事件，禁止胡编猜测。{user_name}
 - call_core: 判断是否需要主动联系{user_name}
 - core_reason: 仅当call_core为true时填写，说明为什么要主动联系{user_name}，让核心模型了解情况
@@ -1004,7 +1004,7 @@ call_core判断依据：
         await manager.broadcast({"type": "monitor_log", "data": log_entry})
 
         if call_core:
-            await self._call_core(monitoring_log, last_user_ts, summary, core_reason, recent_logs, screenshot_filename)
+            await self._call_core(monitoring_log, last_user_ts, summary, core_reason, None, screenshot_filename)
 
     async def _call_core(self, trigger_log: str, last_user_ts: float, summary: str = "", core_reason: str = "", cached_logs: list = None, screenshot_filename: str = ""):
         wb = load_worldbook()

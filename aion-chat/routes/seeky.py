@@ -87,7 +87,7 @@ def _normalize_config(row: aiosqlite.Row | None = None) -> dict:
             "context_limit": 40,
             "updated_at": time.time(),
         }
-    model = row["model"] if row["model"] in MODELS else DEFAULT_SEEKY_MODEL
+    model = row["model"] if (row["model"] in MODELS or (row["model"] or "").startswith("自定义/")) else DEFAULT_SEEKY_MODEL
     return {
         "name": row["name"] or "Seeky",
         "persona": row["persona"] or DEFAULT_SEEKY_PERSONA,
@@ -1171,7 +1171,7 @@ async def get_config():
 @router.put("/config")
 async def update_config(body: SeekyConfigUpdate):
     await _ensure_schema()
-    model = body.model if body.model in MODELS else DEFAULT_SEEKY_MODEL
+    model = body.model if (body.model in MODELS or (body.model or "").startswith("自定义/")) else DEFAULT_SEEKY_MODEL
     config = {
         "name": (body.name or "Seeky").strip() or "Seeky",
         "persona": body.persona.strip() or DEFAULT_SEEKY_PERSONA,

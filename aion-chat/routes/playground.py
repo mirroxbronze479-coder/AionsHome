@@ -254,8 +254,8 @@ async def _insert_system_message(conv_id: str, server_name: str, brief: str):
 
 # ── 获取模型配置 ──
 def _get_model_cfg(model_key: str) -> dict:
-    if model_key and model_key in MODELS:
-        return MODELS[model_key]
+    if model_key and (model_key in MODELS or (model_key or "").startswith("自定义/")):
+        return MODELS.get(model_key) or {"provider": "openai_custom", "model": model_key[len("自定义/"):]}
     # 默认使用一个支持 tool calling 的模型
     for key in ["硅基GLM-5.1", "硅基GLM-5", "硅基Kimi2.6"]:
         if key in MODELS:

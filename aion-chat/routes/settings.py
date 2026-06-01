@@ -4,10 +4,10 @@
 
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import Response, FileResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 import httpx
 
@@ -18,7 +18,15 @@ router = APIRouter()
 # ── 模型列表 ──────────────────────────────────────
 @router.get("/api/models")
 async def list_models():
-    return [{"key": k, "provider": v["provider"]} for k, v in MODELS.items()]
+    models = [{"key": k, "provider": v["provider"]} for k, v in MODELS.items()]
+    # 动态注入自定义中转站模型
+    url = SETTINGS.get("custom_endpoint_url", "").strip()
+    key = SETTINGS.get("custom_endpoint_key", "").strip()
+    selected = [m for m in SETTINGS.get("custom_endpoint_models", []) if m and isinstance(m, str) and m.strip()]
+    if url and key and selected:
+        for m in selected:
+            models.append({"key": f"自定义/{m}", "provider": "openai_custom"})
+    return models
 
 # ── 设置 ──────────────────────────────────────────
 class SettingsUpdate(BaseModel):
@@ -33,6 +41,9 @@ class SettingsUpdate(BaseModel):
     embedding_base_url: Optional[str] = None
     embedding_api_key: Optional[str] = None
     embedding_model: Optional[str] = None
+    custom_endpoint_url: Optional[str] = None
+    custom_endpoint_key: Optional[str] = None
+    custom_endpoint_models: Optional[List[str]] = None
 
 @router.get("/api/settings")
 async def get_settings():
@@ -59,6 +70,10 @@ async def get_settings():
         "netease_music_u_masked": mask(SETTINGS.get("netease_music_u", "")),
         "sentinel_api_key_masked": mask(SETTINGS.get("sentinel_api_key", "")),
         "embedding_api_key_masked": mask(SETTINGS.get("embedding_api_key", "")),
+        "custom_endpoint_url": SETTINGS.get("custom_endpoint_url", ""),
+        "custom_endpoint_key": SETTINGS.get("custom_endpoint_key", ""),
+        "custom_endpoint_models": SETTINGS.get("custom_endpoint_models", []),
+        "custom_endpoint_key_masked": mask(SETTINGS.get("custom_endpoint_key", "")),
     }
 
 @router.put("/api/settings")
@@ -83,6 +98,12 @@ async def update_settings(body: SettingsUpdate):
         SETTINGS["embedding_api_key"] = body.embedding_api_key
     if body.embedding_model is not None:
         SETTINGS["embedding_model"] = body.embedding_model
+    if body.custom_endpoint_url is not None:
+        SETTINGS["custom_endpoint_url"] = body.custom_endpoint_url
+    if body.custom_endpoint_key is not None:
+        SETTINGS["custom_endpoint_key"] = body.custom_endpoint_key
+    if body.custom_endpoint_models is not None:
+        SETTINGS["custom_endpoint_models"] = [m for m in body.custom_endpoint_models if m and m.strip()]
     if body.netease_music_u is not None:
         old_mu = SETTINGS.get("netease_music_u", "")
         SETTINGS["netease_music_u"] = body.netease_music_u
@@ -95,6 +116,28 @@ async def update_settings(body: SettingsUpdate):
                 pass
     save_settings(SETTINGS)
     return {"ok": True}
+
+# ── 自定义中转站模型拉取 ──────────────────────────
+@router.get("/api/custom-endpoint/models")
+async def list_custom_endpoint_models(
+    url: str = Query(""),
+    key: str = Query(""),
+):
+    if not url or not key:
+        return {"models": [], "error": "请提供端点地址和密钥"}
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                f"{url.rstrip('/')}/v1/models",
+                headers={"Authorization": f"Bearer {key}"}
+            )
+        if resp.status_code != 200:
+            return {"models": [], "error": f"API 返回 {resp.status_code}"}
+        data = resp.json()
+        ids = [m["id"] for m in data.get("data", []) if m.get("id")]
+        return {"models": ids, "error": None}
+    except Exception as e:
+        return {"models": [], "error": str(e)}
 
 # ── 温度设置 ──────────────────────────────────────
 class TempUpdate(BaseModel):

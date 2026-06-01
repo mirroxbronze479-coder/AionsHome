@@ -410,9 +410,9 @@ async def annotate_segment(book_id: str, ch_idx: int, body: AnnotateRequest):
     ai_name = wb.get("ai_name", "AI")
     connor_name = load_chatroom_config().get("connor_name", "Connor")
     model_key = body.model_key or DEFAULT_MODEL
-    if model_key not in MODELS:
+    if not (model_key in MODELS or (model_key or "").startswith("自定义/")):
         model_key = DEFAULT_MODEL
-    if model_key not in MODELS:
+    if not (model_key in MODELS or (model_key or "").startswith("自定义/")):
         model_key = next(iter(MODELS)) if MODELS else None
     if not model_key:
         raise HTTPException(500, "没有可用的 AI 模型")
@@ -497,9 +497,9 @@ async def annotate_all_segments(book_id: str, ch_idx: int, body: AnnotateAllRequ
 
     wb = load_worldbook()
     model_key = body.model_key or DEFAULT_MODEL
-    if model_key not in MODELS:
+    if not (model_key in MODELS or (model_key or "").startswith("自定义/")):
         model_key = DEFAULT_MODEL
-    if model_key not in MODELS:
+    if not (model_key in MODELS or (model_key or "").startswith("自定义/")):
         model_key = next(iter(MODELS)) if MODELS else None
     if not model_key:
         raise HTTPException(500, "没有可用的 AI 模型")

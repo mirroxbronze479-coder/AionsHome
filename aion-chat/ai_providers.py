@@ -1125,6 +1125,48 @@ async def call_codex_cli(messages: list, model: str, meta: dict | None = None,
 
 
 # ── 非流式调用（收集流式输出） ────────────────────
+# ── 自定义 OpenAI 兼容中转站 ──────────────────────
+async def call_openai_custom(messages: list, model: str, meta: dict | None = None, temperature: float | None = None, max_tokens: int | None = None):
+    base_url = SETTINGS.get("custom_endpoint_url", "").rstrip("/")
+    api_key = SETTINGS.get("custom_endpoint_key", "")
+    url = f"{base_url}/v1/chat/completions"
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    api_messages = build_multimodal_messages(messages)
+    payload = {"model": model, "messages": api_messages, "stream": True,
+               "stream_options": {"include_usage": True}}
+    if temperature is not None:
+        payload["temperature"] = temperature
+    if max_tokens is not None:
+        payload["max_tokens"] = max_tokens
+    async with httpx.AsyncClient(timeout=120) as client:
+        async with client.stream("POST", url, json=payload, headers=headers) as resp:
+            if resp.status_code != 200:
+                body = await resp.aread()
+                try:
+                    err = json.loads(body).get("error", {}).get("message", body.decode())
+                except:
+                    err = body.decode(errors="replace")[:500]
+                yield f"[自定义端点错误 {resp.status_code}] {err}"
+                return
+            async for line in resp.aiter_lines():
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data.strip() == "[DONE]":
+                        return
+                    try:
+                        chunk = json.loads(data)
+                        if meta is not None and "usage" in chunk and chunk["usage"]:
+                            u = chunk["usage"]
+                            meta["prompt_tokens"] = u.get("prompt_tokens", 0)
+                            meta["completion_tokens"] = u.get("completion_tokens", 0)
+                            meta["total_tokens"] = u.get("total_tokens", 0)
+                        delta = chunk["choices"][0].get("delta", {}) if chunk.get("choices") else {}
+                        if "content" in delta and delta["content"]:
+                            yield delta["content"]
+                    except:
+                        pass
+
+
 async def simple_ai_call(messages: list, model_key: str, temperature: float | None = None) -> str:
     """收集 stream_ai 的全部 chunk，返回完整文本（自动过滤 CLI_STATUS 状态行）"""
     full_text = ""
@@ -1147,8 +1189,15 @@ async def stream_ai(messages: list, model_key: str, meta: dict | None = None, te
         normalized.append(nm)
     cfg = MODELS.get(model_key)
     if not cfg:
-        yield f"[错误] 未知模型: {model_key}"
-        return
+        # 动态自定义中转站模型
+        if model_key.startswith("自定义/"):
+            url = SETTINGS.get("custom_endpoint_url", "").strip()
+            key = SETTINGS.get("custom_endpoint_key", "").strip()
+            if url and key:
+                cfg = {"provider": "openai_custom", "model": model_key[len("自定义/"):]}
+        if not cfg:
+            yield f"[错误] 未知模型: {model_key}"
+            return
     if cfg["provider"] == "siliconflow":
         async for chunk in call_siliconflow(normalized, cfg["model"], meta, temperature, max_tokens):
             if cancel_event and cancel_event.is_set():
@@ -1176,6 +1225,11 @@ async def stream_ai(messages: list, model_key: str, meta: dict | None = None, te
             yield chunk
     elif cfg["provider"] == "codex_cli":
         async for chunk in call_codex_cli(normalized, cfg["model"], meta, temperature, max_tokens):
+            if cancel_event and cancel_event.is_set():
+                return
+            yield chunk
+    elif cfg["provider"] == "openai_custom":
+        async for chunk in call_openai_custom(normalized, cfg["model"], meta, temperature, max_tokens):
             if cancel_event and cancel_event.is_set():
                 return
             yield chunk

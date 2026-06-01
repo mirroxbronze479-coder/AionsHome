@@ -620,8 +620,9 @@ async function fetchCurrentModel() {
     ]);
     if (Array.isArray(models)) chatroomModels = models;
     if (cfg?.connor_model) chatroomConnorModel = cfg.connor_model;
+    if (cfg?.aion_model) chatroomModel = cfg.aion_model;
     if (cfg?.reply_order) chatroomReplyOrder = cfg.reply_order;
-    if (Array.isArray(convs) && convs.length > 0 && convs[0].model) {
+    if (!chatroomModel && Array.isArray(convs) && convs.length > 0 && convs[0].model) {
       chatroomModel = convs[0].model;
     }
     updateHeaderActions();
@@ -1613,6 +1614,7 @@ async function saveSettings() {
     body: JSON.stringify({
       connor_name: nextConnorName || undefined,
       connor_model: chatroomConnorModel,
+      aion_model: chatroomModel,
       tts_aion_voice: document.getElementById('setTtsAionVoice').value,
       tts_connor_voice: document.getElementById('setTtsConnorVoice').value,
       reply_order: nextReplyOrder,

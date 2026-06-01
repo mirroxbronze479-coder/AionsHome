@@ -962,6 +962,7 @@ class ConfigUpdate(BaseModel):
     tts_connor_voice: Optional[str] = None
     reply_order: Optional[str] = None
     connor_model: Optional[str] = None
+    aion_model: Optional[str] = None
 
 
 # ══════════════════════════════════════════════════
@@ -1002,6 +1003,8 @@ async def update_config(body: ConfigUpdate):
         cfg["reply_order"] = body.reply_order
     if body.connor_model is not None:
         cfg["connor_model"] = body.connor_model or "Codex"
+    if body.aion_model is not None:
+        cfg["aion_model"] = body.aion_model
     save_chatroom_config(cfg)
     return {"ok": True}
 

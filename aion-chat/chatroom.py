@@ -37,6 +37,7 @@ _DEFAULT_CONFIG = {
     "tts_connor_voice": "",
     "reply_order": "random",
     "connor_model": "Codex",
+    "aion_model": "",
 }
 
 
