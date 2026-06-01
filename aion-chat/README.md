@@ -8,7 +8,7 @@
 - **前端**：多页面架构（原生 JS，无框架），暖光主题，手机/PC 自适应。chat.html/css/js 为主聊天页（结构/样式/逻辑分离），独立功能页通过 common.css/common.js 共享样式和工具函数
 - **摄像头**：OpenCV (`cv2`) DirectShow 后端后台线程采集 + ESP32-CAM HTTP 远程抓帧（双摄切换 + App 桥接模式）
 - **语音**：WebRTC VAD 语音检测 + 硬基流动 ASR (SenseVoiceSmall) + TTS (CosyVoice2) + 语音消息（按住录制）
-- **AI 接口**：硬基流动（OpenAI 兼容）、Google Gemini（REST API）、AiPro 中转站（OpenAI 兼容）、Gemini CLI（本地子进程调用，免费 OAuth 认证）、Codex CLI（本地子进程调用，Connor 专用）
+- **AI 接口**：硬基流动（OpenAI 兼容）、Google Gemini（REST API）、AiPro 中转站（OpenAI 兼容）、Gemini CLI（本地子进程调用，免费 OAuth 认证）、Codex CLI（本地子进程调用，Connor 专用）、Antigravity CLI（本地子进程调用，Google OAuth 认证，PowerShell Start-Transcript 捕获输出）
 - **AI 生图**：Gemini `gemini-3.1-flash-image-preview`（REST API generateContent，responseModalities=["IMAGE"]）
 - **Embedding**：Gemini `gemini-embedding-001`（3072维）或 OpenAI 兼容向量模型（如硅基流动 `Qwen/Qwen3-Embedding-8B` 4096维），余弦相似度检索，支持设置页自定义切换
 - **Android App**：Java，WebView + 前台推送服务（OkHttp 4.12.0 WebSocket）+ 原生录音桥 + 原生摄像头桥 + 原生视频录制桥（MediaCodec + MediaMuxer），compileSdk 34 / minSdk 24
@@ -16,7 +16,7 @@
 - **EPUB 解析**：ebooklib（EPUB 读取）+ BeautifulSoup4 / lxml（HTML 解析）
 - **基金监控**：akshare（A股/基金数据拉取）+ chinese-calendar（中国节假日/交易日判断）
 - **MCP 娱乐室**：mcp（Python MCP SDK，支持 Streamable HTTP / stdio 传输，接入外部服务如 AI 小镇）
-- **聊天室**：三人群聊（用户 + Aion + Connor-Codex），Connor 代理通过 HTTP 轮询接入 Codex CLI 服务，随机回复顺序，统一时间线上下文（私聊+群聊合并排序，场景切换标记），统一记忆总结（Aion/Connor 各自合并私聊+群聊消息总结，独立锚点，1小时无新消息自动触发），图片收发（用户发图→CLI 管线通过本地绝对路径传递、API 管线通过 base64 内嵌，Codex 回复 `[[image:...]]` 标记→前端渲染，图片存储于 `Connor-Codex/uploads/YYYY-MM-DD/`），＋展开菜单（上传图片/拍照/语音消息/密语时刻，复用 Android 原生桥 AionCamera/AionAudio，iframe 穿透访问），拍照功能（getUserMedia + AionCamera 原生桥回退，前后摄切换），语音消息（按住说话 + 上滑取消 + MediaRecorder / AionAudio 原生桥录制 → 上传 → ASR 转写 → 橙色语音气泡 + 转写小字 + 播放动画，音频文件同时发送给 AI 模型），TTS 语音合成（Aion/Connor 独立音色配置，硬基流动 CosyVoice2 服务端流式切分+并行合成，通过 SSE 推送音频分段顺序播放，配置持久化服务端 `chatroom_config.json` + localStorage 双存），侧栏群聊/私聊分 Tab 筛选 + 新建房间自动日期命名，Connor 名字可配置（`chatroom_config.json` 中 `connor_name`），聊天室内 [CAM_CHECK] 摄像头查看独立实现（提示音→延迟→截图→AI 分析→回复写入聊天室），日程/闹铃/定时监控按来源窗口路由回复（origin + origin_room_id 追踪，Connor 来源使用 Connor TTS 音色），音乐点歌（[MUSIC:xxx] 指令检测 + 音乐卡片 + 在线播放器 + 自动播放），密语时刻 BLE 控制（完整 BLE 连接/预设/编辑器 + 跨页面 BLE 状态同步 + 密语模式开关 + AI [TOY:x] 指令执行 + 胶囊气泡）
+- **聊天室**：三人群聊（用户 + Aion + Connor-Codex），Connor 代理通过 HTTP 轮询接入 Codex CLI 服务，随机回复顺序，统一时间线上下文（私聊+群聊合并排序，场景切换标记），统一记忆总结（Aion/Connor 各自合并私聊+群聊消息总结，独立锚点，1小时无新消息自动触发），图片收发（用户发图→CLI 管线通过本地绝对路径传递、API 管线通过 base64 内嵌，Codex 回复 `[[image:...]]` 标记→前端渲染，图片存储于 `Connor-Codex/uploads/YYYY-MM-DD/`），＋展开菜单（上传图片/拍照/语音消息/密语时刻，复用 Android 原生桥 AionCamera/AionAudio，iframe 穿透访问），拍照功能（getUserMedia + AionCamera 原生桥回退，前后摄切换），语音消息（按住说话 + 上滑取消 + MediaRecorder / AionAudio 原生桥录制 → 上传 → ASR 转写 → 橙色语音气泡 + 转写小字 + 播放动画，音频文件同时发送给 AI 模型），TTS 语音合成（Aion/Connor 独立音色配置，硬基流动 CosyVoice2 服务端流式切分+并行合成，通过 SSE 推送音频分段顺序播放，配置持久化服务端 `chatroom_config.json` + localStorage 双存），侧栏群聊/私聊分 Tab 筛选 + 新建房间自动日期命名，Connor 名字/人设统一配置（`chatroom_config.json` 中 `connor_name` + `connor_persona`，侧栏🎭人设按钮统一管理，所有群聊/私聊房间共享），聊天室内 [CAM_CHECK] 摄像头查看独立实现（提示音→延迟→截图→AI 分析→回复写入聊天室），日程/闹铃/定时监控按来源窗口路由回复（origin + origin_room_id 追踪，Connor 来源使用 Connor TTS 音色），音乐点歌（[MUSIC:xxx] 指令检测 + 音乐卡片 + 在线播放器 + 自动播放），密语时刻 BLE 控制（完整 BLE 连接/预设/编辑器 + 跨页面 BLE 状态同步 + 密语模式开关 + AI [TOY:x] 指令执行 + 胶囊气泡）
 - **依赖库**：fastapi, uvicorn, httpx, aiosqlite, opencv-python, Pillow, sounddevice, numpy, webrtcvad-wheels, pyncm, pywin32, psutil, ebooklib, beautifulsoup4, lxml, akshare, chinese-calendar, mcp
 
 ## 模块化文件结构
@@ -53,10 +53,10 @@
 ├── 启动壁纸.bat                  # Chrome App 模式无边框全屏启动动态壁纸
 └── aion-chat/
     ├── main.py                   # 入口：lifespan、路由注册、静态挂载、WebSocket、PWA 路由、自动记忆总结定时任务（私聊+群聊空闲检测）、Connor自动总结定时任务
-    ├── config.py                 # 全局路径、常量、settings/worldbook/chat_status/cam_config 读写、哨兵模型配置(get_sentinel_config)、向量模型配置(get_embedding_config)
+    ├── config.py                 # 全局路径、常量、settings/worldbook/chat_status/cam_config 读写、哨兵模型配置(get_sentinel_config)、向量模型配置(get_embedding_config)、MODELS 字典含 vision 字段标记是否支持图片输入
     ├── database.py               # SQLite 初始化（conversations/messages/memories/schedules/theater 等表 + 性能索引）
     ├── ws.py                     # WebSocket ConnectionManager 单例，含 tts_clients 状态追踪 + _tts_fallback HTTP 回落机制 + client_id 注册/定向推送 + 各AI最后活跃窗口追踪
-    ├── ai_providers.py           # AI 调用：硅基流动/Gemini/AiPro中转站/GeminiCLI 流式 + 非流式 + 多模态消息构建
+    ├── ai_providers.py           # AI 调用：硅基流动/Gemini/AiPro中转站/GeminiCLI/AntigravityCLI 流式 + 非流式 + 多模态消息构建 + 哨兵模型图片描述回退（非 vision 模型自动调用哨兵识图后注入文字描述）
     ├── memory.py                 # 向量记忆：embedding（Gemini/OpenAI兼容）、综合评分召回、手动/自动总结（合并私聊+群聊消息）、即时哨兵(RAG路由)、原文追溯、重建向量索引
     ├── camera.py                 # 摄像头：CameraMonitor 类、Sentinel 分析（注入设备活动摘要）、Core 唤醒、[CAM_CHECK]、ESP32-CAM 双摄切换+App桥接
     ├── location.py               # 高德地图定位：GPS心跳处理、三级研判、状态机(at_home/outside)、哨兵通知、POI搜索
@@ -70,7 +70,7 @@
     ├── image_gen.py               # AI 生图模块：Gemini 图片生成（SELFIE/DRAW 模式）
     ├── mcp_client.py              # MCP 连接管理器：管理多个 MCP Server 连接（HTTP/stdio）、工具发现、统一 call_tool 接口、转换 OpenAI tools 格式
     ├── context_builder.py          # 统一上下文构建：fetch_merged_timeline（合并私聊+群聊消息时间线）、render_merged_timeline（场景切换标记渲染）、build_ability_block、build_memory_blocks、strip_tool_commands
-    ├── chatroom.py                # 聊天室核心逻辑：Connor-Codex 代理调用（HTTP+taskId轮询+images）、统一时间线上下文构建、统一记忆总结（Connor 1v1+群聊合并，独立锚点 connor_unified）、1h无消息自动总结
+    ├── chatroom.py                # 聊天室核心逻辑：Connor-Codex 代理调用（HTTP+taskId轮询+images）、统一时间线上下文构建、统一记忆总结（Connor 1v1+群聊合并，独立锚点 connor_unified）、1h无消息自动总结、Connor 人设统一读取（chatroom_config 优先，persona.md 兑底）
     ├── routes/
     │   ├── __init__.py
     │   ├── book.py               # 阅读功能 API：书籍上传/列表/章节/进度/删除/图片/AI批注（Aion+Connor并行，单段+全章SSE）/用户高亮（框选多目标提问持久化CRUD）
@@ -95,7 +95,7 @@
     │   ├── playground.py         # 娱乐室 API：MCP Server 连接/断开、tool calling 循环、SSE 流式行动日志、经历总结归档
     │   ├── doudizhu.py           # 斗地主 API：发牌/叫地主/出牌校验/AI JSON 决策/结算/钱包联动/群聊战报
     │   └── wallpaper.py          # 动态壁纸 API：文件列表/配置读写/上传/删除
-    │   └── chatroom.py           # 聊天室 API：房间 CRUD、发消息(SSE)、AI 互聊(SSE)、记忆 CRUD、配置（connor_url/connor_name/TTS音色）、Connor 状态、总结记忆、图片/音频上传（/api/chatroom/upload，支持 image + audio MIME）+ 图片路径重写 + 语音附件预处理（转写注入+音频URL保留） + TTS流式合成（Aion/Connor独立音色） + 聊天室内 [CAM_CHECK] 独立实现 + Connor 1v1 指令处理（[MUSIC:]/[MEMORY:]/[TOY:]/[ALARM:] 等）+ 密语模式能力注入
+    │   └── chatroom.py           # 聊天室 API：房间 CRUD、发消息(SSE)、AI 互聊(SSE)、记忆 CRUD、配置（connor_url/connor_name/connor_persona/TTS音色）、Connor 状态、总结记忆、图片/音频上传（/api/chatroom/upload，支持 image + audio MIME）+ 图片路径重写 + 语音附件预处理（转写注入+音频URL保留） + TTS流式合成（Aion/Connor独立音色） + 聊天室内 [CAM_CHECK] 独立实现 + Connor 1v1 指令处理（[MUSIC:]/[MEMORY:]/[TOY:]/[ALARM:] 等）+ 密语模式能力注入
     ├── activity.py               # 设备活动日志：JSONL 存储、自动清理（保留最近 3 小时）、PC 前台窗口采集、PC 显示器电源状态/空闲检测、App 包名→中文名映射、10分钟窗口摘要、AI联动开关+Prompt摘要生成
     ├── phone_screen.py           # 手机屏幕监督：Android MediaProjection 截图上传缓存、最近截图读取、自动清理
     ├── music.py                  # pyncm 封装层（搜索/歌曲详情/音频URL/MUSIC_U Cookie 登录/匿名登录）
@@ -130,7 +130,7 @@
     │   ├── doudizhu.html          # 斗地主页 → /doudizhu（三人牌桌：用户+Aion+Connor，手机牌桌布局）
     │   ├── doudizhu.css           # 斗地主样式（桌面/手机自适应、手牌压叠、弃牌堆、结算弹窗）
     │   ├── doudizhu.js            # 斗地主前端逻辑（发牌预览、叫地主/出牌交互、AI回合推进、TTS/音效、昭告天下）
-    │   ├── chatroom.html          # 聊天室页 → /chatroom（三人群聊 + Connor 私聊 + 房间管理 + 记忆库悬浮窗 + 图片/语音收发 + 拍照 + TTS设置 + Connor名字设置 + 密语时刻面板）
+    │   ├── chatroom.html          # 聊天室页 → /chatroom（三人群聊 + Connor 私聊 + 房间管理 + 记忆库悬浮窗 + 图片/语音收发 + 拍照 + TTS设置 + 🎭人设统一管理面板 + 密语时刻面板）
     │   ├── chatroom.css           # 聊天室样式（暖色三人气泡、头像、双换行拆分气泡、图片预览/查看器/内联图片、＋展开菜单、拍照全屏遮罩、语音录制浮层、橙色语音气泡+播放动画+转写小字、TTS滑块开关、群聊/私聊Tab样式、音乐卡片+播放器、密语面板+编辑器+胶囊样式）
     │   ├── chatroom.js            # 聊天室前端逻辑（SSE流式、AI互聊、记忆CRUD、世界书人设继承、图片上传/粘贴/[[image:]]渲染、＋展开菜单（上传图片/拍照/语音消息/密语时刻）、拍照（getUserMedia+AionCamera原生桥+iframe穿透）、语音消息（按住说话+上滑取消+MediaRecorder/AionAudio原生桥+WAV转换+ASR转写+语音气泡渲染+播放）、TTS分段队列播放+音色配置持久化服务端+localStorage、侧栏群聊/私聊Tab筛选+自动日期命名、音乐卡片+在线播放器+自动播放、BLE密语控制系统+BroadcastChannel跨页同步+指令胶囊气泡）
     │   ├── wallpaper.html         # 动态壁纸页 → /wallpaper（全屏壁纸轮播+AI气泡，独立显示器使用）
@@ -155,7 +155,7 @@
         ├── theater_personas.json # 小剧场角色预设（多套人设，JSON数组）
         ├── fund_config.json      # 基金监控配置（开关、投资倾向）
         ├── fund_cache.json       # 基金数据缓存（最近一次拉取结果）
-        ├── chatroom_config.json  # 聊天室配置（connor_url、connor_name、tts_aion_voice、tts_connor_voice）
+        ├── chatroom_config.json  # 聊天室配置（connor_url、connor_name、connor_persona、tts_aion_voice、tts_connor_voice）
         ├── doudizhu_state.json   # 斗地主当前牌局状态（手牌/底牌/回合/历史/结算）
         ├── mcp_servers.json      # MCP Server 配置（娱乐室服务地址列表）
         ├── wallpaper_config.json  # 动态壁纸配置（轮换间隔、文件启用状态、气泡锚点坐标）
@@ -1676,6 +1676,39 @@ python main.py
 | 长按返回键无效（Vivo X300 Pro 手势导航） | `onKeyLongPress` 不适用于手势导航的侧滑返回 | 改为 `onBackPressed` 弹出 AlertDialog |
 
 ## 更新日志
+
+### 2026-05-30 — Antigravity CLI 管线接入
+
+**背景**：Google Antigravity CLI（`agy`）是 Gemini CLI 的升级替代品，支持 Google OAuth 免费调用 Gemini 模型。与 Gemini CLI 不同，agy 使用 Windows `WriteConsole()` API 直接写入控制台句柄，无法通过 stdout 管道或文件重定向捕获输出，需要特殊处理。
+
+**改动内容**：
+1. **`ai_providers.py` — Antigravity CLI 调用实现**
+   - 新增 `_find_antigravity_binary()`：自动定位 agy.exe（PATH 搜索 + `%LOCALAPPDATA%\agy\bin\agy.exe` 回退）
+   - 新增 `call_antigravity_cli()` 异步生成器：构建 PowerShell 脚本，使用 `Start-Transcript` 拦截 console buffer 输出，`CREATE_NEW_CONSOLE + SW_HIDE` 给 PowerShell 独立隐藏控制台窗口（解决从 uvicorn 进程 spawn 时 transcript 为空的问题），通过 `asyncio.to_thread` 包装同步 `subprocess.run` 调用
+   - 新增 `_extract_transcript_body()`：解析 PowerShell Transcript 文件，过滤英文/中文系统头部，保留空行用于段落分隔
+   - 新增 `_deduplicate_cjk()`：修复 PowerShell 5.1 Start-Transcript 的已知 Bug（CJK 字符每个被重复输出两次）
+   - 新增 `_summarize_antigravity_log()` / `_is_antigravity_auth_prompt()`：日志诊断和认证检测
+   - `CLI_STATUS_PREFIX` 状态消息前缀（`\x00CLI_STATUS:`），在流式输出中传递「AI正在思考…」等状态事件
+   - 控制台缓冲区宽度设为 500 列，避免 AI 回复在默认 80 列处被硬换行
+
+2. **`config.py` — MODELS 字典新增 Antigravity 条目**
+   - 新增 `"Antigravity": {"provider": "antigravity_cli", "model": "", "vision": True}`
+   - 模型选择由 agy CLI 内部管理（通过交互式 `/model` 命令切换，偏好存储在 Google 服务器端）
+
+3. **`routes/theater.py` — CLI_STATUS 过滤**
+   - 小剧场的两个 `_bg_generate` 函数（发送 + 重新生成）增加 `CLI_STATUS_PREFIX` 检测，将状态消息路由为 `cli_status` SSE 事件而非追加到回复文本
+
+4. **`给朋友的部署教程.md` — 新增 Antigravity CLI 部署说明**
+   - 安装命令、OAuth 登录步骤、使用说明、模型切换教程、注意事项
+
+**技术要点**：
+- agy 使用 `WriteConsole()` 直接写 Windows Console Handle，stdout pipe / 文件重定向 / cmd /c 包装均无法捕获输出
+- 唯一可行方案：PowerShell `Start-Transcript` 拦截 console buffer → `Stop-Transcript` → 读取 transcript 文件
+- 从 uvicorn 服务进程 spawn 时，必须 `CREATE_NEW_CONSOLE` 给 PowerShell 独立控制台 + `SW_HIDE` 隐藏窗口
+- 不支持流式输出（transcript 文件只在 `Stop-Transcript` 后才可读取），等待完成后一次性返回
+- agy `--print` 模式无 `--model` 参数，模型偏好需在服务器上用 `agy` 交互模式 → `/model` 命令切换
+
+**使用方式**：聊天界面右上角切换模型到 `Antigravity`，不需要 API Key，使用 Google OAuth 免费调用。切换底层 Gemini 模型需在服务器终端运行 `agy` → 输入 `/model` → 选择模型 → `/exit`。
 
 ### 2026-05-10 — CLI 图片管线修复 + Connor 跨窗口上下文 + 多场景群聊集成
 

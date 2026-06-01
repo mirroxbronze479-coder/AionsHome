@@ -360,17 +360,13 @@ class CameraMonitor:
     def _close_camera_internal(self):
         """内部关闭方法（调用者需持有 _cam_op_lock）"""
         self._cancel_verify = True  # 中断正在进行的验证
-        self.monitoring = False
         self.running = False
         # 等待采集线程退出（它内部会检查 self.running）
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=10)
             if self._thread.is_alive():
                 print("[Camera] 警告: 采集线程未在 10s 内退出")
-        if self._monitor_thread and self._monitor_thread.is_alive():
-            self._monitor_thread.join(timeout=3)
         self._thread = None
-        self._monitor_thread = None
         if self.cap:
             try:
                 self.cap.release()
@@ -758,12 +754,52 @@ class CameraMonitor:
         _, buf = cv2.imencode(".jpg", combined)
         return buf.tobytes()
 
+    def get_screen_only_jpeg(self) -> bytes | None:
+        """摄像头未开启时，仅截取 PC 屏幕 + 手机截屏，返回 JPEG bytes。"""
+        screen = self._capture_screen()
+        if screen is not None:
+            screen = self._overlay_phone_screen(screen)
+            _, buf = cv2.imencode(".jpg", screen)
+            return buf.tobytes()
+        # PC 屏幕不可用时尝试仅手机截屏
+        try:
+            from phone_screen import get_recent_phone_screen_path
+            phone_path = get_recent_phone_screen_path(max_age_seconds=150)
+            if phone_path:
+                phone = cv2.imread(str(phone_path))
+                if phone is not None:
+                    _, buf = cv2.imencode(".jpg", phone)
+                    return buf.tobytes()
+        except Exception:
+            pass
+        return None
+
     def save_screenshot(self) -> str | None:
+        frame = None
         with self._lock:
-            if self._latest_frame is None:
-                return None
-            frame = self._apply_crop(self._latest_frame).copy()
-        combined = self._combine_with_screen(frame)
+            if self._latest_frame is not None:
+                frame = self._apply_crop(self._latest_frame).copy()
+        if frame is not None:
+            combined = self._combine_with_screen(frame)
+        else:
+            # 摄像头未开启，尝试仅截屏
+            screen = self._capture_screen()
+            if screen is not None:
+                combined = self._overlay_phone_screen(screen)
+            else:
+                try:
+                    from phone_screen import get_recent_phone_screen_path
+                    phone_path = get_recent_phone_screen_path(max_age_seconds=150)
+                    if phone_path:
+                        phone = cv2.imread(str(phone_path))
+                        if phone is not None:
+                            combined = phone
+                        else:
+                            return None
+                    else:
+                        return None
+                except Exception:
+                    return None
         SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y%m%d_%H%M%S")
         filename = f"cam_{ts}.jpg"
@@ -792,11 +828,6 @@ class CameraMonitor:
     def start_monitoring(self):
         if self.monitoring:
             return
-        if not self.running:
-            if self.cfg.get("active_source") == "esp32":
-                self.open_esp32()
-            else:
-                self.open_camera()
         self.monitoring = True
         self.cfg["monitor_enabled"] = True
         save_cam_config(self.cfg)
@@ -837,7 +868,7 @@ class CameraMonitor:
 
     def _monitor_loop(self):
         print("[Monitor] 监控线程已启动")
-        while self.monitoring and self.running:
+        while self.monitoring:
             now = time.time()
             if now < self._next_capture_at:
                 time.sleep(0.5)
@@ -853,7 +884,7 @@ class CameraMonitor:
                     self._loop
                 )
             time.sleep(5)
-            if not self.monitoring or not self.running:
+            if not self.monitoring:
                 break
             filename = self.save_screenshot()
             if filename and self._loop:
@@ -863,7 +894,7 @@ class CameraMonitor:
                 )
             elif not filename:
                 print("[Monitor] 截图失败: 无可用画面")
-        print(f"[Monitor] 监控线程退出 (monitoring={self.monitoring}, running={self.running})")
+        print(f"[Monitor] 监控线程退出 (monitoring={self.monitoring})")
 
     async def _analyze_and_log(self, screenshot_filename: str):
         filepath = SCREENSHOTS_DIR / screenshot_filename
@@ -1192,7 +1223,7 @@ CAM_CHECK_CMD = "[CAM_CHECK]"
 
 async def perform_cam_check(conv_id: str, model_key: str):
     """Core 在聊天中主动请求查看监控画面：截图 → 发给 Core → 保存为新消息"""
-    jpg_bytes = cam.get_frame_jpeg()
+    jpg_bytes = cam.get_frame_jpeg() or cam.get_screen_only_jpeg()
     if not jpg_bytes:
         return
 

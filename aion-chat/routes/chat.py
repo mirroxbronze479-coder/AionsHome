@@ -729,7 +729,7 @@ async def send_message(conv_id: str, body: MsgCreate):
     if wb.get("user_persona"):
         prefix.append({"role": "user", "content": f"[系统设定 - 用户信息]\n{wb['user_persona']}"})
         prefix.append({"role": "assistant", "content": "收到，我会记住你的信息。"})
-    if wb.get("system_prompt"):
+    if wb.get("system_prompt") and wb.get("system_prompt_enabled", True):
         prefix.append({"role": "user", "content": f"[系统提示]\n{wb['system_prompt']}"})
         prefix.append({"role": "assistant", "content": "收到，我会遵循这些规则。"})
     if prefix:
@@ -1287,7 +1287,7 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     if wb.get("user_persona"):
         prefix.append({"role": "user", "content": f"[系统设定 - 用户信息]\n{wb['user_persona']}"})
         prefix.append({"role": "assistant", "content": "收到，我会记住你的信息。"})
-    if wb.get("system_prompt"):
+    if wb.get("system_prompt") and wb.get("system_prompt_enabled", True):
         prefix.append({"role": "user", "content": f"[系统提示]\n{wb['system_prompt']}"})
         prefix.append({"role": "assistant", "content": "收到，我会遵循这些规则。"})
     if prefix:
@@ -1303,8 +1303,7 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
     abilities = []
     user_name = wb.get("user_name", "用户")
     abilities.append(f"[MUSIC:歌曲名 歌手名] — 点歌/推荐音乐。系统自动展示播放卡片，不要在指令外重复歌曲信息。可同时用多个。")
-    if cam.running:
-        abilities.append(f"{CAM_CHECK_CMD} — 当你想查看{user_name}**此时此刻**的状态，不限于监督其是否去睡觉，在吃什么，在干什么时，可以主动调用指令。使用后下条消息会收到画面，查看前不要编造内容。")
+    abilities.append(f"{CAM_CHECK_CMD} — 当你想查看{user_name}**此时此刻**的状态，不限于监督其是否去睡觉，在吃什么，在干什么时，可以主动调用指令。使用后下条消息会收到画面，查看前不要编造内容。")
     abilities.append("[ALARM:YYYY-MM-DDTHH:MM|内容] — 设置闹铃，到时间系统会主动提醒用户。日期时间用ISO格式。")
     abilities.append("[REMINDER:YYYY-MM-DD|内容] — 设置日程提醒（不闹铃），你在合适时机自然提起即可。")
     abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监控。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了，是否工作在摸鱼等，尤其是当{user_name}表示去工作或长时间做事，监督她隔一段时间起来活动一下，或者单纯想主动找她聊天，可以随意使用。日期时间用ISO格式。")
@@ -1758,13 +1757,10 @@ async def edit_resend_message(msg_id: str, body: MsgEditResend):
 
             # [CAM_CHECK] 服务端直接触发，前端只显示 UI 指示器
             if cam_triggered:
-                if cam.running:
-                    cam_data = {'type': 'cam_check', 'conv_id': conv_id, 'model_key': model_key, 'msg_id': ai_msg_id}
-                    await _q.put(cam_data)
-                    await manager.broadcast({"type": "cam_check", "data": cam_data})
-                    asyncio.create_task(_delayed_cam_check(conv_id, model_key))
-                else:
-                    await _q.put({'type': 'cam_offline'})
+                cam_data = {'type': 'cam_check', 'conv_id': conv_id, 'model_key': model_key, 'msg_id': ai_msg_id}
+                await _q.put(cam_data)
+                await manager.broadcast({"type": "cam_check", "data": cam_data})
+                asyncio.create_task(_delayed_cam_check(conv_id, model_key))
 
             # [POI_SEARCH] 搜索周边 → 携带结果自动追加一轮 Core 回复
             if poi_matches:
@@ -1927,8 +1923,6 @@ class CamCheckTrigger(BaseModel):
 
 @router.post("/api/cam-check-trigger")
 async def cam_check_trigger(body: CamCheckTrigger):
-    if not cam.running:
-        return {"ok": False, "error": "摄像头未开启"}
     if body.conv_id in _cam_check_active:
         return {"ok": False, "error": "cam check already in progress"}
     _cam_check_active.add(body.conv_id)
@@ -2022,7 +2016,7 @@ async def perform_poi_check(conv_id: str, model_key: str, categories: list[str])
     if wb.get("user_persona"):
         prefix.append({"role": "user", "content": f"[系统设定 - 用户信息]\n{wb['user_persona']}"})
         prefix.append({"role": "assistant", "content": "收到，我会记住你的信息。"})
-    if wb.get("system_prompt"):
+    if wb.get("system_prompt") and wb.get("system_prompt_enabled", True):
         prefix.append({"role": "user", "content": f"[系统提示]\n{wb['system_prompt']}"})
         prefix.append({"role": "assistant", "content": "收到，我会遵循这些规则。"})
 
@@ -2142,7 +2136,7 @@ async def perform_activity_check(conv_id: str, model_key: str, n: int = 6):
     if wb.get("user_persona"):
         prefix.append({"role": "user", "content": f"[系统设定 - 用户信息]\n{wb['user_persona']}"})
         prefix.append({"role": "assistant", "content": "收到，我会记住你的信息。"})
-    if wb.get("system_prompt"):
+    if wb.get("system_prompt") and wb.get("system_prompt_enabled", True):
         prefix.append({"role": "user", "content": f"[系统提示]\n{wb['system_prompt']}"})
         prefix.append({"role": "assistant", "content": "收到，我会遵循这些规则。"})
 
@@ -2268,7 +2262,7 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
     if wb.get("user_persona"):
         prefix.append({"role": "user", "content": f"[系统设定 - 用户信息]\n{wb['user_persona']}"})
         prefix.append({"role": "assistant", "content": "收到，我会记住你的信息。"})
-    if wb.get("system_prompt"):
+    if wb.get("system_prompt") and wb.get("system_prompt_enabled", True):
         prefix.append({"role": "user", "content": f"[系统提示]\n{wb['system_prompt']}"})
         prefix.append({"role": "assistant", "content": "收到，我会遵循这些规则。"})
     if prefix:
@@ -2282,8 +2276,7 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
     abilities = []
     user_name = wb.get("user_name", "用户")
     abilities.append(f"[MUSIC:歌曲名 歌手名] — 点歌/推荐音乐。系统自动展示播放卡片，不要在指令外重复歌曲信息。可同时用多个。")
-    if cam.running:
-        abilities.append(f"{CAM_CHECK_CMD} — 查看{user_name}的实时监控画面。使用后下条消息会收到画面，查看前不要编造内容。")
+    abilities.append(f"{CAM_CHECK_CMD} — 查看{user_name}的实时监控画面。使用后下条消息会收到画面，查看前不要编造内容。")
     abilities.append("[ALARM:YYYY-MM-DDTHH:MM|内容] — 设置闹铃，到时间系统会主动提醒用户。日期时间用ISO格式。")
     abilities.append("[REMINDER:YYYY-MM-DD|内容] — 设置日程提醒（不闹铃），你在合适时机自然提起即可。")
     abilities.append(f"[Monitor:YYYY-MM-DDTHH:MM|内容] — 设置定时监控。到时间后系统自动截取摄像头画面发送给你，你可以查看{user_name}的状态。例如检查{user_name}是否去运动了、是否关灯睡觉了，是否工作在摸鱼等，尤其是当{user_name}表示去工作或长时间做事，监督她隔一段时间起来活动一下，或者单纯想主动找她聊天，可以随意使用。日期时间用ISO格式。")
@@ -2656,13 +2649,10 @@ async def regenerate_message(conv_id: str, context_limit: int = 30, whisper_mode
 
             # [CAM_CHECK] 服务端直接触发，前端只显示 UI 指示器
             if cam_triggered:
-                if cam.running:
-                    cam_data = {'type': 'cam_check', 'conv_id': conv_id, 'model_key': model_key, 'msg_id': ai_msg_id}
-                    await _q.put(cam_data)
-                    await manager.broadcast({"type": "cam_check", "data": cam_data})
-                    asyncio.create_task(_delayed_cam_check(conv_id, model_key))
-                else:
-                    await _q.put({'type': 'cam_offline'})
+                cam_data = {'type': 'cam_check', 'conv_id': conv_id, 'model_key': model_key, 'msg_id': ai_msg_id}
+                await _q.put(cam_data)
+                await manager.broadcast({"type": "cam_check", "data": cam_data})
+                asyncio.create_task(_delayed_cam_check(conv_id, model_key))
 
             # [POI_SEARCH] 搜索周边 → 携带结果自动追加一轮 Core 回复
             if poi_matches:

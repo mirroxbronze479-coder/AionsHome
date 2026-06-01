@@ -26,8 +26,10 @@
     <label class="form-label">用户人设</label>
     <div class="form-hint">关于你自己的信息，AI 会以此为参考</div>
     <textarea class="form-input" id="wbUserPersona" placeholder="例如：我叫小明，喜欢编程和游戏..."></textarea>
-    <label class="form-label">系统提示</label>
-    <div class="form-hint">额外的行为规则或提示词，每次对话都会发送给模型（可留空）</div>
+    <label class="form-label" style="display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="wbSystemPromptEnabled">
+      <span>启用系统提示</span>
+    </label>
     <textarea class="form-input" id="wbSystemPrompt" placeholder="例如：时间感知：每次收到消息，先计算与上一条消息的时间差..."></textarea>
     <div class="btn-row">
       <button class="btn-cancel" onclick="location.href='/'">取消</button>
@@ -46,6 +48,7 @@ connectCommonWS();
   $("wbAiPersona").value = wb.ai_persona || "";
   $("wbUserPersona").value = wb.user_persona || "";
   $("wbSystemPrompt").value = wb.system_prompt || "";
+  $("wbSystemPromptEnabled").checked = wb.system_prompt_enabled !== false;
 })();
 
 async function saveWorldBook() {
@@ -54,7 +57,8 @@ async function saveWorldBook() {
     user_name: $("wbUserName").value.trim() || "你",
     ai_persona: $("wbAiPersona").value,
     user_persona: $("wbUserPersona").value,
-    system_prompt: $("wbSystemPrompt").value
+    system_prompt: $("wbSystemPrompt").value,
+    system_prompt_enabled: $("wbSystemPromptEnabled").checked
   };
   await api("PUT", "/api/worldbook", wb);
   showToast("✅ 世界书已保存");

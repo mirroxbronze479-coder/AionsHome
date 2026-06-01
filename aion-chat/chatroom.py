@@ -11,7 +11,7 @@ import aiosqlite, httpx
 from config import DATA_DIR, DEFAULT_MODEL, load_worldbook
 from database import get_db
 from memory import get_embedding, cosine_similarity, _pack_embedding, _unpack_embedding, _keyword_match_score
-from ai_providers import call_codex_cli, CLI_STATUS_PREFIX, _build_cli_prompt
+from ai_providers import call_codex_cli, stream_ai, CLI_STATUS_PREFIX, _build_cli_prompt
 from context_builder import build_ability_block, build_memory_blocks, fetch_merged_timeline, render_merged_timeline
 from ws import manager
 
@@ -32,6 +32,7 @@ _DEFAULT_CONFIG = {
     "connor_poll_interval": 1.0,
     "connor_poll_timeout": 480,  # 8 分钟，与 Connor 后端 CODEX_TIMEOUT_MS 保持一致
     "connor_name": "Connor",
+    "connor_persona": "",
     "tts_enabled": False,
     "tts_aion_voice": "",
     "tts_connor_voice": "",
@@ -170,10 +171,16 @@ _CONNOR_PERSONA_PATH = Path(__file__).parent.parent / "Connor-Codex" / "persona.
 
 
 def _read_connor_persona() -> str:
-    """读取 Connor 的人设文件"""
-    if _CONNOR_PERSONA_PATH.exists():
-        return _CONNOR_PERSONA_PATH.read_text(encoding="utf-8").strip()
-    return ""
+    """读取 Connor 全局人设：优先 chatroom_config，其次 persona.md 文件；勾选补充设定时拼接"""
+    cfg = load_chatroom_config()
+    cfg_persona = cfg.get("connor_persona", "").strip()
+    base = cfg_persona
+    if not base and _CONNOR_PERSONA_PATH.exists():
+        base = _CONNOR_PERSONA_PATH.read_text(encoding="utf-8").strip()
+    if cfg.get("connor_persona_extra_enabled") and cfg.get("connor_persona_extra", "").strip():
+        extra = cfg["connor_persona_extra"].strip()
+        base = f"{base}\n\n[补充设定]\n{extra}" if base else extra
+    return base
 
 
 def _build_connor_messages(prompt: str) -> list[dict]:
@@ -211,11 +218,19 @@ async def stream_connor_cli(prompt: str = None, *, messages: list[dict] = None):
 
 
 async def simple_connor_cli_call(prompt: str) -> Optional[str]:
-    """非流式调用 Codex CLI，返回完整回复文本（用于记忆总结等）"""
+    """非流式调用 Connor 模型，根据 connor_model 配置选择 Codex CLI 或 stream_ai"""
+    cfg = load_chatroom_config()
+    model_key = (cfg.get("connor_model") or "Codex").strip() or "Codex"
     full_text = ""
-    async for chunk in stream_connor_cli(prompt):
-        if not chunk.startswith(CLI_STATUS_PREFIX):
-            full_text += chunk
+    if model_key == "Codex":
+        async for chunk in stream_connor_cli(prompt):
+            if not chunk.startswith(CLI_STATUS_PREFIX):
+                full_text += chunk
+    else:
+        messages = [{"role": "user", "content": prompt}]
+        async for chunk in stream_ai(messages, model_key, {}):
+            if not chunk.startswith(CLI_STATUS_PREFIX):
+                full_text += chunk
     return full_text.strip() or None
 
 
@@ -534,10 +549,11 @@ async def digest_chatroom(room_id: str = None, model_key: str = None) -> dict:
     wb = load_worldbook()
     user_name, ai_name, connor_name = get_chatroom_names()
 
-    # 构建人设前缀（Connor 已有自身人设，这里注入 Aion 和用户信息供参考）
+    # 构建人设前缀（Connor 总结只带自己的人设 + 用户信息，不带 Aion 人设）
     persona_block = ""
-    if wb.get("ai_persona"):
-        persona_block += f"[{ai_name}的人设]\n{wb['ai_persona']}\n\n"
+    connor_persona = _read_connor_persona()
+    if connor_persona:
+        persona_block += f"[{connor_name}的人设]\n{connor_persona}\n\n"
     if wb.get("user_persona"):
         persona_block += f"[{user_name}的信息]\n{wb['user_persona']}\n\n"
 
@@ -648,10 +664,9 @@ async def digest_chatroom(room_id: str = None, model_key: str = None) -> dict:
                 name = {"user": user_name, "aion": ai_name, "connor": connor_name}.get(m["sender"], m["sender"])
                 context_lines.append(f"[{ts}][{source_label}] {name}: {content[:300]}")
             context_text = "\n".join(context_lines)
-            connor_persona_block = f"[{connor_name}的人设]\n{connor_persona}\n\n" if connor_persona else ""
+            connor_persona_block = ""
             diary_prompt = (
                 f"{persona_block}"
-                f"{connor_persona_block}"
                 f"你是{connor_name}。你刚刚整理了和{user_name}今天的聊天记忆，以下是你整理出的摘要：\n"
                 f"{summaries_text}\n\n"
                 f"【最近上下文】\n{context_text}\n\n"
@@ -762,7 +777,6 @@ def _parse_digest_result(raw: str) -> Optional[dict]:
 async def build_aion_group_context(
     room_id: str,
     room_messages: list[dict],
-    aion_persona: str,
     context_minutes: int = 30,
     query_text: str = "",
     query_keywords: list[str] = None,
@@ -784,16 +798,11 @@ async def build_aion_group_context(
     if wb.get("user_persona"):
         history.append({"role": "user", "content": f"[系统设定 - 用户信息]\n{wb['user_persona']}"})
         history.append({"role": "assistant", "content": "收到，我会记住你的信息。"})
-    if wb.get("system_prompt"):
+    if wb.get("system_prompt") and wb.get("system_prompt_enabled", True):
         history.append({"role": "user", "content": f"[系统提示]\n{wb['system_prompt']}"})
         history.append({"role": "assistant", "content": "收到，我会遵循这些规则。"})
 
-    # 1. 注入房间补充人设
-    if aion_persona:
-        history.append({"role": "user", "content": f"[群聊补充设定]\n{aion_persona}"})
-        history.append({"role": "assistant", "content": "收到，我会按照设定参与群聊。"})
-
-    # 2. 注入系统能力
+    # 1. 注入系统能力
     ability_block = await build_ability_block(
         user_name,
         who="aion",
@@ -857,7 +866,6 @@ async def build_aion_group_context(
 async def build_connor_group_context(
     room_id: str,
     room_messages: list[dict],
-    connor_persona: str,
     context_minutes: int = 30,
     query_text: str = "",
     query_keywords: list[str] = None,
@@ -874,8 +882,8 @@ async def build_connor_group_context(
     wb = load_worldbook()
     user_name, ai_name, connor_name = get_chatroom_names()
 
-    # 0. Connor 人设
-    connor_full_persona = connor_persona or _read_connor_persona()
+    # 0. Connor 人设（从全局配置读取）
+    connor_full_persona = _read_connor_persona()
     if connor_full_persona:
         history.append({"role": "user", "content": f"[系统设定 - 你的角色设定]\n{connor_full_persona}"})
         history.append({"role": "assistant", "content": "收到，我会按照设定扮演角色。"})
@@ -955,7 +963,6 @@ async def build_connor_group_context(
 async def build_connor_1v1_context(
     room_id: str,
     room_messages: list[dict],
-    connor_persona: str,
     context_minutes: int = 30,
     query_text: str = "",
     query_keywords: list[str] = None,
@@ -972,7 +979,7 @@ async def build_connor_1v1_context(
     user_name, _, _ = get_chatroom_names()
 
     # 角色设定、用户信息、能力等作为前缀消息对
-    connor_full_persona = connor_persona or _read_connor_persona()
+    connor_full_persona = _read_connor_persona()
     if connor_full_persona:
         messages.append({"role": "user", "content": f"[你的角色设定]\n{connor_full_persona}"})
         messages.append({"role": "assistant", "content": "收到，我会按照设定扮演角色。"})

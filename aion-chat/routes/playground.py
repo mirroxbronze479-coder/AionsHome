@@ -35,11 +35,36 @@ class RunRequest(BaseModel):
     conv_id: Optional[str] = None
     model: str = ""  # 留空则用默认
 
+class AddServerRequest(BaseModel):
+    name: str
+    type: str = "sse"   # http / sse / stdio
+    url: str
+
 
 # ── API: 列出 MCP Server ──
 @router.get("/api/playground/servers")
 async def list_servers():
     return {"servers": mcp_manager.list_servers()}
+
+
+# ── API: 添加 MCP Server ──
+@router.post("/api/playground/servers/add")
+async def add_server(req: AddServerRequest):
+    try:
+        srv = mcp_manager.add_server(req.name.strip(), req.type.strip(), req.url.strip())
+        return {"ok": True, "server": srv}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ── API: 删除 MCP Server ──
+@router.post("/api/playground/servers/remove")
+async def remove_server(req: ServerRequest):
+    try:
+        await mcp_manager.remove_server(req.server)
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 # ── API: 连接 ──
@@ -103,6 +128,33 @@ async def delete_log(log_id: str):
     return {"ok": True}
 
 
+# ── messages 裁剪：防止上下文无限增长 ──
+def _trim_messages(messages: list, max_chars: int = 40000) -> list:
+    """
+    估算总字符数，如果超限则将较早的 tool result 内容截断。
+    保留最近 2 轮的 tool result 完整，更早的截断到 300 字。
+    """
+    total = sum(len(m.get("content", "") or "") for m in messages)
+    if total <= max_chars:
+        return messages
+
+    # 找到所有 tool role 的索引
+    tool_indices = [i for i, m in enumerate(messages) if m.get("role") == "tool"]
+    if len(tool_indices) <= 2:
+        return messages  # 只有 1-2 个 tool result，不裁剪
+
+    # 保留最后 2 个 tool result 不动，之前的截断
+    keep_from = tool_indices[-2]
+    result = []
+    for i, m in enumerate(messages):
+        if m.get("role") == "tool" and i < keep_from:
+            content = m.get("content", "") or ""
+            result.append({**m, "content": content[:300] + "...（已截断）" if len(content) > 300 else content})
+        else:
+            result.append(m)
+    return result
+
+
 # ── 独立 AI 调用（带 tools 的 OpenAI 兼容格式）──
 async def _call_ai_with_tools(messages: list, tools: list, model_cfg: dict,
                                cancel_event: asyncio.Event | None = None) -> dict:
@@ -128,14 +180,17 @@ async def _call_ai_with_tools(messages: list, tools: list, model_cfg: dict,
     else:
         raise ValueError(f"不支持的 provider: {provider}")
 
+    # 裁剪 messages 防止上下文爆炸
+    trimmed = _trim_messages(messages)
+
     payload = {
         "model": model,
-        "messages": messages,
+        "messages": trimmed,
         "tools": tools,
         "temperature": 0.8,
     }
 
-    async with httpx.AsyncClient(timeout=120) as client:
+    async with httpx.AsyncClient(timeout=180) as client:
         resp = await client.post(url, json=payload, headers=headers)
         if resp.status_code != 200:
             err_text = resp.text[:500]
@@ -232,24 +287,24 @@ async def _get_recent_memories(limit: int = 8) -> list[str]:
     return [r["content"] for r in rows]
 
 
-# ── 插入系统消息到主聊天 ──
+# ── 插入见闻消息到主聊天（作为 AI 自己的消息）──
 async def _insert_system_message(conv_id: str, server_name: str, brief: str):
     if not conv_id:
         return
     now = time.time()
     msg_id = f"msg_{int(now * 1000)}_pg"
-    content = f"🎮 AI去{server_name}逛了一圈：{brief[:200]}"
+    content = f"🎮 我刚去{server_name}逛了一圈：\n\n{brief}"
 
     async with get_db() as db:
         await db.execute(
             "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-            (msg_id, conv_id, "system", content, now, "[]")
+            (msg_id, conv_id, "assistant", content, now, "[]")
         )
         await db.commit()
 
-    sys_msg = {"id": msg_id, "conv_id": conv_id, "role": "system",
-               "content": content, "created_at": now, "attachments": []}
-    await manager.broadcast({"type": "msg_created", "data": sys_msg})
+    msg = {"id": msg_id, "conv_id": conv_id, "role": "assistant",
+           "content": content, "created_at": now, "attachments": []}
+    await manager.broadcast({"type": "msg_created", "data": msg})
 
 
 # ── 获取模型配置 ──
@@ -300,7 +355,7 @@ async def run_instruction(req: RunRequest):
             user_name = wb.get("user_name", "用户")
             ai_persona = wb.get("ai_persona", "")
             user_persona = wb.get("user_persona", "")
-            system_prompt_text = wb.get("system_prompt", "")
+            system_prompt_text = wb.get("system_prompt", "") if wb.get("system_prompt_enabled", True) else ""
 
             # 核心身份 system prompt
             system_parts = []
@@ -390,12 +445,18 @@ async def run_instruction(req: RunRequest):
 
                         yield _sse("tool_call", {"name": tool_name, "args": tool_args}, log_events)
 
-                        # 调用 MCP 工具
+                        # 调用 MCP 工具（带超时保护）
                         try:
-                            tool_result = await mcp_manager.call_tool(server, tool_name, tool_args)
+                            tool_result = await asyncio.wait_for(
+                                mcp_manager.call_tool(server, tool_name, tool_args),
+                                timeout=60
+                            )
                             result_text = "\n".join(
                                 item.get("text", str(item)) for item in tool_result
                             )
+                        except asyncio.TimeoutError:
+                            result_text = "工具调用超时（60秒）"
+                            logger.warning(f"[Playground] MCP tool {tool_name} 超时")
                         except Exception as e:
                             result_text = f"工具调用出错: {str(e)}"
 
@@ -416,32 +477,17 @@ async def run_instruction(req: RunRequest):
                     if ai_content:
                         yield _sse("text", ai_content, log_events)
                         all_actions.append(f"AI说: {ai_content[:200]}")
+                        mem_summary = ai_content  # 直接用 AI 的最终回复作为见闻
                     break
 
-            # ── 4. 后处理：写记忆 + 插系统消息 ──
-            yield _sse("status", "正在整理见闻记忆...", log_events)
-
-            # 总结整段经历
-            mem_summary = ""
-            if all_actions:
-                actions_text = "\n".join(all_actions[:20])
-                # 带上人设进行总结，确保语气风格一致
-                sum_sys = f"你是{ai_name}，{user_name}的AI伴侣。"
-                if ai_persona:
-                    sum_sys += f"\n你的人设：{ai_persona}"
-                sum_sys += "\n\n请用你自己的语气和风格，将以下外出探索的行动记录总结为一段简要见闻（100-200字），用第一人称，包含关键事件和感受。只输出总结内容。"
-                summarize_messages = [
-                    {"role": "system", "content": sum_sys},
-                    {"role": "user", "content": f"探索地点: {server}\n指令: {instruction}\n行动记录:\n{actions_text}"},
-                ]
-                try:
-                    sum_result = await _call_ai_with_tools(summarize_messages, [], model_cfg)
-                    mem_summary = sum_result.get("content", "") or f"去{server}逛了一圈"
-                except Exception:
-                    mem_summary = f"去{server}逛了一圈"
-
-                # 插入系统消息到主聊天
-                await _insert_system_message(conv_id, server, mem_summary[:100])
+            # ── 4. 后处理：插入见闻到主聊天 ──
+            if mem_summary:
+                yield _sse("status", "正在写入见闻...", log_events)
+                await _insert_system_message(conv_id, server, mem_summary)
+            elif all_actions:
+                # AI 没给最终文字回复（只调了工具），用简短总结
+                mem_summary = f"去{server}逛了一圈，做了{len(all_actions)}个操作"
+                await _insert_system_message(conv_id, server, mem_summary)
 
             yield _sse("done", "探索完成！", log_events)
 

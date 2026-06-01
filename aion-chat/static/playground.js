@@ -462,3 +462,92 @@ async function deleteLog(logId) {
 // ── 启动 ──
 loadServers();
 loadHistory();
+
+// ── 服务器管理 ──
+function toggleManagePanel() {
+  const overlay = document.getElementById('manageOverlay');
+  if (overlay.style.display === 'none') {
+    overlay.style.display = 'flex';
+    renderManageList();
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+function renderManageList() {
+  const list = document.getElementById('manageList');
+  list.innerHTML = '<div style="opacity:0.5;font-size:12px;padding:8px;">加载中...</div>';
+  fetch('/api/playground/servers').then(r => r.json()).then(data => {
+    const servers = data.servers || [];
+    if (servers.length === 0) {
+      list.innerHTML = '<div style="opacity:0.5;font-size:13px;padding:8px;">暂无服务器，在下方添加</div>';
+      return;
+    }
+    list.innerHTML = '';
+    servers.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'pg-manage-row';
+      row.innerHTML = `
+        <span class="pg-manage-row-icon">${s.connected ? '🟢' : '⚪'}</span>
+        <div class="pg-manage-row-info">
+          <div class="pg-manage-row-name">${escapeHtml(s.name)}</div>
+          <div class="pg-manage-row-detail">${escapeHtml(s.type)} · ${s.connected ? '已连接' : '未连接'}</div>
+        </div>
+        <button class="pg-manage-row-del" onclick="removeServer('${escapeHtml(s.name)}')" title="删除">✕</button>
+      `;
+      list.appendChild(row);
+    });
+  });
+}
+
+async function addServer() {
+  const name = document.getElementById('addName').value.trim();
+  const url = document.getElementById('addUrl').value.trim();
+  const type = document.getElementById('addType').value;
+  if (!name || !url) return;
+
+  try {
+    const resp = await fetch('/api/playground/servers/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, type, url }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      document.getElementById('addName').value = '';
+      document.getElementById('addUrl').value = '';
+      renderManageList();
+      loadServers();
+    } else {
+      alert('添加失败: ' + (data.error || '未知错误'));
+    }
+  } catch (e) {
+    alert('添加失败: ' + e.message);
+  }
+}
+
+async function removeServer(name) {
+  if (!confirm(`确认删除「${name}」？`)) return;
+  try {
+    const resp = await fetch('/api/playground/servers/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server: name }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      renderManageList();
+      loadServers();
+      if (currentServer === name) {
+        currentServer = '';
+        isConnected = false;
+        updateStatusCard(false, '', 0);
+        toolsPanel.style.display = 'none';
+      }
+    } else {
+      alert('删除失败: ' + (data.error || '未知错误'));
+    }
+  } catch (e) {
+    alert('删除失败: ' + e.message);
+  }
+}

@@ -853,6 +853,13 @@ body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-se
   color: var(--text);
   outline: none;
 }
+.settings-panel .field input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: revert;
+  border-radius: revert;
+  background: revert;
+}
 .settings-panel .field textarea {
   resize: vertical;
   min-height: 84px;

@@ -20,7 +20,26 @@
     <select class="pg-server-select" id="serverSelect">
       <option value="">选择服务器...</option>
     </select>
+    <button class="pg-manage-btn" id="manageBtn" onclick="toggleManagePanel()" title="管理服务器">⚙</button>
   </header>
+
+  <!-- 服务器管理面板（遮罩弹窗） -->
+  <div class="pg-manage-overlay" id="manageOverlay" style="display:none;" onclick="if(event.target===this)toggleManagePanel()">
+    <div class="pg-manage-panel">
+      <div class="pg-manage-title">管理 MCP 服务器</div>
+      <div class="pg-manage-list" id="manageList"></div>
+      <div class="pg-manage-add">
+        <div class="pg-manage-add-title">添加新服务器</div>
+        <input type="text" class="pg-manage-input" id="addName" placeholder="名称，如「R论坛」">
+        <input type="text" class="pg-manage-input" id="addUrl" placeholder="MCP 地址（含 token）">
+        <select class="pg-manage-input" id="addType">
+          <option value="sse">SSE（推荐，大多数论坛用这个）</option>
+          <option value="http">Streamable HTTP</option>
+        </select>
+        <button class="pg-manage-add-btn" onclick="addServer()">添加</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 连接状态卡片 -->
   <div class="pg-status-card" id="statusCard">

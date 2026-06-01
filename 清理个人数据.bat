@@ -7,7 +7,7 @@ echo   清理个人数据（打包给朋友前使用）
 echo ========================================
 echo.
 echo   将删除以下内容:
-echo     - 聊天数据库 (chat.db)
+echo     - 聊天数据库 (chat.db，含聊天/记忆/朋友圈/日记本/礼物/钱包等)
 echo     - 导出的聊天记录 (chats/)
 echo     - 监控日志 (monitor_logs/)
 echo     - 摄像头截图 (screenshots/)
@@ -16,6 +16,7 @@ echo     - 活动日志 (activity_logs/)
 echo     - TTS 语音缓存 (tts_cache/)
 echo     - 临时文件 (tmp/)
 echo     - 聊天状态 + 记忆锚点
+echo     - 日记本数据 (存放在 chat.db)
 echo     - 定位配置 + 定位状态（含家坐标/高德Key）
 echo     - 世界书人设 (重置为空白)
 echo     - 小剧场角色预设 (theater_personas.json)

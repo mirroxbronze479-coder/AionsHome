@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 import tempfile
 
-from config import get_key, MODELS, UPLOADS_DIR, CODEX_UPLOADS_DIR, load_worldbook, SETTINGS
+from config import get_key, MODELS, UPLOADS_DIR, CODEX_UPLOADS_DIR, load_worldbook, SETTINGS, get_sentinel_config
 
 # CLI 状态前缀：yield 此前缀的 chunk 会被 _bg_generate 拦截为状态事件，不送入 TTS 和正文
 CLI_STATUS_PREFIX = "\x00CLI_STATUS:"
@@ -439,73 +439,7 @@ def _summarize_antigravity_log(log_path: Path | None) -> str:
         return lines[-1][-500:]
     return ""
 
-def _ps_single_quote(text: str) -> str:
-    return "'" + text.replace("'", "''") + "'"
 
-def _deduplicate_cjk(text: str) -> str:
-    """修复 Windows PowerShell 5.1 Start-Transcript 捕获双字节/CJK 字符时
-    每个字符被重复两遍的 bug（如 '收收到到' 还原为 '收到收到'）。
-    """
-    if not text:
-        return text
-    result = []
-    i = 0
-    n = len(text)
-    while i < n:
-        char = text[i]
-        if ord(char) > 127:
-            if i + 1 < n and text[i + 1] == char:
-                result.append(char)
-                i += 2
-                continue
-        result.append(char)
-        i += 1
-    return "".join(result)
-
-def _extract_antigravity_transcript_output(transcript_path: Path | None) -> str:
-    if not transcript_path or not transcript_path.exists():
-        return ""
-    try:
-        text = transcript_path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return ""
-
-    marker = "**********************"
-    parts = text.split(marker)
-    # Start-Transcript 输出形如：marker + header + marker + command output + marker + footer + marker
-    if len(parts) >= 4:
-        body = parts[2]
-    else:
-        body = text
-
-    drop_prefixes = (
-        "Windows PowerShell transcript",
-        "Start time:",
-        "End time:",
-        "Username:",
-        "RunAs User:",
-        "Configuration Name:",
-        "Machine:",
-        "Host Application:",
-        "Process ID:",
-        "PSVersion:",
-        "PSEdition:",
-        "PSCompatibleVersions:",
-        "BuildVersion:",
-        "CLRVersion:",
-        "WSManStackVersion:",
-        "PSRemotingProtocolVersion:",
-        "SerializationVersion:",
-    )
-    kept = []
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped == marker:
-            continue
-        if any(stripped.startswith(p) for p in drop_prefixes):
-            continue
-        kept.append(line.rstrip())
-    return "\n".join(kept).strip()
 
 def _is_antigravity_auth_prompt(text: str) -> bool:
     lowered = text.lower()
@@ -517,74 +451,6 @@ def _is_antigravity_auth_prompt(text: str) -> bool:
         or "accounts.google.com/o/oauth2" in lowered
     )
 
-async def _run_antigravity_print(
-    agy_bin: str,
-    base_args: list[str],
-    prompt: str,
-    log_dir: Path,
-    *,
-    timeout: str,
-    prefix: str,
-    cwd: str | None = None,
-) -> tuple[int | None, str, str]:
-    """Run `agy --print` through PowerShell transcript capture.
-
-    On Windows, agy 1.0.0 writes print output to the console buffer instead of
-    reliable stdout/stderr pipes, so transcript capture is the least invasive
-    bridge for this experimental provider.
-    """
-    transcript_file = None
-    script_file = None
-    try:
-        fd_tr, transcript_file = tempfile.mkstemp(prefix=f"{prefix}_transcript_", suffix=".txt", dir=log_dir)
-        os.close(fd_tr)
-        fd_script, script_file = tempfile.mkstemp(prefix=f"run_{prefix}_", suffix=".ps1", dir=log_dir)
-        os.close(fd_script)
-
-        prompt_b64 = base64.b64encode(prompt.encode("utf-8")).decode("ascii")
-        args_before_prompt = base_args + ["--print"]
-        args_literal = "@(" + ",".join(_ps_single_quote(arg) for arg in args_before_prompt) + ",$prompt,'--print-timeout'," + _ps_single_quote(timeout) + ")"
-        script_text = (
-            "$ErrorActionPreference = 'Continue'\n"
-            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n"
-            "$OutputEncoding = [System.Text.Encoding]::UTF8\n"
-            "$env:NO_COLOR = '1'\n"
-            f"$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String({_ps_single_quote(prompt_b64)}))\n"
-            f"$agyArgs = {args_literal}\n"
-            f"Start-Transcript -Path {_ps_single_quote(transcript_file)} -Force | Out-Null\n"
-            f"& {_ps_single_quote(agy_bin)} @agyArgs\n"
-            "$exitCode = $LASTEXITCODE\n"
-            "Stop-Transcript | Out-Null\n"
-            "exit $exitCode\n"
-        )
-        Path(script_file).write_text(script_text, encoding="utf-8")
-
-        env = {**os.environ, "NO_COLOR": "1"}
-        proc = await asyncio.create_subprocess_exec(
-            "powershell",
-            "-ExecutionPolicy", "Bypass",
-            "-File", script_file,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            env=env,
-            cwd=cwd,
-            limit=8 * 1024 * 1024,
-        )
-        stdout, stderr = await proc.communicate()
-        out = stdout.decode("utf-8", errors="replace").strip()
-        err = stderr.decode("utf-8", errors="replace").strip()
-        captured = _extract_antigravity_transcript_output(Path(transcript_file))
-        
-        # Deduplicate CJK characters to resolve PowerShell transcription duplication
-        clean_out = _deduplicate_cjk(out)
-        clean_captured = _deduplicate_cjk(captured)
-        return proc.returncode, (clean_out or clean_captured).strip(), err
-    finally:
-        if script_file:
-            try:
-                Path(script_file).unlink(missing_ok=True)
-            except Exception:
-                pass
 
 def _build_cli_prompt(messages: list, *, copy_cr_uploads: bool = False) -> str:
     """将 messages 列表拼成供 CLI stdin 使用的完整 prompt。
@@ -902,13 +768,66 @@ async def call_gemini_cli(messages: list, model: str, meta: dict | None = None,
 
 
 # ── Antigravity CLI ───────────────────────────────
+
+def _deduplicate_cjk(text: str) -> str:
+    """修复 PowerShell 5.1 Start-Transcript 中 CJK 字符被重复捕获的 bug。"""
+    if not text:
+        return text
+    result = []
+    i = 0
+    n = len(text)
+    while i < n:
+        char = text[i]
+        if ord(char) > 127 and i + 1 < n and text[i + 1] == char:
+            result.append(char)
+            i += 2
+        else:
+            result.append(char)
+            i += 1
+    return "".join(result)
+
+
+def _extract_transcript_body(transcript_path: Path) -> str:
+    """从 PowerShell Transcript 文件中提取有效输出内容。"""
+    try:
+        text = transcript_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    marker = "**********************"
+    parts = text.split(marker)
+    body = parts[2] if len(parts) >= 4 else text
+    # 中英文版 PowerShell transcript header 都要过滤
+    drop_prefixes = (
+        "Windows PowerShell transcript", "Windows PowerShell 脚本开始",
+        "Windows PowerShell 脚本结束",
+        "Start time:", "End time:", "开始时间:", "结束时间:",
+        "Username:", "用户名:", "RunAs User:", "RunAs 用户:",
+        "Configuration Name:", "配置名称:", "Machine:", "计算机:",
+        "Host Application:", "主机应用程序:", "Process ID:", "进程 ID:",
+        "PSVersion:", "PSEdition:", "PSCompatibleVersions:",
+        "BuildVersion:", "CLRVersion:", "WSManStackVersion:",
+        "PSRemotingProtocolVersion:", "SerializationVersion:",
+    )
+    kept = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped == marker:
+            continue
+        if any(stripped.startswith(p) for p in drop_prefixes):
+            continue
+        # 保留空行，前端依赖双换行来拆分消息段落
+        kept.append(line.rstrip())
+    # 去掉首尾空行，但保留中间的空行
+    result = "\n".join(kept).strip()
+    return _deduplicate_cjk(result)
+
+
 async def call_antigravity_cli(messages: list, model: str, meta: dict | None = None,
                                temperature: float | None = None, max_tokens: int | None = None):
-    """通过 Antigravity CLI(agy) 非交互 print 模式获取响应。
+    """通过 Antigravity CLI(agy) --print 非交互模式获取响应。
 
-    当前 agy 1.0.0 暴露的是 --print 文本输出模式，暂未暴露 Gemini CLI 的
-    -o stream-json / -m 等价参数，所以这里先作为新增管线接入：保留旧 Gemini CLI，
-    Antigravity 的模型选择依赖 agy/Antigravity 自己的 /model 或 settings。
+    agy 在 Windows 上直接写 Console Handle（WriteConsole），无法通过管道/文件重定向捕获。
+    使用 PowerShell Start-Transcript 来拦截 console buffer 输出。
     """
     agy_bin = _find_antigravity_binary()
     if not agy_bin:
@@ -916,87 +835,107 @@ async def call_antigravity_cli(messages: list, model: str, meta: dict | None = N
         return
 
     prompt = _build_cli_prompt(messages, copy_cr_uploads=True)
-    if model:
-        prompt = (
-            "[System Instruction]\n"
-            f"Aion Chat 本次选择的 Antigravity 目标模型是：{model}。"
-            "如果当前 Antigravity CLI 会话支持该模型，请使用它；不要在回复里提及这条内部路由说明。\n\n"
-            f"{prompt}"
-        )
 
-    # Keep the experimental chat path close to the command that works in a
-    # normal user terminal. Adding the workspace can trigger extra AGY project
-    # initialization/auth flows, which is useful for coding agents but brittle
-    # for casual chat.
-    cmd = [
-        agy_bin,
-        "--log-file",
-        "",
-    ]
-    if SETTINGS.get("gemini_cli_tools_enabled", False):
-        cmd.append("--dangerously-skip-permissions")
+    log_dir = Path(__file__).parent / "data" / "cli_debug"
+    log_dir.mkdir(parents=True, exist_ok=True)
 
-    log_file = None
+    transcript_file = None
+    script_file = None
     try:
-        log_dir = Path(__file__).parent / "data" / "cli_debug"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        fd_log, log_file = tempfile.mkstemp(prefix="antigravity_", suffix=".log", dir=log_dir)
-        os.close(fd_log)
-        cmd[cmd.index("--log-file") + 1] = log_file
+        fd_tr, transcript_file = tempfile.mkstemp(prefix="agy_transcript_", suffix=".txt", dir=log_dir)
+        os.close(fd_tr)
+        fd_sc, script_file = tempfile.mkstemp(prefix="agy_run_", suffix=".ps1", dir=log_dir)
+        os.close(fd_sc)
 
-        yield f"{CLI_STATUS_PREFIX}🔐 检查 Antigravity CLI 登录状态…"
-        check_code, check_out, check_err = await _run_antigravity_print(
-            agy_bin,
-            cmd[1:],
-            "请只回复 OK",
-            log_dir,
-            timeout="2m",
-            prefix="antigravity_check",
-            cwd=_ANTIGRAVITY_WORKSPACE,
+        # 构建参数
+        def _ps_quote(s: str) -> str:
+            return "'" + s.replace("'", "''") + "'"
+
+        prompt_b64 = base64.b64encode(prompt.encode("utf-8")).decode("ascii")
+        agy_args = []
+        if SETTINGS.get("gemini_cli_tools_enabled", False):
+            agy_args.append("--dangerously-skip-permissions")
+        agy_args.append("--print")
+        # prompt 通过 base64 解码注入，避免 PS 转义问题
+        # --print-timeout 10m
+        args_literal = "@(" + ",".join(_ps_quote(a) for a in agy_args) + ",$prompt,'--print-timeout','10m')"
+
+        script_text = (
+            "$ErrorActionPreference = 'Continue'\n"
+            # CREATE_NEW_CONSOLE 的默认宽度仅 80 列，transcript 会在此处硬换行。
+            # 将缓冲区宽度设为 500 列，避免 AI 回复被截断换行。
+            "try { $h = $Host.UI.RawUI; $sz = $h.BufferSize; $sz.Width = 500; $h.BufferSize = $sz } catch {}\n"
+            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n"
+            "$OutputEncoding = [System.Text.Encoding]::UTF8\n"
+            "$env:NO_COLOR = '1'\n"
+            f"$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String({_ps_quote(prompt_b64)}))\n"
+            f"$agyArgs = {args_literal}\n"
+            f"Start-Transcript -Path {_ps_quote(transcript_file)} -Force | Out-Null\n"
+            f"& {_ps_quote(agy_bin)} @agyArgs\n"
+            "$exitCode = $LASTEXITCODE\n"
+            "Stop-Transcript | Out-Null\n"
+            "exit $exitCode\n"
         )
-        check_text = "\n".join(part for part in (check_out, check_err) if part)
-        if check_code and check_code != 0:
-            detail = _summarize_antigravity_log(Path(log_file) if log_file else None) or check_text[:300]
-            yield f"[AntigravityCLI错误] 登录预检失败。请先在 PowerShell 里运行 agy 完成 Google OAuth 登录，再回到 AionsHome 重试。{(' ' + detail) if detail else ''}"
-            return
-        if _is_antigravity_auth_prompt(check_text):
-            yield "[AntigravityCLI错误] Antigravity CLI 正在要求重新登录。请先在 PowerShell 里运行 agy，完成 Google OAuth 后再回到 AionsHome 重试。"
-            return
-        if not check_out:
-            detail = _summarize_antigravity_log(Path(log_file) if log_file else None)
-            yield f"[AntigravityCLI错误] 登录预检没有收到 AGY 回复{('：' + detail) if detail else ''}"
+        Path(script_file).write_text(script_text, encoding="utf-8")
+
+        _ai_name = load_worldbook().get("ai_name") or "AI"
+        yield f"{CLI_STATUS_PREFIX}🚀 {_ai_name}正在思考…"
+
+        env = {**os.environ, "NO_COLOR": "1"}
+
+        # agy 使用 WriteConsole() 直接写 console buffer，无法通过 stdout pipe 捕获。
+        # Start-Transcript 只在 PowerShell 拥有自己的 console 时才能正常工作。
+        # 从 uvicorn 服务器进程 spawn 时，继承父 console 不可靠（transcript 为空）。
+        # 解决方案：CREATE_NEW_CONSOLE 给 PowerShell 独立 console + SW_HIDE 隐藏窗口。
+        import subprocess as _sp
+        startupinfo = _sp.STARTUPINFO()
+        startupinfo.dwFlags |= _sp.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = 0  # SW_HIDE
+
+        def _run_agy_sync():
+            result = _sp.run(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_file],
+                env=env,
+                cwd=_ANTIGRAVITY_WORKSPACE,
+                creationflags=_sp.CREATE_NEW_CONSOLE,
+                startupinfo=startupinfo,
+                stdin=_sp.DEVNULL,
+            )
+            return result.returncode
+
+        returncode = await asyncio.to_thread(_run_agy_sync)
+
+        # 从 transcript 提取输出
+        output = _extract_transcript_body(Path(transcript_file))
+
+        # 检查认证问题
+        if _is_antigravity_auth_prompt(output):
+            yield "[AntigravityCLI错误] Antigravity CLI 要求登录。请在 PowerShell 里运行 agy 完成 Google OAuth 后重试。"
             return
 
-        yield f"{CLI_STATUS_PREFIX}🚀 Antigravity CLI 正在生成…"
-        code, out, err = await _run_antigravity_print(
-            agy_bin,
-            cmd[1:],
-            prompt,
-            log_dir,
-            timeout="10m",
-            prefix="antigravity",
-            cwd=_ANTIGRAVITY_WORKSPACE,
-        )
-        combined = "\n".join(part for part in (out, err) if part)
-        if _is_antigravity_auth_prompt(combined):
-            yield "[AntigravityCLI错误] Antigravity CLI 又要求重新登录了。请保持同一 Windows 用户会话，在 PowerShell 里运行 agy 完成登录后重试。"
+        if returncode and returncode != 0 and not output:
+            if "not logged into Antigravity" in output:
+                yield "[AntigravityCLI错误] 未登录。请先在 PowerShell 里运行 agy 完成 Google OAuth 登录后重试。"
+            else:
+                yield f"[AntigravityCLI错误 code={returncode}] 调用失败"
             return
-        if code and code != 0:
-            detail = err or out or "Antigravity CLI 调用失败"
-            yield f"[AntigravityCLI错误 code={code}] {detail[:800]}"
-            return
-        if err:
-            yield f"{CLI_STATUS_PREFIX}⚠️ Antigravity CLI stderr：{err[:120]}…"
-        if out:
-            yield out
+
+        if output:
+            yield output
         else:
-            detail = _summarize_antigravity_log(Path(log_file) if log_file else None)
-            suffix = f"：{detail}" if detail else ""
-            yield f"[AntigravityCLI错误] 未收到回复{suffix}"
+            yield "[AntigravityCLI错误] 未收到回复"
+
     except FileNotFoundError:
-        yield "[AntigravityCLI错误] 无法启动 agy CLI 进程"
+        yield "[AntigravityCLI错误] 无法启动 PowerShell 进程"
     except Exception as e:
         yield f"[AntigravityCLI错误] {e}"
+    finally:
+        for f in (script_file,):
+            if f:
+                try:
+                    Path(f).unlink(missing_ok=True)
+                except Exception:
+                    pass
 
 
 # ── Codex CLI ─────────────────────────────────────
@@ -1177,6 +1116,89 @@ async def simple_ai_call(messages: list, model_key: str, temperature: float | No
     return full_text
 
 
+# ── 哨兵代看：为不支持视觉的模型描述图片 ─────────────
+_IMAGE_MIME_PREFIXES = ("image/",)
+
+def _messages_have_images(messages: list) -> bool:
+    """检查消息列表中是否存在图片附件"""
+    for m in messages:
+        if m.get("role") != "user":
+            continue
+        atts = m.get("attachments", [])
+        if isinstance(atts, str):
+            try: atts = json.loads(atts) if atts else []
+            except: atts = []
+        for att in atts:
+            fpath = _resolve_attachment_path(att)
+            if fpath.exists():
+                mime = mimetypes.guess_type(str(fpath))[0] or ""
+                if mime.startswith("image/"):
+                    return True
+    return False
+
+
+async def _sentinel_describe_images(messages: list) -> list:
+    """用哨兵模型识别消息中的图片，将描述注入文本并剥离图片附件。
+    优先使用用户配置的哨兵模型，失败则回退到 gemini-3.1-flash-lite。"""
+    from memory import _call_sentinel_vision
+    scfg = get_sentinel_config()
+
+    result = []
+    for m in messages:
+        nm = dict(m)
+        atts = nm.get("attachments", [])
+        if isinstance(atts, str):
+            try: atts = json.loads(atts) if atts else []
+            except: atts = []
+
+        if nm.get("role") != "user" or not atts:
+            result.append(nm)
+            continue
+
+        img_descs = []
+        non_img_atts = []
+        for att in atts:
+            fpath = _resolve_attachment_path(att)
+            if not fpath.exists():
+                non_img_atts.append(att)
+                continue
+            mime = mimetypes.guess_type(str(fpath))[0] or ""
+            if not mime.startswith("image/"):
+                non_img_atts.append(att)
+                continue
+            # 识图
+            img_b64 = base64.b64encode(fpath.read_bytes()).decode()
+            prompt = "请详细描述这张图片的内容，包括画面中的人物、物体、文字、场景、颜色、构图等关键信息。用中文回答，尽量简洁但不遗漏重要细节。"
+            desc = None
+            try:
+                desc = await _call_sentinel_vision(scfg, prompt, img_b64, mime, timeout=30)
+            except Exception as e:
+                print(f"[Vision Fallback] 哨兵模型识图失败: {e}，尝试回退 gemini-3.1-flash-lite")
+                # 回退到 Gemini flash-lite
+                fallback_cfg = {
+                    "base_url": "",
+                    "api_key": get_key("gemini_free"),
+                    "model": "gemini-3.1-flash-lite",
+                    "use_openai": False,
+                }
+                try:
+                    desc = await _call_sentinel_vision(fallback_cfg, prompt, img_b64, mime, timeout=30)
+                except Exception as e2:
+                    print(f"[Vision Fallback] 回退模型也失败: {e2}")
+            if desc:
+                img_descs.append(f"[图片内容：{desc}]")
+            else:
+                img_descs.append("[图片内容：识别失败]")
+
+        # 将图片描述注入到消息文本前面
+        if img_descs:
+            desc_text = "\n".join(img_descs)
+            nm["content"] = f"{desc_text}\n{nm.get('content', '')}".strip()
+        nm["attachments"] = non_img_atts
+        result.append(nm)
+    return result
+
+
 # ── 统一调度 ──────────────────────────────────────
 async def stream_ai(messages: list, model_key: str, meta: dict | None = None, temperature: float | None = None, max_tokens: int | None = None, cancel_event=None):
     normalized = []
@@ -1198,6 +1220,11 @@ async def stream_ai(messages: list, model_key: str, meta: dict | None = None, te
         if not cfg:
             yield f"[错误] 未知模型: {model_key}"
             return
+
+    # 非视觉模型 + 消息含图片 → 哨兵代看
+    if not cfg.get("vision", True) and _messages_have_images(normalized):
+        yield f"{CLI_STATUS_PREFIX}哨兵模型正在识别图片内容..."
+        normalized = await _sentinel_describe_images(normalized)
     if cfg["provider"] == "siliconflow":
         async for chunk in call_siliconflow(normalized, cfg["model"], meta, temperature, max_tokens):
             if cancel_event and cancel_event.is_set():

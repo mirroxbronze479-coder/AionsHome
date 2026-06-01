@@ -144,6 +144,10 @@ class ScheduleManager:
             last = manager.get_aion_last_active()
             if last and last.startswith("chatroom:"):
                 return {"type": "chatroom", "room_id": last.split(":", 1)[1]}
+            # Aion 侧没有活跃记录，回退到创建时的 room_id
+            origin_room = item.get("origin_room_id", "")
+            if origin_room:
+                return {"type": "chatroom", "room_id": origin_room}
             return {"type": "private"}
 
     async def _save_to_private(self, conv_id: str, sys_content: str, ai_text: str, ai_msg_id: str, att_json: str, music_atts: list):
@@ -241,6 +245,13 @@ class ScheduleManager:
             conv_id = conv["id"]
             model_key = conv["model"] or DEFAULT_MODEL
 
+        # 聊天室来源的闹铃，优先用聊天室配置的 Aion 模型
+        if is_chatroom and origin != "connor":
+            from chatroom import load_chatroom_config as _lcc
+            _cr_model = _lcc().get("aion_model", "").strip()
+            if _cr_model:
+                model_key = _cr_model
+
         # 根据来源构建不同的上下文
         if origin == "connor" and is_chatroom:
             # Connor 来源 → 用 Connor 的上下文
@@ -254,12 +265,11 @@ class ScheduleManager:
                 return
             room = dict(room)
             room_type = room.get("type", "group")
-            connor_persona = room.get("connor_persona", "")
 
             if room_type == "connor_1v1":
-                messages_ctx, _ = await build_connor_1v1_context(room_id, [], connor_persona, query_text=content)
+                messages_ctx, _ = await build_connor_1v1_context(room_id, [], query_text=content)
             else:
-                messages_ctx, _ = await build_connor_group_context(room_id, [], connor_persona, query_text=content)
+                messages_ctx, _ = await build_connor_group_context(room_id, [], query_text=content)
 
             now_str = datetime.now().strftime("%Y年%m月%d日  %H:%M:%S")
             trigger_prompt = (
@@ -323,26 +333,36 @@ class ScheduleManager:
         # 预生成 ai_msg_id（TTS 分段文件命名需要）
         ai_msg_id = f"msg_{int(time.time()*1000)}_sa"
 
-        # Connor 来源时用 Codex CLI 流式调用
+        # Connor 来源时根据配置的模型调用
         if origin == "connor":
-            from chatroom import stream_connor_cli
+            from chatroom import stream_connor_cli, load_chatroom_config as _lcc_cr
             from ai_providers import CLI_STATUS_PREFIX as _CSP
+
+            _connor_model = (_lcc_cr().get("connor_model") or "Codex").strip() or "Codex"
 
             alarm_tts = None
             if manager.any_tts_enabled():
-                from chatroom import load_chatroom_config
-                tts_voice = load_chatroom_config().get("tts_connor_voice", "") or manager.get_tts_voice()
+                tts_voice = _lcc_cr().get("tts_connor_voice", "") or manager.get_tts_voice()
                 if tts_voice:
                     alarm_tts = TTSStreamer(ai_msg_id, tts_voice, manager)
 
             full_text = ""
             try:
-                async for chunk in stream_connor_cli(messages=messages):
-                    if chunk.startswith(_CSP):
-                        continue
-                    full_text += chunk
-                    if alarm_tts:
-                        alarm_tts.feed(chunk)
+                if _connor_model == "Codex":
+                    async for chunk in stream_connor_cli(messages=messages):
+                        if chunk.startswith(_CSP):
+                            continue
+                        full_text += chunk
+                        if alarm_tts:
+                            alarm_tts.feed(chunk)
+                else:
+                    _temp = SETTINGS.get("temperature")
+                    async for chunk in stream_ai(messages, _connor_model, temperature=_temp):
+                        if chunk.startswith(CLI_STATUS_PREFIX):
+                            continue
+                        full_text += chunk
+                        if alarm_tts:
+                            alarm_tts.feed(chunk)
             except Exception as e:
                 full_text = f"[闹铃提醒回复失败] {e}"
         else:
@@ -432,25 +452,24 @@ class ScheduleManager:
         is_chatroom = target["type"] == "chatroom"
         sender = "connor" if origin == "connor" else "aion"
 
-        # 尝试截图（摄像头可能未开启）
+        # 尝试截图（优先摄像头+屏幕，摄像头未开启时仅截取屏幕+手机）
         from camera import cam
         fname = None
-        if cam.running:
-            # 播放提示音 + 5秒延迟，给用户反应时间
-            await manager.broadcast({"type": "monitor_alert", "data": {"content": content}})
-            await asyncio.sleep(5)
+        # 播放提示音 + 5秒延迟，给用户反应时间
+        await manager.broadcast({"type": "monitor_alert", "data": {"content": content}})
+        await asyncio.sleep(5)
 
-            jpg_bytes = cam.get_frame_jpeg()
-            if jpg_bytes:
-                from config import UPLOADS_DIR, SCREENSHOTS_DIR
-                ts = time.strftime("%Y%m%d_%H%M%S")
-                fname = f"monitor_{ts}.jpg"
-                fpath = UPLOADS_DIR / fname
-                fpath.write_bytes(jpg_bytes)
+        jpg_bytes = cam.get_frame_jpeg() or cam.get_screen_only_jpeg()
+        if jpg_bytes:
+            from config import UPLOADS_DIR, SCREENSHOTS_DIR
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            fname = f"monitor_{ts}.jpg"
+            fpath = UPLOADS_DIR / fname
+            fpath.write_bytes(jpg_bytes)
 
-                # 同时保存到 screenshots 目录
-                SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
-                (SCREENSHOTS_DIR / fname).write_bytes(jpg_bytes)
+            # 同时保存到 screenshots 目录
+            SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+            (SCREENSHOTS_DIR / fname).write_bytes(jpg_bytes)
 
         # 获取最新对话
         wb = load_worldbook()
@@ -465,6 +484,13 @@ class ScheduleManager:
                 return
             conv_id = conv["id"]
             model_key = conv["model"] or DEFAULT_MODEL
+
+        # 聊天室来源的监控，优先用聊天室配置的 Aion 模型
+        if is_chatroom and origin != "connor":
+            from chatroom import load_chatroom_config as _lcc
+            _cr_model = _lcc().get("aion_model", "").strip()
+            if _cr_model:
+                model_key = _cr_model
 
         now_str = datetime.now().strftime("%Y年%m月%d日  %H:%M:%S")
 
@@ -508,12 +534,11 @@ class ScheduleManager:
                 return
             room = dict(room)
             room_type = room.get("type", "group")
-            connor_persona = room.get("connor_persona", "")
 
             if room_type == "connor_1v1":
-                messages_ctx, _ = await build_connor_1v1_context(room_id, [], connor_persona, query_text=content)
+                messages_ctx, _ = await build_connor_1v1_context(room_id, [], query_text=content)
             else:
-                messages_ctx, _ = await build_connor_group_context(room_id, [], connor_persona, query_text=content)
+                messages_ctx, _ = await build_connor_group_context(room_id, [], query_text=content)
 
             trigger_msg = {"role": "user", "content": trigger_prompt}
             if fname:
@@ -561,26 +586,36 @@ class ScheduleManager:
         # 预生成 ai_msg_id（TTS 分段文件命名需要）
         ai_msg_id = f"msg_{int(time.time()*1000)}_sm"
 
-        # Connor 来源时用 Codex CLI 流式调用
+        # Connor 来源时根据配置的模型调用
         if origin == "connor":
-            from chatroom import stream_connor_cli
+            from chatroom import stream_connor_cli, load_chatroom_config as _lcc_cr
             from ai_providers import CLI_STATUS_PREFIX as _CSP
+
+            _connor_model = (_lcc_cr().get("connor_model") or "Codex").strip() or "Codex"
 
             monitor_tts = None
             if manager.any_tts_enabled():
-                from chatroom import load_chatroom_config
-                tts_voice = load_chatroom_config().get("tts_connor_voice", "") or manager.get_tts_voice()
+                tts_voice = _lcc_cr().get("tts_connor_voice", "") or manager.get_tts_voice()
                 if tts_voice:
                     monitor_tts = TTSStreamer(ai_msg_id, tts_voice, manager)
 
             full_text = ""
             try:
-                async for chunk in stream_connor_cli(messages=messages):
-                    if chunk.startswith(_CSP):
-                        continue
-                    full_text += chunk
-                    if monitor_tts:
-                        monitor_tts.feed(chunk)
+                if _connor_model == "Codex":
+                    async for chunk in stream_connor_cli(messages=messages):
+                        if chunk.startswith(_CSP):
+                            continue
+                        full_text += chunk
+                        if monitor_tts:
+                            monitor_tts.feed(chunk)
+                else:
+                    _temp = SETTINGS.get("temperature")
+                    async for chunk in stream_ai(messages, _connor_model, temperature=_temp):
+                        if chunk.startswith(CLI_STATUS_PREFIX):
+                            continue
+                        full_text += chunk
+                        if monitor_tts:
+                            monitor_tts.feed(chunk)
             except Exception as e:
                 full_text = f"[定时监控回复失败] {e}"
         else:

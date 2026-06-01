@@ -631,7 +631,7 @@ async def _latest_group_context() -> tuple[str, dict, list[dict]]:
         cur = await db.execute("SELECT * FROM chatroom_rooms WHERE type='group' ORDER BY updated_at DESC LIMIT 1")
         room_row = await cur.fetchone()
         if not room_row:
-            return "", {"aion_persona": "", "connor_persona": "", "context_minutes": 30}, []
+            return "", {"context_minutes": 30}, []
         room = dict(room_row)
         cur = await db.execute(
             "SELECT * FROM chatroom_messages WHERE room_id=? ORDER BY created_at DESC LIMIT ?",
@@ -854,10 +854,17 @@ async def _collect_ai_text(messages: list[dict], player: str, model: str) -> str
                 continue
             text += chunk
     else:
-        async for chunk in stream_connor_cli(messages=messages):
-            if chunk.startswith(CLI_STATUS_PREFIX):
-                continue
-            text += chunk
+        _connor_key = (load_chatroom_config().get("connor_model") or "Codex").strip() or "Codex"
+        if _connor_key == "Codex":
+            async for chunk in stream_connor_cli(messages=messages):
+                if chunk.startswith(CLI_STATUS_PREFIX):
+                    continue
+                text += chunk
+        else:
+            async for chunk in stream_ai(messages, _connor_key, {}):
+                if chunk.startswith(CLI_STATUS_PREFIX):
+                    continue
+                text += chunk
     return text
 
 
@@ -866,11 +873,11 @@ async def _ask_ai(state: dict, player: str, moves: Optional[list[dict]] = None) 
     query = "斗地主牌局 JSON 决策"
     if player == "aion":
         messages, _ = await build_aion_group_context(
-            room_id, msgs, room.get("aion_persona", ""), room.get("context_minutes", 30), query,
+            room_id, msgs, room.get("context_minutes", 30), query,
         )
     else:
         messages, _ = await build_connor_group_context(
-            room_id, msgs, room.get("connor_persona", ""), room.get("context_minutes", 30), query,
+            room_id, msgs, room.get("context_minutes", 30), query,
         )
     messages.append({"role": "user", "content": _game_prompt(state, player, moves)})
 

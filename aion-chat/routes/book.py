@@ -619,13 +619,21 @@ async def _run_aion_annotation(messages: list, model_key: str) -> tuple[str, str
 
 
 async def _run_connor_annotation(messages: list) -> tuple[str, str]:
-    """执行 Connor 批注（Codex CLI），返回 (full_text, error_msg)"""
+    """执行 Connor 批注，根据 connor_model 配置选择模型，返回 (full_text, error_msg)"""
     try:
+        cfg = load_chatroom_config()
+        _connor_key = (cfg.get("connor_model") or "Codex").strip() or "Codex"
         full_text = ""
-        async for chunk in stream_connor_cli(messages=messages):
-            if chunk.startswith(CLI_STATUS_PREFIX):
-                continue  # 跳过状态事件
-            full_text += chunk
+        if _connor_key == "Codex":
+            async for chunk in stream_connor_cli(messages=messages):
+                if chunk.startswith(CLI_STATUS_PREFIX):
+                    continue
+                full_text += chunk
+        else:
+            async for chunk in stream_ai(messages, _connor_key, {}):
+                if chunk.startswith(CLI_STATUS_PREFIX):
+                    continue
+                full_text += chunk
         return full_text, ""
     except Exception as e:
         return "", str(e)

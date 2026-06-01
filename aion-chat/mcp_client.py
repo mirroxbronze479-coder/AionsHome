@@ -7,9 +7,12 @@ import json, logging
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.sse import sse_client
 
 from config import DATA_DIR
 
@@ -93,6 +96,8 @@ class MCPManager:
 
         if srv_type == "http":
             return await self._connect_http(server_name, server_cfg)
+        elif srv_type == "sse":
+            return await self._connect_sse(server_name, server_cfg)
         elif srv_type == "stdio":
             return await self._connect_stdio(server_name, server_cfg)
         else:
@@ -120,6 +125,36 @@ class MCPManager:
             "tools": tools,
         }
         logger.info(f"[MCP] 已连接 {name}，{len(tools)} 个工具可用")
+        return tools
+
+    async def _connect_sse(self, name: str, cfg: dict) -> list[dict]:
+        url = cfg["url"]
+        headers = cfg.get("headers", {})
+
+        # SSE 传输（旧版 MCP 协议，部分远程服务仍在使用）
+        transport_cm = sse_client(
+            url=url,
+            headers=headers,
+            httpx_client_factory=lambda **kw: httpx.AsyncClient(
+                verify=False, proxy=None, **kw
+            ),
+        )
+        streams = await transport_cm.__aenter__()
+        read_stream, write_stream = streams
+
+        session = ClientSession(read_stream, write_stream)
+        await session.__aenter__()
+        await session.initialize()
+
+        tools_result = await session.list_tools()
+        tools = [self._tool_to_dict(t) for t in tools_result.tools]
+
+        self._connections[name] = {
+            "session": session,
+            "transport_cm": transport_cm,
+            "tools": tools,
+        }
+        logger.info(f"[MCP] 已连接 {name} (SSE)，{len(tools)} 个工具可用")
         return tools
 
     async def _connect_stdio(self, name: str, cfg: dict) -> list[dict]:
@@ -210,6 +245,32 @@ class MCPManager:
     def get_tools(self, server_name: str) -> list[dict]:
         conn = self._connections.get(server_name)
         return conn["tools"] if conn else []
+
+    # ── 服务器配置管理 ────────────────────
+    def add_server(self, name: str, srv_type: str, url: str) -> dict:
+        """添加一个新的 MCP Server 配置"""
+        cfg = _load_config()
+        for s in cfg.get("servers", []):
+            if s["name"] == name:
+                raise ValueError(f"服务器名称已存在: {name}")
+        new_server = {
+            "name": name,
+            "type": srv_type,
+            "url": url,
+            "headers": {},
+            "enabled": True,
+        }
+        cfg.setdefault("servers", []).append(new_server)
+        _save_config(cfg)
+        return new_server
+
+    async def remove_server(self, name: str):
+        """移除一个 MCP Server 配置（如果已连接则先断开）"""
+        if name in self._connections:
+            await self.disconnect(name)
+        cfg = _load_config()
+        cfg["servers"] = [s for s in cfg.get("servers", []) if s["name"] != name]
+        _save_config(cfg)
 
 
 # 全局单例

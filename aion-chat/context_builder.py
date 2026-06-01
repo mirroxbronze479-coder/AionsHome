@@ -199,12 +199,11 @@ async def build_ability_block(
         f"不要在指令外重复歌曲信息。可同时用多个。"
     )
 
-    if cam.running:
-        abilities.append(
-            f"{CAM_CHECK_CMD} — 当你想查看{user_name}**此时此刻**的状态，"
-            f"不限于监督其是否去睡觉，在吃什么，在干什么时，可以主动调用指令。"
-            f"使用后下条消息会收到画面，查看前不要编造内容。"
-        )
+    abilities.append(
+        f"{CAM_CHECK_CMD} — 当你想查看{user_name}**此时此刻**的状态，"
+        f"不限于监督其是否去睡觉，在吃什么，在干什么时，可以主动调用指令。"
+        f"使用后下条消息会收到画面，查看前不要编造内容。"
+    )
 
     abilities.append("[ALARM:YYYY-MM-DDTHH:MM|内容] — 设置闹铃，到时间系统会主动提醒用户。日期时间用ISO格式。")
     abilities.append("[REMINDER:YYYY-MM-DD|内容] — 设置日程提醒（不闹铃），你在合适时机自然提起即可。")

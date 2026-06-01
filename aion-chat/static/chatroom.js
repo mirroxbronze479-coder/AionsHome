@@ -51,15 +51,6 @@ function applyChatroomNames(cfg = {}) {
   crUserName = cfg.user_name || crUserName || '我';
   crConnorName = cfg.connor_name || crConnorName || 'Connor';
 
-  const aionPersonaLabel = document.querySelector('#fieldAionPersona label');
-  if (aionPersonaLabel) aionPersonaLabel.textContent = `${crAiName} 人设`;
-  const connorPersona = document.getElementById('setConnorPersona');
-  if (connorPersona?.previousElementSibling) connorPersona.previousElementSibling.textContent = `${crConnorName} 补充设定（可选）`;
-  const connorNameInput = document.getElementById('setConnorName');
-  if (connorNameInput?.previousElementSibling) {
-    connorNameInput.previousElementSibling.textContent = `${crConnorName} 名字`;
-    connorNameInput.placeholder = crConnorName;
-  }
   const aionVoice = document.getElementById('setTtsAionVoice');
   if (aionVoice?.previousElementSibling) aionVoice.previousElementSibling.textContent = `${crAiName} 音色`;
   const connorVoice = document.getElementById('setTtsConnorVoice');
@@ -78,8 +69,6 @@ function applyChatroomNames(cfg = {}) {
   if (aionModelLabel) aionModelLabel.textContent = `${crAiName} 模型线路`;
   const connorModelLabel = document.querySelector('#fieldConnorModel label');
   if (connorModelLabel) connorModelLabel.textContent = `${crConnorName} 模型线路`;
-  const personaSummary = document.getElementById('settingsPersonaSummary');
-  if (personaSummary) personaSummary.textContent = `${crAiName} / ${crConnorName} 补充设定`;
   updateHeaderActions();
 }
 
@@ -1544,8 +1533,6 @@ async function openSettings() {
 
   // 先立即打开面板，再异步填充数据（提升感知速度）
   document.getElementById('setTtsEnabled').checked = crTtsEnabled;
-  const personaFold = document.getElementById('settingsPersonaFold');
-  if (personaFold) personaFold.open = false;
   document.getElementById('settingsOverlay').classList.add('active');
 
   // 三个请求并行发起，避免串行等待外部服务超时
@@ -1557,11 +1544,8 @@ async function openSettings() {
   applyChatroomNames(cfg);
 
   document.getElementById('setTitle').value = room.title || '';
-  document.getElementById('setAionPersona').value = room.aion_persona || '';
-  document.getElementById('setConnorPersona').value = room.connor_persona || '';
   document.getElementById('setContextMin').value = room.context_minutes || 30;
   document.getElementById('setAiRounds').value = room.ai_chat_rounds || 1;
-  document.getElementById('setConnorName').value = cfg.connor_name || 'Connor';
   chatroomConnorModel = cfg.connor_model || chatroomConnorModel || 'Codex';
   document.getElementById('setAionModel').innerHTML = renderModelOptions(chatroomModel);
   document.getElementById('setConnorModel').innerHTML = renderModelOptions(chatroomConnorModel);
@@ -1579,7 +1563,6 @@ async function openSettings() {
 
   // connor_1v1 隐藏群聊专属设置
   const isConnor1v1 = room.type === 'connor_1v1';
-  document.getElementById('fieldAionPersona').style.display = isConnor1v1 ? 'none' : '';
   document.getElementById('fieldAiRounds').style.display = isConnor1v1 ? 'none' : '';
   document.getElementById('fieldReplyOrder').style.display = isConnor1v1 ? 'none' : '';
   document.getElementById('fieldAionModel').style.display = isConnor1v1 ? 'none' : '';
@@ -1587,6 +1570,42 @@ async function openSettings() {
 
 function closeSettings() {
   document.getElementById('settingsOverlay').classList.remove('active');
+}
+
+// ── 人设面板 ──
+async function crOpenPersona() {
+  document.getElementById('personaOverlay').classList.add('active');
+  closeSidebar();
+  try {
+    const cfg = await api('/config');
+    document.getElementById('personaConnorName').value = cfg.connor_name || 'Connor';
+    document.getElementById('personaConnorText').value = cfg.connor_persona || '';
+    document.getElementById('personaExtraEnabled').checked = !!cfg.connor_persona_extra_enabled;
+    document.getElementById('personaExtraText').value = cfg.connor_persona_extra || '';
+  } catch(e) { console.error(e); }
+}
+
+function crClosePersona() {
+  document.getElementById('personaOverlay').classList.remove('active');
+}
+
+async function crSavePersona() {
+  const name = document.getElementById('personaConnorName').value.trim();
+  const persona = document.getElementById('personaConnorText').value;
+  const extraEnabled = document.getElementById('personaExtraEnabled').checked;
+  const extra = document.getElementById('personaExtraText').value;
+  await api('/config', {
+    method: 'PUT',
+    body: JSON.stringify({
+      connor_name: name || undefined,
+      connor_persona: persona,
+      connor_persona_extra_enabled: extraEnabled,
+      connor_persona_extra: extra,
+    }),
+  });
+  if (name) applyChatroomNames({ connor_name: name });
+  crClosePersona();
+  toast('人设已保存');
 }
 
 async function saveSettings() {
@@ -1597,22 +1616,19 @@ async function saveSettings() {
     method: 'PUT',
     body: JSON.stringify({
       title: document.getElementById('setTitle').value,
-      aion_persona: document.getElementById('setAionPersona').value,
-      connor_persona: document.getElementById('setConnorPersona').value,
       context_minutes: parseInt(document.getElementById('setContextMin').value) || 30,
       ai_chat_rounds: parseInt(document.getElementById('setAiRounds').value) || 1,
     }),
   });
 
   // 保存 Connor 配置
-  const nextConnorName = document.getElementById('setConnorName')?.value || crConnorName;
   const nextReplyOrder = document.getElementById('setReplyOrder').value || 'random';
   chatroomModel = document.getElementById('setAionModel')?.value || chatroomModel;
   chatroomConnorModel = document.getElementById('setConnorModel')?.value || chatroomConnorModel || 'Codex';
   await api('/config', {
     method: 'PUT',
     body: JSON.stringify({
-      connor_name: nextConnorName || undefined,
+      aion_model: chatroomModel,
       connor_model: chatroomConnorModel,
       aion_model: chatroomModel,
       tts_aion_voice: document.getElementById('setTtsAionVoice').value,
@@ -1620,7 +1636,6 @@ async function saveSettings() {
       reply_order: nextReplyOrder,
     }),
   });
-  applyChatroomNames({ connor_name: nextConnorName });
   await loadMessages();
   checkConnor();
 

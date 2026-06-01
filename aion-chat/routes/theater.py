@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from config import DEFAULT_MODEL, DATA_DIR, SETTINGS, THEATER_TTS_CACHE_DIR
 from database import get_db
 from ws import manager
-from ai_providers import stream_ai
+from ai_providers import stream_ai, CLI_STATUS_PREFIX
 from tts import TTSStreamer
 
 router = APIRouter(prefix="/api/theater", tags=["theater"])
@@ -328,6 +328,9 @@ async def send_message(conv_id: str, body: MsgCreate):
             await _q.put({"id": ai_msg_id, "type": "start"})
             try:
                 async for chunk in stream_ai(history, model_key, usage_meta, temperature=temperature):
+                    if chunk.startswith(CLI_STATUS_PREFIX):
+                        await _q.put({"type": "cli_status", "text": chunk[len(CLI_STATUS_PREFIX):]})
+                        continue
                     full_text += chunk
                     await _q.put({"type": "chunk", "content": chunk})
                     if tts_streamer:
@@ -454,6 +457,9 @@ async def regenerate_message(conv_id: str, context_limit: int = 20, temperature:
             await _q.put({"id": ai_msg_id, "type": "start"})
             try:
                 async for chunk in stream_ai(history, model_key, usage_meta, temperature=temperature):
+                    if chunk.startswith(CLI_STATUS_PREFIX):
+                        await _q.put({"type": "cli_status", "text": chunk[len(CLI_STATUS_PREFIX):]})
+                        continue
                     full_text += chunk
                     await _q.put({"type": "chunk", "content": chunk})
                     if tts_streamer:

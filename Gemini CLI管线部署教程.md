@@ -276,3 +276,59 @@ npm install -g @google/gemini-cli
 - **CLI 管线和 REST API 管线可以共存**。你可以同时配置 Gemini API Key 和 CLI，在聊天页面随时切换模型。
 - 所有功能（世界书人设、向量记忆、TTS 语音合成、摄像头监控、日程闹铃、音乐点歌、AI 生图、视频通话等）在 CLI 管线下全部正常工作。
 - 如果需要 TTS 语音播报功能，还需要额外配置硅基流动 API Key（在设置页面填写）。
+
+
+
+## 🚀 使用 Antigravity 管线（可选，免费额度）
+
+Antigravity 是 Google 的 AI agent 平台，通过它的 CLI 工具可以免费使用 Gemini 3.5 Flash、Gemini 3.1 Pro、Claude Opus 4.6 等模型。**不需要 API Key**，只需要一个 Google 账号。
+
+### 安装 Antigravity CLI
+
+在 PowerShell 里运行（需要梯子/代理）：
+
+```powershell
+irm https://antigravity.google/cli/install.ps1 | iex
+```
+
+装完后关闭 PowerShell 重新打开，输入 `agy --version` 确认安装成功。
+
+### 登录
+
+1. 在 PowerShell 里输入 `agy` 回车
+2. 它会弹出浏览器让你登录 Google 账号（和平时登 Gmail 一样）
+3. 授权完成后回到终端，看到聊天界面就说明登录成功了
+4. 按 `Ctrl+C` 退出 agy
+
+> 💡 登录一次就行，之后不需要重复登录。
+
+### 在 Aion Chat 中使用
+
+1. 启动 Aion Chat 后，在聊天窗口的**模型选择**下拉菜单里选择 **「Antigravity」**
+2. 发消息就行了，它会通过 agy CLI 帮你调用模型
+
+### 切换模型
+
+Antigravity 支持多个模型，默认是 Gemini 3.5 Flash。如果想换模型：
+
+1. 在 PowerShell 里输入 `agy` 进入交互模式
+2. 输入 `/model` 查看和切换可用模型
+3. 选好后退出（`Ctrl+C`），之后 Aion Chat 走 Antigravity 管线就会使用你选的模型
+
+### 注意事项
+
+- ⚠️ 安装和使用都**需要梯子**（agy 连接 Google 服务）
+- ⚠️ 免费额度有限制，日常聊天够用，频繁刷可能触发限流
+- ⚠️ 如果提示「未登录」，重新在 PowerShell 里运行 `agy` 登录一下就好
+
+
+### AntiGravity线路如何切换模型
+第一步：打开 PowerShell 或终端，输入：agy
+
+第二步：等 agy 的 TUI 界面出来后，输入：/model
+
+第三步：会弹出一个模型选择列表，用 ↑↓ 箭头选择你想要的模型（比如 Gemini 3.1 Pro），按回车确认。
+
+第四步：输入 /exit 退出 agy。
+
+完成。 你的选择会保存在 Google 服务器上，之后所有 agy --print 调用（包括我们项目里的 Antigravity 管线）都会自动使用新模型。不需要重启服务器。

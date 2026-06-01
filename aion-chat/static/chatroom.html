@@ -29,6 +29,9 @@
         <button onclick="openMemory()">📚 记忆库</button>
       </div>
       <div class="sidebar-mem-btn">
+        <button onclick="crOpenPersona()">🎭 人设</button>
+      </div>
+      <div class="sidebar-mem-btn">
         <button onclick="crOpenWhisper()">💗 密语时刻</button>
       </div>
       <div class="sidebar-mem-btn">
@@ -101,24 +104,6 @@
           <label>房间名称</label>
           <input id="setTitle" type="text">
         </div>
-        <div class="field">
-          <label>第二位 AI 名字</label>
-          <input id="setConnorName" type="text" placeholder="第二位 AI">
-        </div>
-        <details class="settings-fold" id="settingsPersonaFold">
-          <summary>
-            <span id="settingsPersonaSummary">角色补充设定</span>
-            <span class="fold-hint">展开</span>
-          </summary>
-          <div class="field" id="fieldAionPersona">
-            <label>AI 人设</label>
-            <textarea id="setAionPersona" placeholder="AI 在此房间使用的人设..."></textarea>
-          </div>
-          <div class="field" id="fieldConnorPersona">
-            <label>第二位 AI 补充设定（可选）</label>
-            <textarea id="setConnorPersona" placeholder="留空则使用 persona.md 默认人设，此处可追加房间专属指令..."></textarea>
-          </div>
-        </details>
         <div class="settings-inline-row">
           <div class="field">
             <label>跨窗口上下文（条）</label>
@@ -164,6 +149,35 @@
           </div>
         </div>
         <button class="save-btn" onclick="saveSettings()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 人设面板 -->
+  <div class="settings-overlay" id="personaOverlay">
+    <div class="settings-panel">
+      <div class="panel-header">
+        <span>🎭 人设设定</span>
+        <button class="close-btn" onclick="crClosePersona()">✕</button>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label>第二位 AI 名字</label>
+          <input id="personaConnorName" type="text" placeholder="Connor">
+        </div>
+        <div class="field">
+          <label>第二位 AI 人设</label>
+          <textarea id="personaConnorText" rows="10" placeholder="输入第二位 AI 的角色设定..."></textarea>
+        </div>
+        <p style="color:var(--text3);font-size:12px;margin:4px 0 12px;">此人设对所有群聊和私聊房间统一生效。若存在 persona.md 文件，此处填写后将覆盖文件内容。</p>
+        <div class="field" style="margin-top:8px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <input id="personaExtraEnabled" type="checkbox">
+            <span style="font-size:13px;color:var(--text2);">启用补充设定</span>
+          </div>
+          <textarea id="personaExtraText" rows="5" placeholder="补充设定内容..."></textarea>
+        </div>
+        <button class="save-btn" onclick="crSavePersona()">保存</button>
       </div>
     </div>
   </div>

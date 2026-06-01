@@ -343,9 +343,8 @@ async def _process_chatroom_commands(full_text: str, room_id: str, who: str, msg
     cam_triggered = CAM_CHECK_CMD in full_text
     if cam_triggered:
         full_text = full_text.replace(CAM_CHECK_CMD, "")
-        if cam.running:
-            await _chatroom_sys_msg(room_id, f"📷 {who_label}查看了监控", _q)
-            triggered["cam_check"] = True
+        await _chatroom_sys_msg(room_id, f"📷 {who_label}查看了监控", _q)
+        triggered["cam_check"] = True
 
     # ── 查看动态 ──
     activity_match = ACTIVITY_CHECK_PATTERN.search(full_text)
@@ -877,14 +876,10 @@ async def _stream_connor_model(messages: list[dict], model_key: str | None = Non
 class RoomCreate(BaseModel):
     title: str = "新聊天室"
     type: str = "group"  # "group" | "connor_1v1"
-    aion_persona: str = ""
-    connor_persona: str = ""
 
 
 class RoomUpdate(BaseModel):
     title: Optional[str] = None
-    aion_persona: Optional[str] = None
-    connor_persona: Optional[str] = None
     context_minutes: Optional[int] = None
     ai_chat_rounds: Optional[int] = None
 
@@ -957,6 +952,9 @@ class ConfigUpdate(BaseModel):
     connor_poll_interval: Optional[float] = None
     connor_poll_timeout: Optional[int] = None
     connor_name: Optional[str] = None
+    connor_persona: Optional[str] = None
+    connor_persona_extra: Optional[str] = None
+    connor_persona_extra_enabled: Optional[bool] = None
     tts_enabled: Optional[bool] = None
     tts_aion_voice: Optional[str] = None
     tts_connor_voice: Optional[str] = None
@@ -993,6 +991,12 @@ async def update_config(body: ConfigUpdate):
         cfg["connor_poll_timeout"] = body.connor_poll_timeout
     if body.connor_name is not None:
         cfg["connor_name"] = body.connor_name
+    if body.connor_persona is not None:
+        cfg["connor_persona"] = body.connor_persona
+    if body.connor_persona_extra is not None:
+        cfg["connor_persona_extra"] = body.connor_persona_extra
+    if body.connor_persona_extra_enabled is not None:
+        cfg["connor_persona_extra_enabled"] = body.connor_persona_extra_enabled
     if body.tts_enabled is not None:
         cfg["tts_enabled"] = body.tts_enabled
     if body.tts_aion_voice is not None:
@@ -1065,13 +1069,13 @@ async def create_room(body: RoomCreate):
         await db.execute(
             "INSERT INTO chatroom_rooms (id, title, type, aion_persona, connor_persona, created_at, updated_at) "
             "VALUES (?,?,?,?,?,?,?)",
-            (room_id, body.title, body.type, body.aion_persona, body.connor_persona, now, now),
+            (room_id, body.title, body.type, "", "", now, now),
         )
         await db.commit()
 
     room = {
         "id": room_id, "title": body.title, "type": body.type,
-        "aion_persona": body.aion_persona, "connor_persona": body.connor_persona,
+        "aion_persona": "", "connor_persona": "",
         "context_minutes": 30, "ai_chat_rounds": 1,
         "created_at": now, "updated_at": now, "message_count": 0,
     }
@@ -1083,7 +1087,7 @@ async def create_room(body: RoomCreate):
 async def update_room(room_id: str, body: RoomUpdate):
     async with get_db() as db:
         sets, vals = [], []
-        for field in ["title", "aion_persona", "connor_persona", "context_minutes", "ai_chat_rounds"]:
+        for field in ["title", "context_minutes", "ai_chat_rounds"]:
             v = getattr(body, field, None)
             if v is not None:
                 sets.append(f"{field}=?")
@@ -1357,14 +1361,14 @@ async def reply_once(room_id: str, body: ReplyOnceTrigger):
         try:
             if speaker == "aion":
                 await _reply_aion(
-                    room_id, msgs, room.get("aion_persona", ""), context_minutes, query_text, model_key, _q,
+                    room_id, msgs, context_minutes, query_text, model_key, _q,
                     tts_enabled=body.tts_enabled,
                     tts_voice=body.tts_aion_voice,
                     whisper_mode=body.whisper_mode,
                 )
             else:
                 await _reply_connor(
-                    room_id, msgs, room.get("connor_persona", ""), context_minutes, query_text, _q,
+                    room_id, msgs, context_minutes, query_text, _q,
                     connor_model_key=connor_model_key,
                     tts_enabled=body.tts_enabled,
                     tts_voice=body.tts_connor_voice,
@@ -1517,14 +1521,14 @@ async def regenerate_chatroom_message(msg_id: str, body: MsgRegenerate):
         try:
             if target["sender"] == "aion":
                 await _reply_aion(
-                    room_id, msgs, room.get("aion_persona", ""), context_minutes, query_text, model_key, _q,
+                    room_id, msgs, context_minutes, query_text, model_key, _q,
                     tts_enabled=body.tts_enabled,
                     tts_voice=body.tts_aion_voice,
                     whisper_mode=body.whisper_mode,
                 )
             else:
                 await _reply_connor(
-                    room_id, msgs, room.get("connor_persona", ""), context_minutes, query_text, _q,
+                    room_id, msgs, context_minutes, query_text, _q,
                     connor_model_key=connor_model_key,
                     tts_enabled=body.tts_enabled,
                     tts_voice=body.tts_connor_voice,
@@ -1552,11 +1556,10 @@ async def regenerate_chatroom_message(msg_id: str, body: MsgRegenerate):
 async def _generate_connor_reply(room_id, room, msgs, _q, context_minutes, *, connor_model_key="Codex", tts_enabled=False, tts_connor_voice="", whisper_mode=False):
     """Connor 单聊回复（Codex CLI 流式调用）"""
     connor_label = _name_for_identity("connor")
-    connor_persona = room.get("connor_persona", "")
     query_text = msgs[-1]["content"] if msgs else ""
 
     connor_messages, _ = await build_connor_1v1_context(
-        room_id, msgs, connor_persona,
+        room_id, msgs,
         context_minutes=context_minutes,
         query_text=query_text,
         whisper_mode=whisper_mode,
@@ -1611,8 +1614,6 @@ async def _generate_connor_reply(room_id, room, msgs, _q, context_minutes, *, co
 
 async def _generate_group_replies(room_id, room, msgs, model_key, connor_model_key, _q, context_minutes, *, tts_enabled=False, tts_aion_voice="", tts_connor_voice="", whisper_mode=False):
     """群聊回复：顺序执行，第二个 AI 能看到第一个的回复和工具执行结果"""
-    aion_persona = room.get("aion_persona", "")
-    connor_persona = room.get("connor_persona", "")
     query_text = msgs[-1]["content"] if msgs else ""
 
     aion_first = random.choice([True, False])
@@ -1623,23 +1624,23 @@ async def _generate_group_replies(room_id, room, msgs, model_key, connor_model_k
         aion_first = False
 
     if aion_first:
-        digest = await _reply_aion(room_id, msgs, aion_persona, context_minutes, query_text, model_key, _q,
+        digest = await _reply_aion(room_id, msgs, context_minutes, query_text, model_key, _q,
                                    tts_enabled=tts_enabled, tts_voice=tts_aion_voice, whisper_mode=whisper_mode)
         _, updated_msgs = await _load_room_and_messages(room_id)
-        await _reply_connor(room_id, updated_msgs, connor_persona, context_minutes, query_text, _q,
+        await _reply_connor(room_id, updated_msgs, context_minutes, query_text, _q,
                             connor_model_key=connor_model_key, tts_enabled=tts_enabled, tts_voice=tts_connor_voice, digest_result=digest, whisper_mode=whisper_mode)
     else:
-        digest = await _reply_connor(room_id, msgs, connor_persona, context_minutes, query_text, _q,
+        digest = await _reply_connor(room_id, msgs, context_minutes, query_text, _q,
                                      connor_model_key=connor_model_key, tts_enabled=tts_enabled, tts_voice=tts_connor_voice, whisper_mode=whisper_mode)
         _, updated_msgs = await _load_room_and_messages(room_id)
-        await _reply_aion(room_id, updated_msgs, aion_persona, context_minutes, query_text, model_key, _q,
+        await _reply_aion(room_id, updated_msgs, context_minutes, query_text, model_key, _q,
                           tts_enabled=tts_enabled, tts_voice=tts_aion_voice, digest_result=digest, whisper_mode=whisper_mode)
 
 
-async def _reply_aion(room_id, msgs, aion_persona, context_minutes, query_text, model_key, _q, *, tts_enabled=False, tts_voice="", digest_result=None, whisper_mode=False):
+async def _reply_aion(room_id, msgs, context_minutes, query_text, model_key, _q, *, tts_enabled=False, tts_voice="", digest_result=None, whisper_mode=False):
     ai_label = _name_for_identity("aion")
     aion_history, digest_out = await build_aion_group_context(
-        room_id, msgs, aion_persona, context_minutes, query_text,
+        room_id, msgs, context_minutes, query_text,
         digest_result=digest_result,
         whisper_mode=whisper_mode,
     )
@@ -1689,10 +1690,10 @@ async def _reply_aion(room_id, msgs, aion_persona, context_minutes, query_text, 
     return digest_out
 
 
-async def _reply_connor(room_id, msgs, connor_persona, context_minutes, query_text, _q, *, connor_model_key="Codex", tts_enabled=False, tts_voice="", digest_result=None, whisper_mode=False):
+async def _reply_connor(room_id, msgs, context_minutes, query_text, _q, *, connor_model_key="Codex", tts_enabled=False, tts_voice="", digest_result=None, whisper_mode=False):
     connor_label = _name_for_identity("connor")
     connor_history, digest_out = await build_connor_group_context(
-        room_id, msgs, connor_persona, context_minutes, query_text,
+        room_id, msgs, context_minutes, query_text,
         digest_result=digest_result,
         whisper_mode=whisper_mode,
     )
@@ -1761,8 +1762,6 @@ async def trigger_ai_chat(room_id: str, body: AiChatTrigger):
     model_key = body.model
     connor_model_key = _resolve_connor_model(body.connor_model)
     context_minutes = room.get("context_minutes", 30)
-    aion_persona = room.get("aion_persona", "")
-    connor_persona = room.get("connor_persona", "")
     tts_enabled = body.tts_enabled
     tts_aion_voice = body.tts_aion_voice
     tts_connor_voice = body.tts_connor_voice
@@ -1789,24 +1788,24 @@ async def trigger_ai_chat(room_id: str, body: AiChatTrigger):
 
                 if aion_first:
                     digest = await _reply_aion(
-                        room_id, msgs, aion_persona, context_minutes, query_text, model_key, _q,
+                        room_id, msgs, context_minutes, query_text, model_key, _q,
                         tts_enabled=tts_enabled, tts_voice=tts_aion_voice, digest_result=digest,
                     )
                     _, msgs = await _load_room_and_messages(room_id)
                     digest = await _reply_connor(
-                        room_id, msgs, connor_persona, context_minutes, query_text, _q,
+                        room_id, msgs, context_minutes, query_text, _q,
                         connor_model_key=connor_model_key,
                         tts_enabled=tts_enabled, tts_voice=tts_connor_voice, digest_result=digest,
                     )
                 else:
                     digest = await _reply_connor(
-                        room_id, msgs, connor_persona, context_minutes, query_text, _q,
+                        room_id, msgs, context_minutes, query_text, _q,
                         connor_model_key=connor_model_key,
                         tts_enabled=tts_enabled, tts_voice=tts_connor_voice, digest_result=digest,
                     )
                     _, msgs = await _load_room_and_messages(room_id)
                     digest = await _reply_aion(
-                        room_id, msgs, aion_persona, context_minutes, query_text, model_key, _q,
+                        room_id, msgs, context_minutes, query_text, model_key, _q,
                         tts_enabled=tts_enabled, tts_voice=tts_aion_voice, digest_result=digest,
                     )
 
