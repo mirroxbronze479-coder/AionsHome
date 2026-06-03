@@ -172,12 +172,14 @@ def sanitize_filename(name):
 # ── 模型配置 ─────────────────────────────────────
 MODELS = {
     "硅基GLM-5.1":      {"provider": "siliconflow", "model": "Pro/zai-org/GLM-5.1", "vision": False},
+    "硅基GLM-5.0":      {"provider": "siliconflow", "model": "Pro/zai-org/GLM-5", "vision": False},
+    "Kimi-K2.6":      {"provider": "siliconflow", "model": "Pro/moonshotai/Kimi-K2.6", "vision": True},
     "Gemini-3.5-flash":  {"provider": "gemini", "model": "gemini-3.5-flash", "vision": True},
     "Gemini-3.1-pro":  {"provider": "gemini", "model": "gemini-3.1-pro-preview", "vision": True},
-    "Gemini-3.1-lite":  {"provider": "gemini", "model": "gemini-3.1-flash-lite", "vision": True},
-    "DS-v4-flash":    {"provider": "aipro", "model": "deepseek-v4-flash", "vision": False},
     "DS-v4-pro":     {"provider": "aipro", "model": "deepseek-v4-pro", "vision": False},
     "CLI-3.1pro":       {"provider": "gemini_cli", "model": "gemini-3.1-pro-preview", "vision": True},
+    # Keep Codex model empty so Codex CLI inherits ~/.codex/config.toml,
+    # including model_reasoning_effort.
     "Codex":            {"provider": "codex_cli",  "model": "", "vision": True},
     "Antigravity":        {"provider": "antigravity_cli", "model": "", "vision": True},
 }

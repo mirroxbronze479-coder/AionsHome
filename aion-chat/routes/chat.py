@@ -18,7 +18,7 @@ from ws import manager
 from ai_providers import stream_ai, CLI_STATUS_PREFIX
 from memory import recall_memories, instant_digest, fetch_source_details, build_surfacing_memories, get_embedding, _pack_embedding
 from camera import cam, CAM_CHECK_CMD, perform_cam_check
-from activity import is_activity_tracking_enabled, get_activity_summary_for_prompt
+from activity import is_activity_tracking_enabled, get_activity_summary_for_prompt, get_user_dynamics_for_prompt
 from routes.files import export_conversation
 from routes.music import MUSIC_CMD_PATTERN
 from tts import TTSStreamer
@@ -2062,6 +2062,11 @@ async def perform_activity_check(conv_id: str, model_key: str, n: int = 6):
     summary_text = get_activity_summary_for_prompt(n)
     if not summary_text:
         summary_text = "（当前没有设备活动记录）"
+    user_dynamics_text = get_user_dynamics_for_prompt(hours=1)
+    user_dynamics_block = (
+        f"\n\n【用户关键动态】\n{user_dynamics_text}"
+        if user_dynamics_text else ""
+    )
 
     wb = load_worldbook()
     user_name = wb.get("user_name", "用户")
@@ -2105,7 +2110,8 @@ async def perform_activity_check(conv_id: str, model_key: str, n: int = 6):
 
     activity_prompt = (
         f"你刚才想了解{user_name}最近在干什么，以下是系统采集到的{user_name}过去{minutes}分钟的设备使用动态（每10分钟一条摘要）：\n\n"
-        f"【设备活动动态】\n{summary_text}\n\n"
+        f"【设备活动动态】\n{summary_text}"
+        f"{user_dynamics_block}\n\n"
         f"请根据这些动态信息，自然地和{user_name}聊聊。不需要再说\"让我看看\"之类的话，直接根据动态内容回应即可。"
     )
     messages = prefix + recent + [

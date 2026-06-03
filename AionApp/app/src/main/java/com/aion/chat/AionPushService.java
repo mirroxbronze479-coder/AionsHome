@@ -1,4 +1,4 @@
-package com.aion.chat;
+﻿package com.aion.chat;
 
 import android.app.AlarmManager;
 import android.app.KeyguardManager;
@@ -264,7 +264,7 @@ public class AionPushService extends Service {
 
         if (serverUrl == null) {
             SharedPreferences prefs = getSharedPreferences("aion_prefs", MODE_PRIVATE);
-            String saved = prefs.getString("saved_url", "http://192.168.1.92:8080/chat");
+            String saved = prefs.getString("saved_url", "http://192.168.xx.xxx:8080/chat");
             serverUrl = saved.replace("http://", "ws://").replace("https://", "wss://")
                              .replace("/chat", "/ws");
         }

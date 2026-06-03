@@ -105,49 +105,68 @@ async function saveSettings() {
 }
 
 function enablePhoneScreenSupervision() {
-  if (!window.AionPhoneScreen || !window.AionPhoneScreen.requestPermission) {
+  const bridge = getPhoneScreenBridge();
+  if (!bridge || !bridge.requestPermission) {
     showToast("需要在 Android App 里开启");
     return;
   }
-  window.AionPhoneScreen.requestPermission();
+  bridge.requestPermission();
 }
 
 function disablePhoneScreenSupervision() {
-  if (!window.AionPhoneScreen || !window.AionPhoneScreen.stop) {
+  const bridge = getPhoneScreenBridge();
+  if (!bridge || !bridge.stop) {
     showToast("需要在 Android App 里关闭");
     return;
   }
-  window.AionPhoneScreen.stop();
+  bridge.stop();
   refreshPhoneScreenStatus();
 }
 
 function openPhoneAccessibilitySettings() {
-  if (!window.AionPhoneScreen || !window.AionPhoneScreen.openAccessibilitySettings) {
+  const bridge = getPhoneScreenBridge();
+  if (!bridge || !bridge.openAccessibilitySettings) {
     showToast("需要在 Android App 里开启");
     return;
   }
-  window.AionPhoneScreen.openAccessibilitySettings();
+  bridge.openAccessibilitySettings();
 }
 
 function testPhoneAccessibilityCapture() {
-  if (!window.AionPhoneScreen || !window.AionPhoneScreen.testAccessibilityCapture) {
+  const bridge = getPhoneScreenBridge();
+  if (!bridge) {
     showToast("需要在 Android App 里测试");
     return;
   }
-  window.AionPhoneScreen.testAccessibilityCapture();
+  if (!bridge.testAccessibilityCapture) {
+    showToast("Android App 版本太旧，请安装新版 APK");
+    return;
+  }
+  bridge.testAccessibilityCapture();
+}
+
+function getPhoneScreenBridge() {
+  if (window.AionPhoneScreen) return window.AionPhoneScreen;
+  try {
+    if (window.parent && window.parent !== window && window.parent.AionPhoneScreen) {
+      return window.parent.AionPhoneScreen;
+    }
+  } catch (e) {}
+  return null;
 }
 
 function refreshPhoneScreenStatus() {
   const el = $("phoneScreenStatus");
   if (!el) return;
-  if (!window.AionPhoneScreen) {
+  const bridge = getPhoneScreenBridge();
+  if (!bridge) {
     el.textContent = "当前不在 Android App 内，手机截图能力不可用。";
     return;
   }
   let mediaProjection = false;
   let accessibility = false;
-  try { mediaProjection = !!window.AionPhoneScreen.isEnabled?.(); } catch (e) {}
-  try { accessibility = !!window.AionPhoneScreen.isAccessibilityEnabled?.(); } catch (e) {}
+  try { mediaProjection = !!bridge.isEnabled?.(); } catch (e) {}
+  try { accessibility = !!bridge.isAccessibilityEnabled?.(); } catch (e) {}
   el.textContent = `共享屏幕：${mediaProjection ? "已开启" : "未开启"} · 无障碍：${accessibility ? "已开启" : "未开启"}`;
 }
 </script>

@@ -798,6 +798,18 @@ async def _call_core_location(
         conv_id = conv["id"]
         model_key = conv["model"] or "gemini-3-flash"
 
+    from schedule import schedule_mgr
+    target = schedule_mgr._resolve_target({"origin": "aion"})
+    is_chatroom = target["type"] == "chatroom"
+    if is_chatroom:
+        try:
+            from chatroom import load_chatroom_config
+            chatroom_model = (load_chatroom_config().get("aion_model") or "").strip()
+            if chatroom_model:
+                model_key = chatroom_model
+        except Exception:
+            pass
+
     merged = await fetch_merged_timeline("aion", 20, conv_id=conv_id)
     history = render_merged_timeline(merged, "aion")
 
@@ -815,10 +827,12 @@ async def _call_core_location(
     core_parts.append(f"\n{loc_info}")
     if recent_detail:
         core_parts.append(f"\n最近的监控记录：\n{recent_detail}")
+    contact_scene = "群聊" if is_chatroom else "私聊"
     core_parts.append(
         f"\n请自然地根据位置变化和{user_name}互动。"
         f"这里的最近对话上下文已经合并了私聊和群聊；"
         f"{user_name}最近一次在任一场景里和你说话是{time_ago}前。"
+        f"这条回复会发到你和{user_name}最后活跃的{contact_scene}窗口。"
     )
 
     core_prompt = "\n".join(core_parts)
@@ -858,50 +872,56 @@ async def _call_core_location(
     if not full_text.strip():
         return
 
-    now = time.time()
-    trigger_msg_id = f"msg_{int(now * 1000)}_lt"
-    async with get_db() as db:
-        await db.execute(
-            "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-            (trigger_msg_id, conv_id, "cam_trigger", core_prompt, now, "[]"),
+    sys_content = f"检测到{user_name}的位置发生变化，拉响警报！"
+    if is_chatroom:
+        await schedule_mgr._save_to_chatroom(
+            target["room_id"], "aion", sys_content, full_text, core_msg_id, "[]", []
         )
-        sys_now = time.time()
-        sys_msg_id = f"msg_{int(sys_now * 1000)}_ls"
-        sys_content = f"检测到{user_name}的位置发生变化，拉响警报！"
-        await db.execute(
-            "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-            (sys_msg_id, conv_id, "system", sys_content, sys_now, "[]"),
-        )
-        await db.commit()
-    sys_msg = {
-        "id": sys_msg_id, "conv_id": conv_id, "role": "system",
-        "content": sys_content, "created_at": sys_now, "attachments": [],
-    }
-    await manager.broadcast({"type": "msg_created", "data": sys_msg})
-
-    async with get_db() as db:
         now2 = time.time()
-        await db.execute(
-            "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-            (core_msg_id, conv_id, "assistant", full_text, now2, "[]"),
-        )
-        await db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now2, conv_id))
-        await db.commit()
+    else:
+        now = time.time()
+        trigger_msg_id = f"msg_{int(now * 1000)}_lt"
+        async with get_db() as db:
+            await db.execute(
+                "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+                (trigger_msg_id, conv_id, "cam_trigger", core_prompt, now, "[]"),
+            )
+            sys_now = time.time()
+            sys_msg_id = f"msg_{int(sys_now * 1000)}_ls"
+            await db.execute(
+                "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+                (sys_msg_id, conv_id, "system", sys_content, sys_now, "[]"),
+            )
+            await db.commit()
+        sys_msg = {
+            "id": sys_msg_id, "conv_id": conv_id, "role": "system",
+            "content": sys_content, "created_at": sys_now, "attachments": [],
+        }
+        await manager.broadcast({"type": "msg_created", "data": sys_msg})
 
-    core_msg = {
-        "id": core_msg_id, "conv_id": conv_id, "role": "assistant",
-        "content": full_text, "created_at": now2, "attachments": [],
-    }
-    await manager.broadcast({"type": "msg_created", "data": core_msg})
+        async with get_db() as db:
+            now2 = time.time()
+            await db.execute(
+                "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+                (core_msg_id, conv_id, "assistant", full_text, now2, "[]"),
+            )
+            await db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now2, conv_id))
+            await db.commit()
+
+        core_msg = {
+            "id": core_msg_id, "conv_id": conv_id, "role": "assistant",
+            "content": full_text, "created_at": now2, "attachments": [],
+        }
+        await manager.broadcast({"type": "msg_created", "data": core_msg})
+
+        from routes.files import export_conversation
+        await export_conversation(conv_id)
 
     if loc_tts:
         try:
             await loc_tts.flush()
         except Exception:
             pass
-
-    from routes.files import export_conversation
-    await export_conversation(conv_id)
 
     core_log = {
         "timestamp": now2,

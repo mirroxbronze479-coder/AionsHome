@@ -53,6 +53,14 @@
 .source-modal { background:var(--surface); border-radius:12px; width:90%; max-width:500px; padding:20px; max-height:80vh; overflow-y:auto; }
 .source-msg { padding:8px 10px; border-bottom:1px solid var(--border); font-size:13px; line-height:1.5; }
 .source-msg:last-child { border-bottom:none; }
+.source-msg.source-off { opacity:0.42; }
+.source-head { display:flex; align-items:flex-start; gap:8px; }
+.source-check { margin-top:2px; width:18px; height:18px; flex-shrink:0; accent-color:var(--accent); }
+.source-main { flex:1; min-width:0; }
+.source-toolbar { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 10px; }
+.source-toolbar button { background:var(--surface2); color:var(--text2); border:1px solid var(--border); border-radius:5px; padding:4px 10px; font-size:12px; cursor:pointer; }
+.source-toolbar .source-save { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+.source-summary { color:var(--text3); font-size:12px; line-height:1.4; margin-bottom:6px; }
 .source-name { font-weight:600; color:var(--accent); margin-right:6px; font-size:12px; }
 .source-time { font-size:10px; color:var(--text3); }
 @media (max-width: 768px) {
@@ -117,6 +125,13 @@
 <div class="source-overlay" id="sourceOverlay" onclick="if(event.target===this)closeSource()">
   <div class="source-modal">
     <h3>📜 原文记录</h3>
+    <div class="source-summary" id="sourceSummary"></div>
+    <div class="source-toolbar">
+      <button onclick="setSourceSelection('recommended')">恢复预选</button>
+      <button onclick="setSourceSelection('all')">全选</button>
+      <button onclick="setSourceSelection('none')">全不选</button>
+      <button class="source-save" id="sourceSaveBtn" onclick="saveSourceSelection()">保存筛选</button>
+    </div>
     <div id="sourceList" style="max-height:60vh;overflow-y:auto"><div class="mem-empty">加载中...</div></div>
     <div class="btn-row"><button class="btn-cancel" onclick="closeSource()">关闭</button></div>
   </div>
@@ -129,6 +144,8 @@ const MEM_TYPE_LABELS = {
   preference:"喜好/雷区", promise:"约定承诺", milestone:"关系里程碑", event:"事件", digest:"总结"
 };
 let _allMemories = [];
+let _sourceMemId = null;
+let _sourceMessages = [];
 
 connectCommonWS(msg => {
   if (msg.type === "memory_added") {
@@ -164,7 +181,7 @@ function renderMemories() {
   el.innerHTML = filtered.map(m => {
     const typeLabel = MEM_TYPE_LABELS[m.type] || m.type;
     const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleString("zh-CN", {month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "";
-    const hasSource = m.source_start_ts && m.source_end_ts;
+    const hasSource = Number(m.source_count || 0) > 0;
     const sourceBtn = hasSource ? `<button class="mem-source-btn" onclick="viewSource('${escHtml(m.id)}')" title="查看原文">📜</button>` : '';
     let kwDisplay = '';
     try {
@@ -339,8 +356,11 @@ async function rebuildEmbeddings() {
 }
 
 async function viewSource(memId) {
+  _sourceMemId = memId;
+  _sourceMessages = [];
   $("sourceOverlay").classList.add("show");
   const listEl = $("sourceList");
+  $("sourceSummary").textContent = "";
   listEl.innerHTML = '<div class="mem-empty">加载中...</div>';
   try {
     const result = await api("GET", `/api/memories/${memId}/source`);
@@ -348,14 +368,85 @@ async function viewSource(memId) {
       listEl.innerHTML = '<div class="mem-empty">' + (result.message || "没有找到原文记录") + '</div>';
       return;
     }
-    listEl.innerHTML = result.messages.map(m => {
-      const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleString("zh-CN", {month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "";
-      const srcTag = m.source === "group" ? '<span style="color:#f0a040;font-size:11px;margin-left:6px;">[群聊]</span>' : "";
-      return `<div class="source-msg"><span class="source-name">${escHtml(m.name)}</span>${srcTag}<span class="source-time">${escHtml(timeStr)}</span><div style="margin-top:4px;white-space:pre-wrap;word-break:break-word;">${escHtml(m.content)}</div></div>`;
-    }).join("");
+    _sourceMessages = result.messages.map(m => ({ ...m, selected: !!m.selected, recommended: !!m.recommended }));
+    renderSourceSelection();
   } catch(e) { listEl.innerHTML = '<div class="mem-empty">加载失败</div>'; }
 }
-function closeSource() { $("sourceOverlay").classList.remove("show"); }
+
+function renderSourceSelection() {
+  const listEl = $("sourceList");
+  if (!_sourceMessages.length) {
+    listEl.innerHTML = '<div class="mem-empty">没有找到原文记录</div>';
+    return;
+  }
+  listEl.innerHTML = _sourceMessages.map((m, idx) => {
+    const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleString("zh-CN", {month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "";
+    const srcTag = m.source === "chatroom" ? '<span style="color:#f0a040;font-size:11px;margin-left:6px;">[群聊]</span>' : "";
+    const checked = m.selected ? "checked" : "";
+    const offClass = m.selected ? "" : " source-off";
+    return `<div class="source-msg${offClass}">
+      <div class="source-head">
+        <input class="source-check" type="checkbox" ${checked} onchange="toggleSourceMsg(${idx}, this.checked)">
+        <div class="source-main">
+          <span class="source-name">${escHtml(m.name)}</span>${srcTag}<span class="source-time">${escHtml(timeStr)}</span>
+          <div style="margin-top:4px;white-space:pre-wrap;word-break:break-word;">${escHtml(m.content)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+  updateSourceSummary();
+}
+
+function updateSourceSummary() {
+  const total = _sourceMessages.length;
+  const kept = _sourceMessages.filter(m => m.selected).length;
+  $("sourceSummary").textContent = `将保留 ${kept}/${total} 条原文作为这条记忆的证据；点击保存前不会写入数据库。`;
+}
+
+function toggleSourceMsg(index, checked) {
+  if (!_sourceMessages[index]) return;
+  _sourceMessages[index].selected = checked;
+  renderSourceSelection();
+}
+
+function setSourceSelection(mode) {
+  if (mode === "all") _sourceMessages.forEach(m => m.selected = true);
+  else if (mode === "none") _sourceMessages.forEach(m => m.selected = false);
+  else _sourceMessages.forEach(m => m.selected = !!m.recommended);
+  renderSourceSelection();
+}
+
+async function saveSourceSelection() {
+  if (!_sourceMemId) return;
+  const selectedIds = _sourceMessages.filter(m => m.selected).map(m => m.id);
+  if (!selectedIds.length && !confirm("你没有保留任何原文。保存后这条记忆将不再追溯原文，确定继续吗？")) return;
+  const btn = $("sourceSaveBtn");
+  btn.disabled = true;
+  btn.textContent = "保存中...";
+  try {
+    const result = await api("POST", `/api/memories/${_sourceMemId}/source-selection`, { source_message_ids: selectedIds });
+    const mem = _allMemories.find(m => m.id === _sourceMemId);
+    if (mem) {
+      mem.source_msg_id = result.source_msg_id;
+      mem.source_start_ts = result.source_start_ts;
+      mem.source_end_ts = result.source_end_ts;
+      mem.source_count = result.selected_count || 0;
+    }
+    renderMemories();
+    closeSource();
+  } catch(e) {
+    alert("保存失败：" + (e.message || "未知错误"));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "保存筛选";
+  }
+}
+
+function closeSource() {
+  $("sourceOverlay").classList.remove("show");
+  _sourceMemId = null;
+  _sourceMessages = [];
+}
 
 async function loadAnchor() {
   try {

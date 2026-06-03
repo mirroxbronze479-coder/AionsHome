@@ -2,12 +2,12 @@
 设备活动日志：上报接收、JSONL 存储、自动清理（保留最近 N 小时）、PC 活动窗口采集、10 分钟摘要
 """
 
-import json, time, threading, logging
+import json, time, threading, logging, sqlite3
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from config import DATA_DIR
+from config import DATA_DIR, DB_PATH, load_worldbook
 from ws import manager
 
 log = logging.getLogger("activity")
@@ -1076,5 +1076,125 @@ def get_activity_summary_for_prompt(n: int = 6) -> str:
 
 
 # 全局单例
+def _user_dynamic_names() -> dict:
+    wb = load_worldbook()
+    user_name = wb.get("user_name", "用户")
+    ai_name = wb.get("ai_name", "AI")
+    connor_name = "Connor"
+    try:
+        cfg_path = DATA_DIR / "chatroom_config.json"
+        if cfg_path.exists():
+            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+            connor_name = cfg.get("connor_name", connor_name) or connor_name
+    except Exception:
+        pass
+    return {
+        "user": user_name,
+        "assistant": ai_name,
+        "aion": ai_name,
+        "connor": connor_name,
+        "system": "系统",
+    }
+
+
+def _user_dynamic_actor(actor: str, names: dict) -> str:
+    return names.get(actor, actor or "未知")
+
+
+def _user_dynamic_clip(text: str, max_len: int = 80) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_len:
+        return text
+    return text[:max_len].rstrip() + "..."
+
+
+def get_user_dynamics_for_prompt(hours: int = 1, limit: int = 12) -> str:
+    """
+    获取最近用户关键动态，格式化为可注入主动观察/监督 prompt 的短文本。
+    只包含：朋友圈、日记、礼物、位置状态变化；没有动态时返回空字符串。
+    """
+    hours = max(1, min(24, hours))
+    limit = max(1, min(30, limit))
+    cutoff = time.time() - hours * 3600
+    names = _user_dynamic_names()
+    user_name = _user_dynamic_actor("user", names)
+    items: list[tuple[float, str]] = []
+
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+
+            rows = conn.execute(
+                "SELECT id, author, content, attachments, created_at FROM moments "
+                "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+                (cutoff, limit),
+            ).fetchall()
+            for row in rows:
+                actor = _user_dynamic_actor(row["author"], names)
+                try:
+                    atts = json.loads(row["attachments"] or "[]")
+                except Exception:
+                    atts = []
+                suffix = f"（{len(atts)}张图）" if atts else ""
+                detail = _user_dynamic_clip(row["content"])
+                text = f"{actor} 发布了朋友圈{suffix}"
+                if detail:
+                    text += f"：{detail}"
+                items.append((float(row["created_at"]), text))
+
+            rows = conn.execute(
+                "SELECT id, author, title, content, created_at FROM diary_entries "
+                "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+                (cutoff, limit),
+            ).fetchall()
+            for row in rows:
+                actor = _user_dynamic_actor(row["author"], names)
+                detail = _user_dynamic_clip(row["title"] or row["content"])
+                text = f"{actor} 发布了日记"
+                if detail:
+                    text += f"：{detail}"
+                items.append((float(row["created_at"]), text))
+
+            rows = conn.execute(
+                "SELECT id, message, created_at, sender FROM gifts "
+                "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+                (cutoff, limit),
+            ).fetchall()
+            for row in rows:
+                actor = _user_dynamic_actor(row["sender"] or "aion", names)
+                detail = _user_dynamic_clip(row["message"])
+                text = f"{actor} 给 {user_name} 送了礼物"
+                if detail:
+                    text += f"：{detail}"
+                items.append((float(row["created_at"]), text))
+    except Exception:
+        pass
+
+    try:
+        status_path = DATA_DIR / "location_status.json"
+        if status_path.exists():
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+            changed_at = float(status.get("state_changed_at") or 0)
+            if changed_at >= cutoff:
+                state = status.get("state", "unknown")
+                state_label = {"at_home": "在家", "outside": "外出", "unknown": "未知"}.get(state, state)
+                detail = _user_dynamic_clip(status.get("address", ""), 60)
+                text = f"{user_name} 的位置状态变为{state_label}"
+                if detail:
+                    text += f"：{detail}"
+                items.append((changed_at, text))
+    except Exception:
+        pass
+
+    if not items:
+        return ""
+
+    items.sort(key=lambda x: x[0])
+    return "\n".join(
+        f"[{time.strftime('%H:%M', time.localtime(ts))}] {text}"
+        for ts, text in items[-limit:]
+    )
+
+
 pc_tracker = PCActivityTracker()
 pc_display_tracker = PCDisplayTracker()

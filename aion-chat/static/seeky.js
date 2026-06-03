@@ -13,7 +13,7 @@ let reviewBusy = false;
 let sending = false;
 let toastTimer = null;
 let reviewPollTimer = null;
-let reviewMode = 'source';
+let reviewMode = 'compress';
 
 function esc(text) {
   const div = document.createElement('div');
@@ -336,6 +336,15 @@ function reviewModeName(mode) {
   return mode === 'memory_compress' ? '长期压缩' : '原文整理';
 }
 
+function reviewModeFor(review) {
+  return review?.mode === 'memory_compress' ? 'compress' : 'source';
+}
+
+function activeMemoryReview() {
+  if (!memoryReview) return null;
+  return reviewModeFor(memoryReview) === reviewMode ? memoryReview : null;
+}
+
 function parseJsonList(text) {
   if (!text) return [];
   if (Array.isArray(text)) return text;
@@ -371,24 +380,27 @@ function setDateRange(startId, endId, daysAgoEnd = 8, lengthDays = 1) {
 }
 
 function setReviewMode(mode) {
-  reviewMode = mode === 'compress' ? 'compress' : 'source';
-  $('sourceFields').classList.toggle('hidden', reviewMode !== 'source');
-  $('compressFields').classList.toggle('hidden', reviewMode !== 'compress');
+  reviewMode = 'compress';
+  $('compressFields')?.classList.remove('hidden');
   document.querySelectorAll('.review-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === reviewMode);
   });
-  $('createReviewBtn').textContent = reviewMode === 'compress' ? '生成压缩草案' : '生成整理草案';
+  $('createReviewBtn').textContent = '生成压缩草案';
+  renderMemoryReview();
 }
-
 function renderMemoryReview() {
   const list = $('reviewList');
-  if (!memoryReview) {
-    $('reviewStatus').textContent = '还没有整理草案。生成草案不会修改主记忆库。';
-    list.innerHTML = `<div class="review-empty">点“生成整理草案”，Seeky 会先给出建议，等你确认后才会应用。</div>`;
+  if (!activeMemoryReview()) {
+    $('reviewStatus').textContent = '还没有长期压缩草案。生成草案不会修改主记忆库。';
+    list.innerHTML = `<div class="review-empty">点“生成压缩草案”，Seeky 会先从旧摘要里提炼长期重点，等你确认后才会应用。</div>`;
+    $('saveReviewBtn').disabled = true;
+    $('discardReviewBtn').disabled = true;
+    $('applyReviewBtn').disabled = true;
     return;
   }
 
   const items = memoryReview.items || [];
+  const replaceItems = memoryReview.replace_items || [];
   const counts = items.reduce((acc, item) => {
     const action = item.final_action || (isCreateStyleReview() ? 'create' : 'keep');
     acc[action] = (acc[action] || 0) + 1;
@@ -405,7 +417,7 @@ function renderMemoryReview() {
   if (isCreateStyleReview()) {
     const labelName = memoryReview.mode === 'memory_compress' ? '压缩窗' : '原文窗';
     const label = memoryReview.source_label ? `${labelName}：${memoryReview.source_label}。` : '';
-    const oldCount = memoryReview.delete_count || 0;
+    const oldCount = replaceItems.length || memoryReview.delete_count || 0;
     const replaceText = memoryReview.mode === 'memory_compress' ? `应用时会替换该时间窗内旧摘要 ${oldCount} 条` : `应用时会替换该时间窗内旧记忆 ${oldCount} 条`;
     $('reviewStatus').textContent =
       `${statusLabel}。${label}${reviewModeName(memoryReview.mode)}候选 ${items.length} 条：写入 ${counts.create || 0}，丢弃 ${counts.discard || 0}；${replaceText}${errorText}`;
@@ -414,23 +426,74 @@ function renderMemoryReview() {
       `${statusLabel}。共 ${items.length} 条：不动 ${counts.keep || 0}，改写 ${counts.edit || 0}，删除 ${counts.delete || 0}${errorText}`;
   }
 
-  if (!items.length) {
+  if (!items.length && !replaceItems.length) {
     if (memoryReview.status === 'processing') {
-      list.innerHTML = `<div class="review-empty">Seeky 正在按原文时间整理，这里完成后会自动刷新。</div>`;
+      list.innerHTML = `<div class="review-empty">Seeky 正在压缩旧摘要，这里完成后会自动刷新。</div>`;
     } else if (memoryReview.status === 'failed') {
       list.innerHTML = `<div class="review-empty">这次生成失败了，错误信息在上面的状态里。</div>`;
     } else {
       list.innerHTML = `<div class="review-empty">这个时间窗没有生成可写入的记忆。</div>`;
     }
   } else {
-    list.innerHTML = items.map(renderMemoryReviewItem).join('');
+    const createItems = items.filter(item => (item.final_action || item.suggested_action || 'create') === 'create');
+    const discardItems = items.filter(item => (item.final_action || item.suggested_action || 'create') === 'discard');
+    list.innerHTML = `
+      <div class="review-section">
+        <div class="review-section-head">
+          <span>将写入的新长期记忆</span>
+          <b>${createItems.length}</b>
+        </div>
+        ${createItems.length ? createItems.map(renderMemoryReviewItem).join('') : '<div class="review-empty small">没有新记忆会写入。</div>'}
+      </div>
+      <div class="review-section">
+        <div class="review-section-head danger">
+          <span>确认后会替换/删除的旧摘要</span>
+          <b>${replaceItems.length}</b>
+        </div>
+        ${replaceItems.length ? replaceItems.map(renderReplaceMemoryItem).join('') : '<div class="review-empty small">没有旧摘要会被替换。</div>'}
+      </div>
+      ${discardItems.length ? `
+        <div class="review-section">
+          <div class="review-section-head muted">
+            <span>草案中丢弃的新候选</span>
+            <b>${discardItems.length}</b>
+          </div>
+          ${discardItems.map(renderMemoryReviewItem).join('')}
+        </div>` : ''}`;
   }
 
-  const editable = memoryReview.status === 'draft' && !reviewBusy;
+  const editable = memoryReview.status === 'draft' && items.length > 0 && !reviewBusy;
   const discardable = ['draft', 'processing', 'failed'].includes(memoryReview.status) && !reviewBusy;
   $('saveReviewBtn').disabled = !editable;
   $('discardReviewBtn').disabled = !discardable;
   $('applyReviewBtn').disabled = !editable;
+}
+
+function renderReplaceMemoryItem(item, index) {
+  let keywords = [];
+  try {
+    keywords = item.keywords ? JSON.parse(item.keywords) : [];
+  } catch {
+    keywords = String(item.keywords || '').split(/[,，、\n]/).map(s => s.trim()).filter(Boolean);
+  }
+  const kw = keywords.length ? `<div class="review-old-keywords">${keywords.map(k => `<span>${esc(k)}</span>`).join('')}</div>` : '';
+  const importance = item.importance == null ? '' : `<span>重要度 ${esc(Number(item.importance).toFixed(2))}</span>`;
+  return `
+    <div class="review-item review-old-item">
+      <div class="review-seq">
+        <span>D${String(index + 1).padStart(3, '0')}</span>
+        <em>将删除</em>
+      </div>
+      <div class="review-content">
+        <div class="review-original">${esc(item.content)}</div>
+        <div class="review-source-meta">
+          <span>${esc(fmtTime(item.source_start_ts || item.created_at))}</span>
+          <span>${esc(item.type || 'memory')}</span>
+          ${importance}
+        </div>
+        ${kw}
+      </div>
+    </div>`;
 }
 
 function renderMemoryReviewItem(item) {
@@ -538,31 +601,25 @@ function maybePollMemoryReview() {
 
 async function createMemoryReviewDraft() {
   if (reviewBusy) return;
-  const sourceStart = $('reviewStartDateInput').value || defaultReviewDate();
-  const sourceEnd = $('reviewEndDateInput').value || sourceStart;
-  const compressStart = $('compressStartDateInput').value || sourceStart;
+  const compressStart = $('compressStartDateInput').value || defaultReviewDate();
   const compressEnd = $('compressEndDateInput').value || compressStart;
-  const payload = reviewMode === 'compress'
-    ? {
-        mode: 'compress',
-        start_date: compressStart,
-        end_date: compressEnd,
-        compress_source: $('compressSourceSelect').value,
-        compress_strength: $('compressStrengthSelect').value,
-      }
-    : { mode: 'source', start_date: sourceStart, end_date: sourceEnd };
-  const label = reviewMode === 'compress'
-    ? `${compressStart} 到 ${compressEnd} 的长期压缩草案`
-    : `${sourceStart} 到 ${sourceEnd} 的原文整理草案`;
+  const payload = {
+    mode: 'compress',
+    start_date: compressStart,
+    end_date: compressEnd,
+    compress_source: 'summary',
+    compress_strength: $('compressStrengthSelect').value,
+  };
+  const label = `${compressStart} 到 ${compressEnd} 的长期压缩草案`;
   if (!confirm(`生成 ${label}？这一步只写入 Seeky 草案，不会修改主记忆库。`)) return;
-  setReviewBusy(true, reviewMode === 'compress' ? 'Seeky 正在压缩旧摘要...' : 'Seeky 正在按原文时间整理草案...');
-  showPetBubble(reviewMode === 'compress' ? '我去压缩旧摘要，只做草案。' : '我去按时间线翻原文，只做草案，不会偷偷改记忆库。');
+  setReviewBusy(true, 'Seeky 正在压缩旧摘要...');
+  showPetBubble('我去压缩旧摘要，只做草案。');
   try {
     memoryReview = await api('POST', '/api/seeky/memory-review/draft', payload);
     renderMemoryReview();
     maybePollMemoryReview();
     showToast('已开始生成草案');
-    showPetBubble(reviewMode === 'compress' ? '我开始压缩这段旧记忆了，完成后会显示在这里。' : '我开始跑这段原文整理了，完成后会显示在这里。');
+    showPetBubble('我开始压缩这段旧记忆了，完成后会显示在这里。');
   } catch (err) {
     $('reviewStatus').textContent = `生成失败：${err.message}`;
     showToast('草案生成失败');
@@ -606,7 +663,11 @@ async function discardMemoryReview() {
 }
 
 async function applyMemoryReview() {
-  if (!memoryReview || memoryReview.status !== 'draft') return;
+  if (!activeMemoryReview() || memoryReview.status !== 'draft') {
+    showToast('褰撳墠娌℃湁鍙簲鐢ㄧ殑鑽夋');
+    renderMemoryReview();
+    return;
+  }
   syncReviewFromDom();
   let warning = '';
   if (isSourceReview()) {
@@ -672,8 +733,6 @@ function bindEvents() {
   $('saveConfigBtn').addEventListener('click', () => saveConfig(true).catch(err => showToast(`保存失败：${err.message}`)));
   $('clearBtn').addEventListener('click', clearMessages);
   $('closeMemoryReviewBtn').addEventListener('click', closeDrawers);
-  $('sourceModeBtn').addEventListener('click', () => setReviewMode('source'));
-  $('compressModeBtn').addEventListener('click', () => setReviewMode('compress'));
   $('createReviewBtn').addEventListener('click', createMemoryReviewDraft);
   $('saveReviewBtn').addEventListener('click', () => saveReviewEdits(false).catch(err => showToast(`保存失败：${err.message}`)));
   $('discardReviewBtn').addEventListener('click', discardMemoryReview);
@@ -700,6 +759,10 @@ function bindEvents() {
   $('configModelSelect').addEventListener('change', syncModelFromConfig);
   document.querySelectorAll('.skill-btn').forEach(button => {
     button.addEventListener('click', () => {
+      if (button.disabled || button.classList.contains('archived')) {
+        showToast(`${button.dataset.skill} 暂时封存`);
+        return;
+      }
       if (button.dataset.skill === '记忆整理') {
         openDrawer('memoryReviewPanel');
       } else {
@@ -710,9 +773,8 @@ function bindEvents() {
 }
 
 bindEvents();
-setDateRange('reviewStartDateInput', 'reviewEndDateInput', 8, 1);
 setDateRange('compressStartDateInput', 'compressEndDateInput', 190, 30);
-setReviewMode('source');
+setReviewMode('compress');
 loadInitialData().catch(err => {
   showToast(`Seeky 启动失败：${err.message}`);
   console.error(err);

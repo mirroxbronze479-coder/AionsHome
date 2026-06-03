@@ -12,6 +12,12 @@ from config import get_key, MODELS, UPLOADS_DIR, CODEX_UPLOADS_DIR, load_worldbo
 
 # CLI 状态前缀：yield 此前缀的 chunk 会被 _bg_generate 拦截为状态事件，不送入 TTS 和正文
 CLI_STATUS_PREFIX = "\x00CLI_STATUS:"
+_ANTIGRAVITY_DEFAULT_PRINT_TIMEOUT = "10m"
+_ANTIGRAVITY_PRINT_TIMEOUT_RE = re.compile(r"\d+(?:ms|s|m|h)?")
+_ANTIGRAVITY_TIMEOUT_NOTICE_RE = re.compile(
+    r"(?:\r?\n)*Error:\s*timed out waiting for response\s*$",
+    re.IGNORECASE,
+)
 
 # Gemini CLI 内部思考/工具痕迹清洗：
 # Gemini 3 在 agent 模式下处理图片时，可能把内部思考链（image_description / thought / Footnote / 系统指令）
@@ -29,6 +35,22 @@ _GEMINI_CLI_NOISE_PATTERNS = [
     re.compile(r'^.*Currently no further tools are needed.*$', re.IGNORECASE | re.MULTILINE),
 ]
 _LEADING_CLI_ROLE_HEADER_RE = re.compile(r'^\s*\[(?:Assistant|Model|AI|Aion)\]\s*', re.IGNORECASE)
+
+
+def _antigravity_print_timeout(meta: dict | None) -> str:
+    if not isinstance(meta, dict):
+        return _ANTIGRAVITY_DEFAULT_PRINT_TIMEOUT
+    value = str(meta.get("antigravity_print_timeout") or "").strip()
+    if value and _ANTIGRAVITY_PRINT_TIMEOUT_RE.fullmatch(value):
+        return value
+    return _ANTIGRAVITY_DEFAULT_PRINT_TIMEOUT
+
+
+def _strip_antigravity_timeout_notice(text: str) -> str:
+    if not text:
+        return text
+    cleaned = _ANTIGRAVITY_TIMEOUT_NOTICE_RE.sub("", text).rstrip()
+    return cleaned if cleaned.strip() else text.strip()
 
 
 def _strip_gemini_cli_noise(text: str) -> str:
@@ -428,8 +450,19 @@ def _summarize_antigravity_log(log_path: Path | None) -> str:
         text = log_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
-    if "You are not logged into Antigravity" in text:
+    if "RESOURCE_EXHAUSTED" in text or "Individual quota reached" in text:
+        match = re.search(r"Resets in ([^.]+)", text)
+        reset_hint = f"（{match.group(0)}）" if match else ""
+        return f"Antigravity CLI 当前额度已用完{reset_hint}。稍后再试，或临时把 Connor 切回 Codex。"
+    auth_succeeded = (
+        "silent auth succeeded" in text
+        or "OAuth: authenticated successfully" in text
+        or "ChainedAuth: authenticated via keyring" in text
+    )
+    if "You are not logged into Antigravity" in text and not auth_succeeded:
         return "Antigravity CLI 还没有完成登录。请先在终端运行 agy，选 Google OAuth 完成 CLI 登录，再回到 AionsHome 重试。"
+    if "INVALID_ARGUMENT (code 400)" in text:
+        return "Antigravity CLI 拒绝了这次请求参数（INVALID_ARGUMENT）。通常是本次上下文、附件或特殊内容触发了后端参数校验，不是登录掉了；可以删短上下文或换下一条重试。"
     if "A required privilege is not held by the client" in text and "symlink" in text:
         return "Antigravity CLI 创建项目配置软链接失败。可以用管理员 PowerShell 运行 agy 完成一次初始化，或开启 Windows 开发者模式后再试。"
     if "failed to get model config" in text or "FetchAvailableModels" in text:
@@ -787,6 +820,43 @@ def _deduplicate_cjk(text: str) -> str:
     return "".join(result)
 
 
+def _looks_like_json_payload(text: str) -> bool:
+    stripped = (text or "").lstrip()
+    return stripped.startswith("{") or stripped.startswith("```json") or stripped.startswith("```JSON")
+
+
+def _escape_json_string_newlines(text: str) -> str:
+    """修复 Transcript 按控制台宽度在 JSON 字符串内部插入的裸换行。"""
+    if not _looks_like_json_payload(text):
+        return text
+    result = []
+    in_string = False
+    escaped = False
+    for ch in text:
+        if in_string:
+            if escaped:
+                result.append(ch)
+                escaped = False
+                continue
+            if ch == "\\":
+                result.append(ch)
+                escaped = True
+                continue
+            if ch == '"':
+                result.append(ch)
+                in_string = False
+                continue
+            if ch == "\n":
+                result.append("\\n")
+                continue
+            result.append(ch)
+            continue
+        result.append(ch)
+        if ch == '"':
+            in_string = True
+    return "".join(result)
+
+
 def _extract_transcript_body(transcript_path: Path) -> str:
     """从 PowerShell Transcript 文件中提取有效输出内容。"""
     try:
@@ -819,7 +889,8 @@ def _extract_transcript_body(transcript_path: Path) -> str:
         kept.append(line.rstrip())
     # 去掉首尾空行，但保留中间的空行
     result = "\n".join(kept).strip()
-    return _deduplicate_cjk(result)
+    result = _deduplicate_cjk(result)
+    return _escape_json_string_newlines(result)
 
 
 async def call_antigravity_cli(messages: list, model: str, meta: dict | None = None,
@@ -841,11 +912,18 @@ async def call_antigravity_cli(messages: list, model: str, meta: dict | None = N
 
     transcript_file = None
     script_file = None
+    log_file = None
+    prompt_file = None
     try:
         fd_tr, transcript_file = tempfile.mkstemp(prefix="agy_transcript_", suffix=".txt", dir=log_dir)
         os.close(fd_tr)
         fd_sc, script_file = tempfile.mkstemp(prefix="agy_run_", suffix=".ps1", dir=log_dir)
         os.close(fd_sc)
+        fd_log, log_file = tempfile.mkstemp(prefix="agy_cli_", suffix=".log", dir=log_dir)
+        os.close(fd_log)
+        fd_prompt, prompt_file = tempfile.mkstemp(prefix="agy_prompt_", suffix=".txt", dir=log_dir)
+        os.close(fd_prompt)
+        Path(prompt_file).write_text(prompt, encoding="utf-8")
 
         # 构建参数
         def _ps_quote(s: str) -> str:
@@ -855,16 +933,17 @@ async def call_antigravity_cli(messages: list, model: str, meta: dict | None = N
         agy_args = []
         if SETTINGS.get("gemini_cli_tools_enabled", False):
             agy_args.append("--dangerously-skip-permissions")
+        agy_args.extend(["--log-file", log_file])
         agy_args.append("--print")
         # prompt 通过 base64 解码注入，避免 PS 转义问题
-        # --print-timeout 10m
-        args_literal = "@(" + ",".join(_ps_quote(a) for a in agy_args) + ",$prompt,'--print-timeout','10m')"
+        print_timeout = _antigravity_print_timeout(meta)
+        args_literal = "@(" + ",".join(_ps_quote(a) for a in agy_args) + ",$prompt,'--print-timeout'," + _ps_quote(print_timeout) + ")"
 
         script_text = (
             "$ErrorActionPreference = 'Continue'\n"
             # CREATE_NEW_CONSOLE 的默认宽度仅 80 列，transcript 会在此处硬换行。
-            # 将缓冲区宽度设为 500 列，避免 AI 回复被截断换行。
-            "try { $h = $Host.UI.RawUI; $sz = $h.BufferSize; $sz.Width = 500; $h.BufferSize = $sz } catch {}\n"
+            # 尽量拉宽缓冲区；若宿主限制失败，提取层还会修复 JSON 字符串内的硬换行。
+            "try { $h = $Host.UI.RawUI; $sz = $h.BufferSize; $sz.Width = 8000; $h.BufferSize = $sz } catch {}\n"
             "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n"
             "$OutputEncoding = [System.Text.Encoding]::UTF8\n"
             "$env:NO_COLOR = '1'\n"
@@ -906,7 +985,7 @@ async def call_antigravity_cli(messages: list, model: str, meta: dict | None = N
         returncode = await asyncio.to_thread(_run_agy_sync)
 
         # 从 transcript 提取输出
-        output = _extract_transcript_body(Path(transcript_file))
+        output = _strip_antigravity_timeout_notice(_extract_transcript_body(Path(transcript_file)))
 
         # 检查认证问题
         if _is_antigravity_auth_prompt(output):
@@ -914,6 +993,10 @@ async def call_antigravity_cli(messages: list, model: str, meta: dict | None = N
             return
 
         if returncode and returncode != 0 and not output:
+            log_summary = _summarize_antigravity_log(Path(log_file) if log_file else None)
+            if log_summary:
+                yield f"[AntigravityCLI错误] {log_summary}"
+                return
             if "not logged into Antigravity" in output:
                 yield "[AntigravityCLI错误] 未登录。请先在 PowerShell 里运行 agy 完成 Google OAuth 登录后重试。"
             else:
@@ -923,7 +1006,11 @@ async def call_antigravity_cli(messages: list, model: str, meta: dict | None = N
         if output:
             yield output
         else:
-            yield "[AntigravityCLI错误] 未收到回复"
+            log_summary = _summarize_antigravity_log(Path(log_file) if log_file else None)
+            if log_summary:
+                yield f"[AntigravityCLI错误] {log_summary}"
+            else:
+                yield "[AntigravityCLI错误] 未收到回复"
 
     except FileNotFoundError:
         yield "[AntigravityCLI错误] 无法启动 PowerShell 进程"
@@ -958,6 +1045,7 @@ def _find_codex_script() -> str | None:
 
 _CODEX_SCRIPT: str | None = _find_codex_script()
 _CODEX_WORKSPACE: str = str(Path(__file__).parent.parent)
+_CODEX_HOME: str = os.environ.get("CODEX_HOME") or str(Path.home() / ".codex")
 
 async def call_codex_cli(messages: list, model: str, meta: dict | None = None,
                          temperature: float | None = None, max_tokens: int | None = None):
@@ -979,7 +1067,10 @@ async def call_codex_cli(messages: list, model: str, meta: dict | None = None,
            "-"]
 
     try:
+        # Do not pass -m here: Codex should inherit model and reasoning effort
+        # from the user's Codex CLI config.
         env = {**os.environ, "NO_COLOR": "1"}
+        env.setdefault("CODEX_HOME", _CODEX_HOME)
         proc = await _spawn_cli_process(cmd, prompt, env)
 
         last_agent_text = ""

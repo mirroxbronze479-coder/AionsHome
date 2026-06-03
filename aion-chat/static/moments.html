@@ -59,6 +59,27 @@
 }
 .publish-modal-btn:active { opacity:0.8; }
 .publish-modal-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.publish-tools {
+  display:flex; align-items:center; gap:8px; margin-top:10px;
+}
+.publish-image-btn {
+  border:1px solid var(--border); background:var(--surface2); color:var(--text2);
+  border-radius:8px; padding:7px 10px; font-size:13px; cursor:pointer;
+}
+.publish-image-btn:active { opacity:0.82; }
+.publish-preview {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:8px;
+}
+.publish-preview-item {
+  position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--bg);
+  border:1px solid var(--border);
+}
+.publish-preview-item img { width:100%; height:100%; object-fit:cover; display:block; }
+.publish-preview-remove {
+  position:absolute; top:4px; right:4px; width:20px; height:20px; border:none;
+  border-radius:50%; background:rgba(0,0,0,0.55); color:#fff; font-size:13px;
+  line-height:20px; cursor:pointer;
+}
 
 /* ── 朋友圈卡片 ── */
 .moment-card {
@@ -86,6 +107,16 @@
   white-space:pre-wrap; word-break:break-word;
   margin-bottom:8px;
 }
+.moment-images {
+  display:grid; grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:6px; margin:6px 0 8px; max-width:320px;
+}
+.moment-images img {
+  width:100%; aspect-ratio:1; object-fit:cover; border-radius:6px;
+  background:var(--bg); cursor:pointer; display:block;
+}
+.moment-images.one { grid-template-columns:minmax(0, 220px); max-width:220px; }
+.moment-images.one img { aspect-ratio:auto; max-height:260px; object-fit:contain; }
 .moment-del {
   position:absolute; top:2px; right:10px;
   background:none; border:none; color:var(--text3);
@@ -219,6 +250,12 @@
         <button class="publish-modal-close" onclick="closePublishModal()">✕</button>
       </div>
       <textarea class="publish-textarea" id="publishInput" placeholder="分享你的想法..."></textarea>
+      <div class="publish-tools">
+        <button class="publish-image-btn" type="button" onclick="document.getElementById('publishFileInput').click()">配图</button>
+        <span id="publishImageStatus" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+      <input type="file" id="publishFileInput" accept="image/*" multiple style="display:none" onchange="handlePublishImages(this)">
+      <div class="publish-preview" id="publishPreview"></div>
       <button class="publish-modal-btn" id="publishBtn" onclick="publishMoment()">发布</button>
     </div>
   </div>
@@ -255,6 +292,7 @@ let currentPage = 1;
 let totalItems = 0;
 let allMoments = [];
 let nameMap = {};  // author → display name
+let pendingMomentAttachments = [];
 
 // ── 初始化 ──
 async function init() {
@@ -321,6 +359,72 @@ function escapeHtml(s) {
 }
 
 // ── 渲染列表 ──
+function normalizeAttachments(atts) {
+  if (!Array.isArray(atts)) return [];
+  return atts.map(a => {
+    if (typeof a === 'string') return a;
+    if (a && typeof a === 'object') return a.url || '';
+    return '';
+  }).filter(url => url && (url.startsWith('/uploads/') || url.startsWith('/cr-uploads/')));
+}
+
+function renderMomentImages(atts) {
+  const urls = normalizeAttachments(atts);
+  if (!urls.length) return '';
+  const cls = urls.length === 1 ? 'moment-images one' : 'moment-images';
+  return `<div class="${cls}">` + urls.map(url =>
+    `<img src="${escapeHtml(url)}" alt="配图" loading="lazy" onclick="openMomentImage('${escapeHtml(url)}')">`
+  ).join('') + '</div>';
+}
+
+function openMomentImage(url) {
+  window.open(url, '_blank');
+}
+
+function renderPublishPreview() {
+  const preview = document.getElementById('publishPreview');
+  const status = document.getElementById('publishImageStatus');
+  if (!pendingMomentAttachments.length) {
+    preview.innerHTML = '';
+    status.textContent = '';
+    return;
+  }
+  status.textContent = `${pendingMomentAttachments.length} 张`;
+  preview.innerHTML = pendingMomentAttachments.map((url, idx) => `
+    <div class="publish-preview-item">
+      <img src="${escapeHtml(url)}" alt="配图">
+      <button class="publish-preview-remove" onclick="removePublishAttachment(${idx})" type="button">×</button>
+    </div>
+  `).join('');
+}
+
+function removePublishAttachment(idx) {
+  pendingMomentAttachments.splice(idx, 1);
+  renderPublishPreview();
+}
+
+async function handlePublishImages(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+  const status = document.getElementById('publishImageStatus');
+  status.textContent = '上传中...';
+  try {
+    for (const file of files) {
+      if (!file.type || !file.type.startsWith('image/')) continue;
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data && data.url) pendingMomentAttachments.push(data.url);
+    }
+    renderPublishPreview();
+  } catch(e) {
+    status.textContent = '';
+    showToast('图片上传失败');
+  }
+}
+
 function renderList() {
   const container = document.getElementById('momentsList');
   if (!allMoments.length) {
@@ -344,6 +448,7 @@ function renderMomentCard(m) {
   const timeStr = relativeTime(m.created_at);
   const comments = m.comments || [];
   const reactions = m.reactions || [];
+  const imagesHtml = renderMomentImages(m.attachments);
 
   // 反应统计
   const likes = reactions.filter(r => r.type === 'like');
@@ -403,6 +508,7 @@ function renderMomentCard(m) {
       </div>
     </div>
     <div class="moment-content">${escapeHtml(m.content)}</div>
+    ${imagesHtml}
     ${reactionsHtml}
     ${commentsHtml}
   </div>`;
@@ -416,17 +522,20 @@ function openPublishModal() {
 function closePublishModal() {
   document.getElementById('publishOverlay').classList.remove('show');
   document.getElementById('publishInput').value = '';
+  pendingMomentAttachments = [];
+  renderPublishPreview();
 }
 
 // ── 发布朋友圈 ──
 async function publishMoment() {
   const input = document.getElementById('publishInput');
   const content = input.value.trim();
-  if (!content) return;
+  if (!content && !pendingMomentAttachments.length) return;
   const btn = document.getElementById('publishBtn');
   btn.disabled = true;
   try {
-    const m = await api('POST', '/api/moments', { content });
+    const attachments = pendingMomentAttachments.slice();
+    const m = await api('POST', '/api/moments', { content, attachments });
     allMoments.unshift(m);
     totalItems++;
     renderList();

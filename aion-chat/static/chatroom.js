@@ -12,6 +12,8 @@ let isReplyOnce = false;
 let chatroomModels = [];
 let pendingAttachments = [];  // [{url, type, name}]
 let crMessagesById = {};
+let memSourceMemId = null;
+let memSourceMessages = [];
 
 // ── 密语模式 ──
 let crWhisperMode = false;
@@ -529,6 +531,12 @@ const aiChatBtn = document.getElementById('aiChatBtn');
 const replyAionBtn = document.getElementById('replyAionBtn');
 const replyConnorBtn = document.getElementById('replyConnorBtn');
 const toastEl = document.getElementById('toast');
+const chatSearchPanel = document.getElementById('chatSearchPanel');
+const chatSearchForm = document.getElementById('chatSearchForm');
+const chatSearchInput = document.getElementById('chatSearchInput');
+const chatSearchMeta = document.getElementById('chatSearchMeta');
+const chatSearchResults = document.getElementById('chatSearchResults');
+let chatSearchKeyword = '';
 
 // ══════════════════════════════════════════════════
 //  工具函数
@@ -705,6 +713,7 @@ async function selectRoom(roomId) {
   }
   composer.style.display = 'flex';
   updateHeaderActions();
+  resetChatSearch();
   await loadMessages();
   closeSidebar();
 }
@@ -756,6 +765,126 @@ async function loadOlderMessages() {
   loadingOlder = false;
 }
 
+function resetChatSearch() {
+  chatSearchKeyword = '';
+  if (chatSearchInput) chatSearchInput.value = '';
+  if (chatSearchMeta) chatSearchMeta.textContent = currentRoom ? '输入关键词后回车' : '先选择一个聊天室';
+  if (chatSearchResults) chatSearchResults.innerHTML = '';
+  chatSearchPanel?.classList.remove('show');
+}
+
+function openChatSearch() {
+  if (!currentRoom) {
+    toast('先选择一个聊天室');
+    return;
+  }
+  chatSearchPanel?.classList.add('show');
+  setTimeout(() => chatSearchInput?.focus(), 0);
+}
+
+function closeChatSearch() {
+  chatSearchPanel?.classList.remove('show');
+}
+
+function crMsgSelector(msgId) {
+  const safeId = window.CSS?.escape ? CSS.escape(String(msgId)) : String(msgId).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `[data-msg-id="${safeId}"]`;
+}
+
+function crSearchSnippet(content, keyword) {
+  const text = String(content || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const lower = text.toLocaleLowerCase();
+  const needle = String(keyword || '').toLocaleLowerCase();
+  const idx = needle ? lower.indexOf(needle) : -1;
+  if (idx < 0) return text.length > 96 ? text.slice(0, 96) + '...' : text;
+  const start = Math.max(0, idx - 28);
+  const end = Math.min(text.length, idx + keyword.length + 56);
+  return `${start > 0 ? '...' : ''}${text.slice(start, end)}${end < text.length ? '...' : ''}`;
+}
+
+function crHighlightFirst(text, keyword) {
+  const value = String(text || '');
+  const needle = String(keyword || '');
+  if (!needle) return esc(value);
+  const idx = value.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase());
+  if (idx < 0) return esc(value);
+  return esc(value.slice(0, idx)) + '<mark>' + esc(value.slice(idx, idx + needle.length)) + '</mark>' + esc(value.slice(idx + needle.length));
+}
+
+function renderChatSearchResults(items) {
+  if (!chatSearchResults) return;
+  if (!items.length) {
+    chatSearchResults.innerHTML = '<div class="chat-search-meta">没有匹配的消息</div>';
+    return;
+  }
+  chatSearchResults.innerHTML = items.map(m => {
+    const snippet = crSearchSnippet(m.content || '', chatSearchKeyword);
+    const sender = esc(crName(m.sender || 'user'));
+    const time = esc(timeStr(m.created_at));
+    return `<button class="chat-search-result" type="button" onclick="jumpToChatSearchResult('${esc(m.id)}')">
+      <div class="csr-head"><span>${sender}</span><span>${time}</span></div>
+      <div class="csr-snippet">${crHighlightFirst(snippet, chatSearchKeyword)}</div>
+    </button>`;
+  }).join('');
+}
+
+async function runChatSearch(e) {
+  e?.preventDefault();
+  if (!currentRoom) {
+    toast('先选择一个聊天室');
+    return;
+  }
+  const keyword = (chatSearchInput?.value || '').trim();
+  chatSearchKeyword = keyword;
+  if (!keyword) {
+    if (chatSearchMeta) chatSearchMeta.textContent = '输入关键词后回车';
+    if (chatSearchResults) chatSearchResults.innerHTML = '';
+    return;
+  }
+  if (chatSearchMeta) chatSearchMeta.textContent = '搜索中...';
+  try {
+    const result = await api(`/rooms/${currentRoom.id}/messages/search?q=${encodeURIComponent(keyword)}&limit=50`);
+    const items = Array.isArray(result?.items) ? result.items : [];
+    if (chatSearchMeta) chatSearchMeta.textContent = items.length ? `找到 ${items.length} 条，点击可跳转` : '没有匹配的消息';
+    renderChatSearchResults(items);
+  } catch (err) {
+    console.error('搜索聊天记录失败:', err);
+    if (chatSearchMeta) chatSearchMeta.textContent = '搜索失败';
+  }
+}
+
+async function jumpToChatSearchResult(msgId) {
+  if (!currentRoom || !msgId) return;
+  let row = messagesEl.querySelector(crMsgSelector(msgId));
+  if (!row) {
+    if (chatSearchMeta) chatSearchMeta.textContent = '正在定位...';
+    try {
+      const result = await api(`/rooms/${currentRoom.id}/messages/around/${encodeURIComponent(msgId)}?before_count=80&after_count=30`);
+      const msgs = Array.isArray(result?.messages) ? result.messages : [];
+      if (!result?.ok || !msgs.length) {
+        toast('这条消息可能已经被删除');
+        return;
+      }
+      oldestMsgTs = msgs[0]?.created_at || null;
+      noMoreMessages = !result.has_more_older;
+      loadingOlder = false;
+      renderMessages(msgs);
+      row = messagesEl.querySelector(crMsgSelector(msgId));
+    } catch (err) {
+      console.error('定位聊天记录失败:', err);
+      toast('定位失败');
+      return;
+    }
+  }
+  closeChatSearch();
+  row?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  row?.classList.add('search-hit');
+  setTimeout(() => row?.classList.remove('search-hit'), 1600);
+}
+
+if (chatSearchForm) chatSearchForm.addEventListener('submit', runChatSearch);
+
 function renderMessages(msgs) {
   crMessagesById = {};
   if (!msgs || !msgs.length) {
@@ -770,19 +899,78 @@ function renderMessages(msgs) {
   messagesEl.innerHTML = msgs.map(m => msgHTML(m)).join('');
 }
 
+function crMsgMenuHtml(sender, msgId) {
+  if (!msgId) return '';
+  const actionHtml = sender === 'system'
+    ? ''
+    : sender === 'user'
+    ? `<button onclick="editChatroomMsg('${msgId}');closeMsgMenus()">\u7f16\u8f91</button>`
+    : `<button onclick="regenerateChatroomMsg('${msgId}');closeMsgMenus()">\u91cd\u65b0\u751f\u6210</button>`;
+  return `
+    <div class="msg-menu-wrap">
+      <button class="msg-menu-btn" onclick="toggleMsgMenu(event)">\u22ef</button>
+      <div class="msg-menu-dropdown">
+        ${actionHtml}
+        <button class="danger" onclick="deleteMsg('${msgId}', this)">\u5220\u9664</button>
+      </div>
+    </div>`;
+}
+
+function crMsgSenderLineHtml(sender, name, msgId) {
+  const menuHtml = crMsgMenuHtml(sender, msgId);
+  if (sender !== 'user') {
+    return `<div class="sender-line"><span class="sender-label ${sender}">${esc(name)}</span>${menuHtml}</div>`;
+  }
+  return menuHtml ? `<div class="sender-line user-line">${menuHtml}</div>` : '';
+}
+
+function crEnsureMsgMenu(row, sender, msgId) {
+  if (!row || !msgId) return;
+  const content = row.querySelector('.msg-content');
+  if (!content || content.querySelector('.msg-menu-wrap')) return;
+  const name = crName(sender);
+  const senderLine = crMsgSenderLineHtml(sender, name, msgId);
+  if (!senderLine) return;
+  const directLabel = Array.from(content.children).find(el => el.classList?.contains('sender-label'));
+  if (directLabel) {
+    directLabel.insertAdjacentHTML('beforebegin', senderLine);
+    directLabel.remove();
+  } else {
+    content.insertAdjacentHTML('afterbegin', senderLine);
+  }
+}
+
+const CR_STRUCTURED_LINE_RE = /^\s*(```|[-*+]\s+|\d+[.)]\s+|[>|#]|\|)/;
+
+function crBubbleParts(raw, isUser = false) {
+  const text = raw || '';
+  // 转账标签前后强制换行，确保卡片独占一个气泡
+  const splitText = text.replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, isUser ? '\n$1\n' : '\n\n$1\n\n');
+  if (isUser) return splitText.split(/\n+/).filter(p => p.trim());
+
+  const singleLineParts = splitText.split(/\n+/).map(p => p.trim()).filter(Boolean);
+  if (singleLineParts.length < 2) return singleLineParts;
+  if (singleLineParts.some(p => CR_STRUCTURED_LINE_RE.test(p))) return splitText.split(/\n{2,}/).filter(p => p.trim());
+  return singleLineParts;
+}
+
 function msgHTML(m) {
   const sender = m.sender || 'user';
 
   // 系统事件消息（点歌、闹钟等）
   if (sender === 'system') {
-    return `<div class="system-event-msg" data-msg-id="${m.id || ''}">${esc(m.content || '')}</div>`;
+    const msgId = m.id || '';
+    return `<div class="system-event-msg" data-msg-id="${msgId}">
+      <span class="system-event-text">${esc(m.content || '')}</span>
+      ${crMsgMenuHtml('system', msgId)}
+    </div>`;
   }
 
   const name = crName(sender);
   const avatar = AVATARS[sender] || AVATARS.user;
   const time = timeStr(m.created_at);
 
-  // 用户消息按单换行拆，AI消息按双换行拆
+  // 用户消息按单换行拆；AI优先按空行拆，兼容 Gemini CLI 的普通单换行段落。
   const isUser = sender === 'user';
   const raw = m.content || '';
 
@@ -794,9 +982,7 @@ function msgHTML(m) {
   const fmt = isUser ? escWithTransfer : escWithImages;
   let bubblesHtml = '';
   if (!isVoiceOnly) {
-    // 转账标签前后强制换行，确保卡片独占一个气泡
-    const splitRaw = raw.replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n$1\n');
-    const parts = splitRaw.split(isUser ? /\n+/ : /\n{2,}/).filter(p => p.trim());
+    const parts = crBubbleParts(raw, isUser);
     if (parts.length > 1) {
       bubblesHtml = '<div class="bubbles">' + parts.map(p => `<div class="bubble">${fmt(p)}</div>`).join('') + '</div>';
     } else if (raw.trim()) {
@@ -821,9 +1007,7 @@ function msgHTML(m) {
       </div>
     </div>` : '';
 
-  const senderLine = sender !== 'user'
-    ? `<div class="sender-line"><span class="sender-label ${sender}">${esc(name)}</span>${menuHtml}</div>`
-    : (menuHtml ? `<div class="sender-line user-line">${menuHtml}</div>` : '');
+  const senderLine = crMsgSenderLineHtml(sender, name, msgId);
 
   const ttsBtn = !isUser && msgId ? `<button class="tts-replay-btn" onclick="crReplayTTS('${msgId}')" title="重听语音">🔊</button>` : '';
 
@@ -854,9 +1038,70 @@ function toggleMsgMenu(e) {
   dropdown.classList.toggle('show');
 }
 
+function showMsgMenuForRow(row) {
+  if (!row) return;
+  const dropdown = row.querySelector('.msg-menu-dropdown');
+  if (!dropdown) return;
+  document.querySelectorAll('.msg-menu-dropdown.show').forEach(d => { if (d !== dropdown) d.classList.remove('show'); });
+  dropdown.classList.add('show');
+}
+
 function closeMsgMenus() {
   document.querySelectorAll('.msg-menu-dropdown.show').forEach(d => d.classList.remove('show'));
 }
+
+function crMsgMenuRowFromTarget(target) {
+  if (!target || target.closest?.('.msg-menu-wrap, button, input, textarea, a')) return null;
+  return target.closest?.('.message-row[data-msg-id], .system-event-msg[data-msg-id]');
+}
+
+messagesEl.addEventListener('contextmenu', e => {
+  const row = crMsgMenuRowFromTarget(e.target);
+  if (!row || !row.querySelector('.msg-menu-dropdown')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  showMsgMenuForRow(row);
+});
+
+let crMsgLongPressTimer = null;
+let crMsgLongPressPoint = null;
+let crMsgLongPressOpened = false;
+
+function crClearMsgLongPress() {
+  if (crMsgLongPressTimer) clearTimeout(crMsgLongPressTimer);
+  crMsgLongPressTimer = null;
+  crMsgLongPressPoint = null;
+}
+
+messagesEl.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const row = crMsgMenuRowFromTarget(e.target);
+  if (!row || !row.querySelector('.msg-menu-dropdown')) return;
+  crMsgLongPressOpened = false;
+  crMsgLongPressPoint = { x: e.clientX, y: e.clientY, row };
+  crMsgLongPressTimer = setTimeout(() => {
+    crMsgLongPressOpened = true;
+    showMsgMenuForRow(row);
+    try { navigator.vibrate?.(12); } catch {}
+  }, 520);
+});
+
+messagesEl.addEventListener('pointermove', e => {
+  if (!crMsgLongPressPoint) return;
+  const dx = Math.abs(e.clientX - crMsgLongPressPoint.x);
+  const dy = Math.abs(e.clientY - crMsgLongPressPoint.y);
+  if (dx > 8 || dy > 8) crClearMsgLongPress();
+});
+
+['pointerup', 'pointercancel', 'pointerleave'].forEach(type => {
+  messagesEl.addEventListener(type, e => {
+    if (crMsgLongPressOpened) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    crClearMsgLongPress();
+  });
+});
 
 async function deleteMsg(msgId, btnEl) {
   try {
@@ -1001,6 +1246,10 @@ async function regenerateChatroomMsg(msgId) {
 
 // 点击空白处关闭下拉菜单
 document.addEventListener('click', () => {
+  if (crMsgLongPressOpened) {
+    crMsgLongPressOpened = false;
+    return;
+  }
   document.querySelectorAll('.msg-menu-dropdown.show').forEach(d => d.classList.remove('show'));
 });
 
@@ -1111,15 +1360,30 @@ function feedStreamingChunk(text) {
   scrollToBottom();
 }
 
-function endStreamingBubble(attachments) {
+function endStreamingBubble(messageOrAttachments) {
   // 先获取流式行的引用（后面 replaceChild 可能破坏 streamingBubble 的 DOM 位置）
   const streamRow = streamingBubble ? streamingBubble.closest('.message-row') : null;
+  const finalMsg = messageOrAttachments && !Array.isArray(messageOrAttachments) ? messageOrAttachments : null;
+  const attachments = finalMsg ? finalMsg.attachments : messageOrAttachments;
 
-  // 流结束后，按双换行拆分成多个气泡，并解析 [[image:...]] 和转账卡片
+  if (finalMsg?.id) crMessagesById[finalMsg.id] = finalMsg;
+  if (finalMsg?.id && streamRow) {
+    const div = document.createElement('div');
+    div.innerHTML = msgHTML(finalMsg);
+    const renderedRow = div.firstElementChild;
+    if (renderedRow) {
+      streamRow.replaceWith(renderedRow);
+      if (crMemoryRecordMsgIds.has(finalMsg.id)) crApplyMemoryHint(finalMsg.id);
+      crShowToyCapsule(finalMsg.id, crToyCommandsFromAttachments(finalMsg.attachments));
+    }
+    streamingBubble = null;
+    streamingText = '';
+    return;
+  }
+
+  // 流结束后，按段落拆分成多个气泡，并解析 [[image:...]] 和转账卡片
   if (streamingBubble && streamingText) {
-    // 转账标签前后强制换行，确保卡片独占一个气泡
-    const splitText = streamingText.replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n\n$1\n\n');
-    const parts = splitText.split(/\n{2,}/).filter(p => p.trim());
+    const parts = crBubbleParts(streamingText, false);
     if (parts.length > 1) {
       const parent = streamingBubble.parentElement;
       const container = document.createElement('div');
@@ -1146,6 +1410,8 @@ function endStreamingBubble(attachments) {
   if (streamRow && streamRow.id && streamRow.id.startsWith('streaming-')) {
     const msgId = streamRow.id.replace('streaming-', '');
     streamRow.setAttribute('data-msg-id', msgId);
+    const sender = streamRow.classList.contains('connor') ? 'connor' : (streamRow.classList.contains('aion') ? 'aion' : 'user');
+    crEnsureMsgMenu(streamRow, sender, msgId);
     const avatarCol = streamRow.querySelector('.msg-avatar-col');
     if (avatarCol && !avatarCol.querySelector('.tts-replay-btn')) {
       avatarCol.insertAdjacentHTML('beforeend', `<button class="tts-replay-btn" onclick="crReplayTTS('${msgId}')" title="重听语音">🔊</button>`);
@@ -1269,7 +1535,7 @@ function handleSSE(data) {
       if (data.message && data.message.content != null && streamingBubble) {
         streamingText = data.message.content;
       }
-      endStreamingBubble(data.message && data.message.attachments);
+      endStreamingBubble(data.message);
       playRecv();
       break;
     case 'connor_start':
@@ -1295,7 +1561,7 @@ function handleSSE(data) {
       if (data.message && data.message.content != null && streamingBubble) {
         streamingText = data.message.content;
       }
-      endStreamingBubble(data.message && data.message.attachments);
+      endStreamingBubble(data.message);
       // 如果 connor_done 带了 message 且没有流式气泡（兼容旧路径），追加消息
       if (data.message
           && !document.getElementById(`streaming-${data.message.id}`)
@@ -1441,7 +1707,7 @@ async function openSettings() {
   applyChatroomNames(cfg);
 
   document.getElementById('setTitle').value = room.title || '';
-  document.getElementById('setContextMin').value = room.context_minutes || 30;
+  document.getElementById('setContextLimit').value = room.context_limit || room.context_minutes || 30;
   document.getElementById('setAiRounds').value = room.ai_chat_rounds || 1;
   chatroomConnorModel = cfg.connor_model || chatroomConnorModel || 'Codex';
   document.getElementById('setAionModel').innerHTML = renderModelOptions(chatroomModel);
@@ -1513,7 +1779,7 @@ async function saveSettings() {
     method: 'PUT',
     body: JSON.stringify({
       title: document.getElementById('setTitle').value,
-      context_minutes: parseInt(document.getElementById('setContextMin').value) || 30,
+      context_limit: parseInt(document.getElementById('setContextLimit').value) || 30,
       ai_chat_rounds: parseInt(document.getElementById('setAiRounds').value) || 1,
     }),
   });
@@ -1583,6 +1849,8 @@ async function loadMemories() {
   const memListEl = document.getElementById('memList');
   try {
     const mems = await api(`/rooms/${currentRoom.id}/memories`);
+    const countBadge = document.getElementById('memCountBadge');
+    if (countBadge) countBadge.textContent = `共 ${Array.isArray(mems) ? mems.length : 0} 条`;
     if (!Array.isArray(mems) || !mems.length) {
       memListEl.innerHTML = '<div class="mem-empty">暂无记忆，可手动添加或总结生成</div>';
       return;
@@ -1590,7 +1858,7 @@ async function loadMemories() {
     memListEl.innerHTML = mems.map(m => {
       const date = new Date(m.created_at * 1000).toLocaleDateString();
       const kw = m.keywords ? `关键词: ${esc(m.keywords)}` : '';
-      const hasSource = m.source_start_ts && m.source_end_ts;
+      const hasSource = Number(m.source_count || 0) > 0;
       return `
         <div class="mem-item" data-id="${m.id}">
           <div class="mem-content">${esc(m.content)}</div>
@@ -1675,7 +1943,7 @@ async function deleteMemory(memId) {
   loadMemories();
 }
 
-async function viewMemSource(memId) {
+async function viewMemSourceLegacy(memId) {
   const overlay = document.getElementById('memSourceOverlay');
   const listEl = document.getElementById('memSourceList');
   overlay.style.display = 'block';
@@ -1700,8 +1968,102 @@ async function viewMemSource(memId) {
   }
 }
 
+async function viewMemSource(memId) {
+  memSourceMemId = memId;
+  memSourceMessages = [];
+  const overlay = document.getElementById('memSourceOverlay');
+  const listEl = document.getElementById('memSourceList');
+  overlay.style.display = 'block';
+  document.getElementById('memSourceSummary').textContent = '';
+  listEl.innerHTML = '<div class="mem-empty">加载中...</div>';
+  try {
+    const result = await api(`/memories/${memId}/source`);
+    if (!result.ok || !result.messages || !result.messages.length) {
+      listEl.innerHTML = `<div class="mem-empty">${result.message || '没有找到原文记录'}</div>`;
+      return;
+    }
+    memSourceMessages = result.messages.map(m => ({ ...m, selected: !!m.selected, recommended: !!m.recommended }));
+    renderMemSourceSelection();
+  } catch(e) {
+    listEl.innerHTML = '<div class="mem-empty">加载失败</div>';
+  }
+}
+
+function renderMemSourceSelection() {
+  const listEl = document.getElementById('memSourceList');
+  if (!memSourceMessages.length) {
+    listEl.innerHTML = '<div class="mem-empty">没有找到原文记录</div>';
+    return;
+  }
+  listEl.innerHTML = memSourceMessages.map((m, idx) => {
+    const t = m.created_at ? new Date(m.created_at * 1000).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const opacity = m.selected ? '1' : '0.42';
+    const checked = m.selected ? 'checked' : '';
+    return `<div style="margin-bottom:10px; padding:8px; background:var(--bubble-other); border-radius:8px; opacity:${opacity};">
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <input type="checkbox" ${checked} onchange="toggleMemSourceMsg(${idx}, this.checked)" style="width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex-shrink:0;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px; color:var(--text2); margin-bottom:4px;">
+            <strong>${esc(m.name)}</strong> <span style="margin-left:6px;">${esc(t)}</span>
+          </div>
+          <div style="white-space:pre-wrap; word-break:break-word; font-size:13px;">${esc(m.content)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateMemSourceSummary();
+}
+
+function updateMemSourceSummary() {
+  const total = memSourceMessages.length;
+  const kept = memSourceMessages.filter(m => m.selected).length;
+  document.getElementById('memSourceSummary').textContent = `将保留 ${kept}/${total} 条原文作为这条记忆的证据；点击保存前不会写入数据库。`;
+}
+
+function toggleMemSourceMsg(index, checked) {
+  if (!memSourceMessages[index]) return;
+  memSourceMessages[index].selected = checked;
+  renderMemSourceSelection();
+}
+
+function setMemSourceSelection(mode) {
+  if (mode === 'all') memSourceMessages.forEach(m => m.selected = true);
+  else if (mode === 'none') memSourceMessages.forEach(m => m.selected = false);
+  else memSourceMessages.forEach(m => m.selected = !!m.recommended);
+  renderMemSourceSelection();
+}
+
+async function saveMemSourceSelection() {
+  if (!memSourceMemId) return;
+  const selectedIds = memSourceMessages.filter(m => m.selected).map(m => m.id);
+  if (!selectedIds.length && !confirm('你没有保留任何原文。保存后这条记忆将不再追溯原文，确定继续吗？')) return;
+  const btn = document.getElementById('memSourceSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  try {
+    const result = await api(`/memories/${memSourceMemId}/source-selection`, {
+      method: 'POST',
+      body: JSON.stringify({ source_message_ids: selectedIds }),
+    });
+    if (!result.ok) {
+      toast(result.message || '保存失败');
+      return;
+    }
+    toast('原文筛选已保存');
+    closeMemSource();
+    loadMemories();
+  } catch (e) {
+    toast('保存失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存筛选';
+  }
+}
+
 function closeMemSource() {
   document.getElementById('memSourceOverlay').style.display = 'none';
+  memSourceMemId = null;
+  memSourceMessages = [];
 }
 
 // 点击遮罩关闭设置
@@ -2768,8 +3130,14 @@ function crToyCloseEditor() { document.getElementById('crToyEditorOverlay').clas
   } catch(e) {}
   await fetchCurrentModel();
   await loadRooms();
+  const initParams = new URLSearchParams(location.search);
+  const targetRoomId = initParams.get('room');
+  const targetMsgId = initParams.get('msg');
   // 默认打开最后一次聊天的房间
-  if (!currentRoom && rooms.length > 0) {
+  if (targetRoomId && rooms.some(r => r.id === targetRoomId)) {
+    await selectRoom(targetRoomId);
+    if (targetMsgId) setTimeout(() => jumpToChatSearchResult(targetMsgId), 100);
+  } else if (!currentRoom && rooms.length > 0) {
     await selectRoom(rooms[0].id);
   }
   checkConnor();

@@ -7,6 +7,7 @@ import json, time
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
+import aiosqlite
 
 from activity import (
     append_activity_log, read_activity_logs, read_recent_activity,
@@ -16,6 +17,10 @@ from activity import (
     pc_display_tracker,
 )
 from ws import manager
+from database import get_db
+from config import load_worldbook
+from chatroom import load_chatroom_config
+from location import load_location_status
 
 router = APIRouter()
 
@@ -91,6 +96,128 @@ def _resolve_entries(entries: list) -> list:
         e["app"] = resolved
         result.append(e)
     return result
+
+
+def _json_list(raw) -> list:
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return raw
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def _clip(text: str, max_len: int = 180) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_len:
+        return text
+    return text[:max_len].rstrip() + "..."
+
+
+def _timeline_names() -> dict:
+    wb = load_worldbook()
+    try:
+        cr = load_chatroom_config()
+    except Exception:
+        cr = {}
+    return {
+        "user": wb.get("user_name", "用户"),
+        "assistant": wb.get("ai_name", "AI"),
+        "aion": wb.get("ai_name", "AI"),
+        "connor": cr.get("connor_name", "Connor"),
+        "system": "系统",
+    }
+
+
+def _actor_name(actor: str, names: dict) -> str:
+    return names.get(actor, actor or "未知")
+
+
+def _timeline_item(ts: float, kind: str, actor: str, title: str, detail: str = "", source_id: str = "", attachments=None) -> dict:
+    return {
+        "timestamp": ts,
+        "time": time.strftime("%H:%M", time.localtime(ts)),
+        "kind": kind,
+        "actor": actor,
+        "title": title,
+        "detail": detail,
+        "source_id": source_id,
+        "attachments": attachments or [],
+    }
+
+
+@router.get("/api/timeline")
+async def get_timeline(hours: int = 24, limit: int = 300):
+    hours = max(1, min(hours, 24 * 30))
+    limit = max(20, min(limit, 1000))
+    cutoff = time.time() - hours * 3600
+    names = _timeline_names()
+    user_name = _actor_name("user", names)
+    items = []
+
+    async with get_db() as db:
+        db.row_factory = aiosqlite.Row
+
+        cur = await db.execute(
+            "SELECT id, author, content, attachments, created_at FROM moments "
+            "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+            (cutoff, limit),
+        )
+        for r in await cur.fetchall():
+            actor = _actor_name(r["author"], names)
+            atts = _json_list(r["attachments"])
+            title = f"{actor} 发布了朋友圈"
+            if atts:
+                title += f"（{len(atts)}张图）"
+            items.append(_timeline_item(r["created_at"], "moment", actor, title, _clip(r["content"]), r["id"], atts))
+
+        cur = await db.execute(
+            "SELECT id, author, title, content, created_at FROM diary_entries "
+            "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+            (cutoff, limit),
+        )
+        for r in await cur.fetchall():
+            actor = _actor_name(r["author"], names)
+            detail = r["title"] or _clip(r["content"])
+            items.append(_timeline_item(r["created_at"], "diary", actor, f"{actor} 发布了日记", _clip(detail), r["id"]))
+
+        cur = await db.execute(
+            "SELECT id, image_path, message, created_at, sender FROM gifts "
+            "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+            (cutoff, limit),
+        )
+        for r in await cur.fetchall():
+            actor = _actor_name(r["sender"] or "aion", names)
+            image_path = (r["image_path"] or "").strip()
+            atts = [image_path if image_path.startswith("/uploads/") else f"/uploads/{image_path}"] if image_path else []
+            items.append(_timeline_item(
+                r["created_at"], "gift", actor,
+                f"{actor} 给 {user_name} 送了礼物",
+                _clip(r["message"]), r["id"], atts,
+            ))
+
+    status = load_location_status()
+    changed_at = float(status.get("state_changed_at") or 0)
+    if changed_at >= cutoff:
+        state = status.get("state", "unknown")
+        state_label = {"at_home": "在家", "outside": "外出", "unknown": "未知"}.get(state, state)
+        detail_parts = []
+        if status.get("address"):
+            detail_parts.append(status.get("address"))
+        dist = status.get("distance_from_home")
+        if isinstance(dist, (int, float)) and dist >= 0 and state == "outside":
+            detail_parts.append(f"距家约 {int(dist)} 米")
+        items.append(_timeline_item(
+            changed_at, "location", user_name,
+            f"{user_name} 的位置状态变为{state_label}",
+            "；".join(detail_parts),
+        ))
+
+    items.sort(key=lambda x: x["timestamp"], reverse=True)
+    return {"items": items[:limit], "hours": hours, "total": len(items)}
 
 
 @router.get("/api/activity/dates")

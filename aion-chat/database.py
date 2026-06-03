@@ -100,12 +100,17 @@ async def init_db():
                 id TEXT PRIMARY KEY,
                 author TEXT NOT NULL,
                 content TEXT NOT NULL,
+                attachments TEXT DEFAULT '[]',
                 source_conv TEXT,
                 source_msg_id TEXT,
                 expect_reply INTEGER DEFAULT 0,
                 created_at REAL NOT NULL
             )
         """)
+        try:
+            await db.execute("ALTER TABLE moments ADD COLUMN attachments TEXT DEFAULT '[]'")
+        except:
+            pass
         await db.execute("CREATE INDEX IF NOT EXISTS idx_moments_created ON moments(created_at DESC)")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS moment_comments (
@@ -391,6 +396,10 @@ async def init_db():
         """)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_chatroom_mem_room ON chatroom_memories(room_id, created_at)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_chatroom_mem_scope ON chatroom_memories(scope)")
+        try:
+            await db.execute("ALTER TABLE chatroom_memories ADD COLUMN source_msg_id TEXT")
+        except:
+            pass
         # ── 聊天室总结锚点表 ──
         await db.execute("""
             CREATE TABLE IF NOT EXISTS chatroom_digest_anchors (

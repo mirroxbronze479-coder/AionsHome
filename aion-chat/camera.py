@@ -956,11 +956,17 @@ class CameraMonitor:
 
         # 获取最近 1 小时的设备活动摘要（6 条）
         activity_summary_text = ""
+        user_dynamics_text = ""
         try:
-            from activity import get_activity_summary_for_prompt
+            from activity import get_activity_summary_for_prompt, get_user_dynamics_for_prompt
             activity_summary_text = get_activity_summary_for_prompt(6)
+            user_dynamics_text = get_user_dynamics_for_prompt(hours=1)
         except Exception:
             pass
+        user_dynamics_block = (
+            f"\n{user_name}近一小时的用户关键动态：\n{user_dynamics_text}\n"
+            if user_dynamics_text else ""
+        )
 
         prompt = f"""你是一个监控画面分析师，同时也是{user_name}的恋人。分析当前画面，并根据历史日志和当前状况，决定是否调用伴侣职权。
 
@@ -974,6 +980,7 @@ class CameraMonitor:
 
 {user_name}近一小时的设备使用动态（手机/电脑应用使用情况，每10分钟一条摘要）：
 {activity_summary_text if activity_summary_text else "（暂无设备活动记录）"}
+{user_dynamics_block}
 
 历史监控日志：
 {log_history if log_history else "（暂无历史日志）"}
@@ -1078,6 +1085,18 @@ call_core判断依据：
             conv_id = conv["id"]
             model_key = conv["model"] or DEFAULT_MODEL
 
+        from schedule import schedule_mgr
+        target = schedule_mgr._resolve_target({"origin": "aion"})
+        is_chatroom = target["type"] == "chatroom"
+        if is_chatroom:
+            try:
+                from chatroom import load_chatroom_config
+                chatroom_model = (load_chatroom_config().get("aion_model") or "").strip()
+                if chatroom_model:
+                    model_key = chatroom_model
+            except Exception:
+                pass
+
         # 统一时间线：合并私聊 + 群聊消息
         from context_builder import fetch_merged_timeline, render_merged_timeline
         merged = await fetch_merged_timeline("aion", 20, conv_id=conv_id)
@@ -1098,8 +1117,9 @@ call_core判断依据：
             core_parts.append(f"这段时间{user_name}的整体状况：{summary}")
         core_parts.append(f"最新一条监控日志原文（哨兵看到的画面完整描述）：{trigger_log}")
         core_parts.append(f"最近的监控记录：\n{recent_detail}")
+        contact_scene = "群聊里" if is_chatroom else f"{ai_name} 与 {user_name} 的私聊里"
         core_parts.append(
-            f"你现在是在 {ai_name} 与 {user_name} 的私聊里主动联系她。"
+            f"你现在是在{contact_scene}主动联系她。"
             "只用你自己的口吻回复，不要续写、复述或模仿历史里的 [Connor]:、[Assistant]、[User] 等角色标签，"
             "也不要替 Connor 发言。"
         )
@@ -1169,39 +1189,49 @@ call_core判断依据：
         if not full_text.strip():
             return
 
+        sys_content = f"{ai_name}偷偷查看了监控"
+        if is_chatroom:
+            await schedule_mgr._save_to_chatroom(
+                target["room_id"], "aion", sys_content, full_text, core_msg_id, "[]", []
+            )
+        else:
+            now = time.time()
+            trigger_msg_id = f"msg_{int(now*1000)}_ct"
+            async with get_db() as db:
+                await db.execute(
+                    "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+                    (trigger_msg_id, conv_id, "cam_trigger", core_prompt, now, "[]")
+                )
+                # 插入系统提示：哨兵唤醒了Core
+                sys_now = time.time()
+                sys_msg_id = f"msg_{int(sys_now*1000)}_sw"
+                await db.execute(
+                    "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+                    (sys_msg_id, conv_id, "system", sys_content, sys_now, "[]")
+                )
+                await db.commit()
+            sys_msg = {"id": sys_msg_id, "conv_id": conv_id, "role": "system",
+                       "content": sys_content, "created_at": sys_now, "attachments": []}
+            await manager.broadcast({"type": "msg_created", "data": sys_msg})
+
+            async with get_db() as db:
+                now2 = time.time()
+                await db.execute(
+                    "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
+                    (core_msg_id, conv_id, "assistant", full_text, now2, "[]")
+                )
+                await db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now2, conv_id))
+                await db.commit()
+
+            core_msg = {"id": core_msg_id, "conv_id": conv_id, "role": "assistant",
+                        "content": full_text, "created_at": now2, "attachments": []}
+            await manager.broadcast({"type": "msg_created", "data": core_msg})
+
+            # 延迟导入避免循环
+            from routes.files import export_conversation
+            await export_conversation(conv_id)
+
         now = time.time()
-        trigger_msg_id = f"msg_{int(now*1000)}_ct"
-        async with get_db() as db:
-            await db.execute(
-                "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-                (trigger_msg_id, conv_id, "cam_trigger", core_prompt, now, "[]")
-            )
-            # 插入系统提示：哨兵唤醒了Core
-            sys_now = time.time()
-            sys_msg_id = f"msg_{int(sys_now*1000)}_sw"
-            sys_content = f"{ai_name}偷偷查看了监控"
-            await db.execute(
-                "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-                (sys_msg_id, conv_id, "system", sys_content, sys_now, "[]")
-            )
-            await db.commit()
-        sys_msg = {"id": sys_msg_id, "conv_id": conv_id, "role": "system",
-                   "content": sys_content, "created_at": sys_now, "attachments": []}
-        await manager.broadcast({"type": "msg_created", "data": sys_msg})
-
-        async with get_db() as db:
-            now2 = time.time()
-            await db.execute(
-                "INSERT INTO messages (id, conv_id, role, content, created_at, attachments) VALUES (?,?,?,?,?,?)",
-                (core_msg_id, conv_id, "assistant", full_text, now2, "[]")
-            )
-            await db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now2, conv_id))
-            await db.commit()
-
-        core_msg = {"id": core_msg_id, "conv_id": conv_id, "role": "assistant",
-                    "content": full_text, "created_at": now2, "attachments": []}
-        await manager.broadcast({"type": "msg_created", "data": core_msg})
-
         # 刷新 TTS 剩余文本
         if core_tts:
             try:
@@ -1209,14 +1239,10 @@ call_core判断依据：
             except Exception:
                 pass
 
-        # 延迟导入避免循环
-        from routes.files import export_conversation
-        await export_conversation(conv_id)
-
         core_log = {
-            "timestamp": now2,
-            "time": time.strftime("%H:%M:%S", time.localtime(now2)),
-            "date": time.strftime("%Y-%m-%d", time.localtime(now2)),
+            "timestamp": now,
+            "time": time.strftime("%H:%M:%S", time.localtime(now)),
+            "date": time.strftime("%Y-%m-%d", time.localtime(now)),
             "monitoringlog": f"🧠 Core已唤醒并回复：{full_text[:80]}...",
             "call_core": False,
             "screenshot": "",

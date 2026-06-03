@@ -36,7 +36,7 @@
         </div>
         <button class="icon-btn small" id="closeMenuBtn" title="关闭">×</button>
       </div>
-      <button class="drawer-item skill-btn" data-skill="记忆整理">记忆整理</button>
+      <button class="drawer-item skill-btn archived" data-skill="记忆整理" disabled title="暂时封存">记忆整理（封存）</button>
       <button class="drawer-item skill-btn" data-skill="股市雷达">股市雷达</button>
       <button class="drawer-item skill-btn" data-skill="新闻捕手">新闻捕手</button>
       <button class="drawer-item skill-btn" data-skill="日常工具">日常工具</button>
@@ -119,51 +119,31 @@
         <button class="icon-btn small" id="closeMemoryReviewBtn" title="关闭">×</button>
       </div>
 
-      <div class="review-mode-tabs">
-        <button class="review-mode-btn active" id="sourceModeBtn" type="button" data-mode="source">原文整理</button>
-        <button class="review-mode-btn" id="compressModeBtn" type="button" data-mode="compress">长期压缩</button>
+      <div class="review-intro">
+        从已经整理过的历史记忆中提炼长期重点。确认应用后，会用更少的长期记忆替换这个时间窗里的旧摘要。
       </div>
 
-      <div class="review-mode-fields" id="sourceFields">
+      <div class="review-mode-fields" id="compressFields">
         <label class="field review-date-field">
-          <span>开始日期（05:00）</span>
-          <input id="reviewStartDateInput" type="date">
-        </label>
-        <label class="field review-date-field">
-          <span>结束日期（到次日 05:00）</span>
-          <input id="reviewEndDateInput" type="date">
-        </label>
-      </div>
-
-      <div class="review-mode-fields hidden" id="compressFields">
-        <label class="field review-date-field">
-          <span>压缩开始日期</span>
+          <span>开始（05:00）</span>
           <input id="compressStartDateInput" type="date">
         </label>
         <label class="field review-date-field">
-          <span>压缩结束日期</span>
+          <span>结束（次日 05:00）</span>
           <input id="compressEndDateInput" type="date">
-        </label>
-        <label class="field review-date-field">
-          <span>来源记忆</span>
-          <select id="compressSourceSelect">
-            <option value="seeky">Seeky 原文整理记忆</option>
-            <option value="compressed">已压缩记忆</option>
-            <option value="all">全部摘要记忆</option>
-          </select>
         </label>
         <label class="field review-date-field">
           <span>压缩强度</span>
           <select id="compressStrengthSelect">
-            <option value="normal">普通</option>
-            <option value="strict">严格</option>
-            <option value="major">只留重大事件</option>
+            <option value="normal">温和</option>
+            <option value="strict" selected>严格</option>
+            <option value="major">核心</option>
           </select>
         </label>
       </div>
 
       <div class="review-toolbar">
-        <button class="save-btn" id="createReviewBtn">生成整理草案</button>
+        <button class="save-btn" id="createReviewBtn">生成压缩草案</button>
         <button class="ghost-btn" id="saveReviewBtn">保存修改</button>
       </div>
 

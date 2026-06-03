@@ -3,7 +3,7 @@
 """
 
 import time, json, asyncio, random
-from typing import Optional
+from typing import Optional, Any
 from datetime import datetime
 
 import aiosqlite
@@ -42,6 +42,31 @@ def _author_display(author: str) -> str:
     return {"user": user_name, "aion": ai_name, "connor": connor_name}.get(author, author)
 
 
+def _normalize_attachments(raw: Any) -> list:
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        items = raw
+    elif isinstance(raw, str):
+        try:
+            items = json.loads(raw) if raw else []
+        except Exception:
+            items = []
+    else:
+        items = []
+    result = []
+    for item in items:
+        if isinstance(item, str):
+            url = item.strip()
+        elif isinstance(item, dict):
+            url = str(item.get("url") or "").strip()
+        else:
+            continue
+        if url.startswith(("/uploads/", "/cr-uploads/")):
+            result.append(url)
+    return result
+
+
 async def _get_moment_with_comments(moment_id: str) -> Optional[dict]:
     """获取一条朋友圈及其评论和反应"""
     async with get_db() as db:
@@ -51,6 +76,7 @@ async def _get_moment_with_comments(moment_id: str) -> Optional[dict]:
         if not row:
             return None
         moment = dict(row)
+        moment["attachments"] = _normalize_attachments(moment.get("attachments"))
 
         cur = await db.execute(
             "SELECT * FROM moment_comments WHERE moment_id=? ORDER BY created_at ASC",
@@ -410,6 +436,7 @@ async def list_moments(page: int = Query(1, ge=1), page_size: int = Query(20, ge
         moments = [dict(r) for r in await cur.fetchall()]
 
         for m in moments:
+            m["attachments"] = _normalize_attachments(m.get("attachments"))
             cur = await db.execute(
                 "SELECT * FROM moment_comments WHERE moment_id=? ORDER BY created_at ASC",
                 (m["id"],),
@@ -427,13 +454,15 @@ async def list_moments(page: int = Query(1, ge=1), page_size: int = Query(20, ge
 
 class MomentCreate(BaseModel):
     content: str
+    attachments: list[Any] = []
 
 
 @router.post("")
 async def create_moment(body: MomentCreate):
     """用户发布朋友圈"""
     content = body.content.strip()
-    if not content:
+    attachments = _normalize_attachments(body.attachments)
+    if not content and not attachments:
         return {"error": "内容不能为空"}
 
     now = time.time()
@@ -441,14 +470,15 @@ async def create_moment(body: MomentCreate):
 
     async with get_db() as db:
         await db.execute(
-            "INSERT INTO moments (id, author, content, source_conv, source_msg_id, expect_reply, created_at) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (moment_id, "user", content, None, None, 1, now),
+            "INSERT INTO moments (id, author, content, attachments, source_conv, source_msg_id, expect_reply, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (moment_id, "user", content, json.dumps(attachments, ensure_ascii=False), None, None, 1, now),
         )
         await db.commit()
 
     moment_data = {
         "id": moment_id, "author": "user", "content": content,
+        "attachments": attachments,
         "source_conv": None, "source_msg_id": None,
         "expect_reply": 1, "created_at": now,
         "comments": [], "reactions": [],

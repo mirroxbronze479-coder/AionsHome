@@ -56,13 +56,13 @@ class MemoryReviewUpdate(BaseModel):
 
 
 class MemoryReviewDraftRequest(BaseModel):
-    mode: str = "source"
+    mode: str = "compress"
     date: str | None = None
     start_date: str | None = None
     end_date: str | None = None
     start_ts: float | None = None
     end_ts: float | None = None
-    compress_source: str = "seeky"
+    compress_source: str = "summary"
     compress_strength: str = "normal"
 
 
@@ -467,8 +467,10 @@ async def _fetch_replace_candidates(start_ts: float, end_ts: float) -> list[dict
 
 
 def _compress_type_filter(source: str) -> tuple[str, list[str]]:
-    value = (source or "seeky").strip().lower()
-    if value == "all":
+    value = (source or "summary").strip().lower()
+    if value == "summary":
+        types = ["digest", "event", "seeky_digest", "seeky_compressed"]
+    elif value == "all":
         types = ["digest", "seeky_digest", "seeky_compressed"]
     elif value == "compressed":
         types = ["seeky_compressed"]
@@ -1160,7 +1162,60 @@ async def _read_review(review_id: str) -> dict:
         rows = await cur.fetchall()
     data = dict(review)
     data["items"] = [dict(row) for row in rows]
+    data["replace_items"] = await _read_review_replace_items(data)
     return data
+
+
+async def _read_review_replace_items(review: dict) -> list[dict]:
+    start_ts = review.get("source_start_ts")
+    end_ts = review.get("source_end_ts")
+    if not start_ts or not end_ts:
+        return []
+
+    if review.get("status") == "applied":
+        async with get_db() as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute(
+                "SELECT before_json FROM seeky_memory_apply_log "
+                "WHERE review_id=? AND action='delete' ORDER BY created_at ASC, rowid ASC",
+                (review["id"],),
+            )
+            log_rows = await cur.fetchall()
+        old_rows = []
+        for row in log_rows:
+            try:
+                old = json.loads(row["before_json"] or "{}")
+            except Exception:
+                old = {}
+            if isinstance(old, dict) and old.get("id"):
+                old_rows.append(old)
+    elif review.get("mode") == "memory_compress":
+        options = {}
+        try:
+            options = json.loads(review.get("review_options") or "{}")
+        except Exception:
+            options = {}
+        source = options.get("compress_source") or "summary"
+        old_rows = await _fetch_compress_candidates(start_ts, end_ts, source)
+    elif review.get("mode") == "source_day":
+        old_rows = await _fetch_replace_candidates(start_ts, end_ts)
+    else:
+        return []
+
+    result = []
+    for row in old_rows:
+        result.append({
+            "id": row.get("id", ""),
+            "content": row.get("content", ""),
+            "type": row.get("type", ""),
+            "created_at": row.get("created_at"),
+            "source_start_ts": row.get("source_start_ts"),
+            "source_end_ts": row.get("source_end_ts"),
+            "keywords": row.get("keywords", ""),
+            "importance": row.get("importance"),
+            "unresolved": row.get("unresolved", 0),
+        })
+    return result
 
 
 @router.get("/config")
@@ -1273,21 +1328,22 @@ async def create_memory_review_draft(body: MemoryReviewDraftRequest | None = Non
     )
     detail_policy = _detail_policy_for_window(end_ts)
 
-    if (body.mode or "source").strip().lower() == "compress":
-        candidates = await _fetch_compress_candidates(start_ts, end_ts, body.compress_source)
+    if (body.mode or "compress").strip().lower() == "compress":
+        compress_source = "summary"
+        candidates = await _fetch_compress_candidates(start_ts, end_ts, compress_source)
         await _insert_review(
             review_id, config["model"], [], "", "",
             mode="memory_compress", source_start_ts=start_ts, source_end_ts=end_ts,
             source_label=source_label, detail_policy=detail_policy,
             review_options=_json_text({
-                "compress_source": body.compress_source,
+                "compress_source": compress_source,
                 "compress_strength": body.compress_strength,
             }),
             delete_count=len(candidates), status="processing",
         )
         asyncio.create_task(_finish_compress_review_background(
             review_id, config["model"], start_ts, end_ts, source_label,
-            detail_policy, body.compress_source, body.compress_strength,
+            detail_policy, compress_source, body.compress_strength,
         ))
     else:
         replace_candidates = await _fetch_replace_candidates(start_ts, end_ts)
@@ -1309,7 +1365,7 @@ async def get_latest_memory_review():
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
         cur = await db.execute(
-            "SELECT id FROM seeky_memory_reviews ORDER BY created_at DESC LIMIT 1"
+            "SELECT id FROM seeky_memory_reviews WHERE mode='memory_compress' ORDER BY created_at DESC LIMIT 1"
         )
         row = await cur.fetchone()
     if not row:
@@ -1396,7 +1452,7 @@ async def apply_memory_review(review_id: str):
             options = json.loads(review.get("review_options") or "{}")
         except Exception:
             options = {}
-        source = options.get("compress_source") or "seeky"
+        source = options.get("compress_source") or "summary"
 
         changed = 0
         deleted = 0

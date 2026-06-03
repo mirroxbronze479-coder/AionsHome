@@ -1,4 +1,4 @@
-package com.aion.chat;
+﻿package com.aion.chat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -419,7 +419,7 @@ public class WebViewActivity extends AppCompatActivity {
         // 加载目标 URL
         targetUrl = getIntent().getStringExtra("url");
         if (targetUrl == null || targetUrl.isEmpty()) {
-            targetUrl = "http://192.168.1.92:8080/chat";
+            targetUrl = "http://192.168.xx.xxx:8080/chat";
         }
         webView.loadUrl(targetUrl);
     }

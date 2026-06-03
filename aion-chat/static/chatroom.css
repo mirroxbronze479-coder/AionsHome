@@ -249,6 +249,110 @@ body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-se
 .chat-header .header-actions .reply-once-btn.connor { background: #f5e8f0; color: #9a4272; }
 .chat-header .header-actions .reply-once-btn.connor:hover { background: #ecd6e3; }
 
+.chat-search-panel {
+  position: absolute;
+  top: calc(56px + env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  z-index: 9;
+  display: none;
+  max-height: min(420px, calc(100% - 150px));
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(250,247,244,0.96);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-search-panel.show { display: flex; }
+.chat-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+}
+.chat-search-form input {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 13px;
+  outline: none;
+}
+.chat-search-form input:focus { border-color: var(--accent); }
+.chat-search-form button {
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  padding: 0 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chat-search-form .chat-search-close {
+  width: 30px;
+  padding: 0;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 16px;
+}
+.chat-search-meta {
+  color: var(--text3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.chat-search-results {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-search-result {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.chat-search-result:hover { background: var(--surface2); }
+.chat-search-result .csr-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+  color: var(--text3);
+  font-size: 11px;
+}
+.chat-search-result .csr-snippet {
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.chat-search-result mark {
+  border-radius: 3px;
+  background: #ffe08a;
+  color: #513b00;
+  padding: 0 2px;
+}
+.message-row.search-hit .bubble,
+.system-event-msg.search-hit {
+  animation: crSearchPulse 1.4s ease;
+  box-shadow: 0 0 0 3px rgba(255,190,74,0.52);
+}
+@keyframes crSearchPulse {
+  0% { box-shadow: 0 0 0 6px rgba(255,190,74,0.72); }
+  100% { box-shadow: 0 0 0 0 rgba(255,190,74,0); }
+}
+
 /* ── 消息列表 ── */
 .messages {
   flex: 1;
@@ -723,11 +827,36 @@ body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-se
 
 /* ── 系统事件气泡 ── */
 .system-event-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   text-align: center;
   padding: 6px 16px;
   font-size: 12px;
   color: var(--text3);
   margin: 4px 40px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.system-event-text {
+  min-width: 0;
+  word-break: break-word;
+}
+.system-event-msg .msg-menu-wrap {
+  display: inline-flex;
+}
+.system-event-msg .msg-menu-btn {
+  font-size: 12px;
+  padding: 1px 4px;
+}
+.system-event-msg:hover .msg-menu-btn {
+  opacity: 1;
+}
+.system-event-msg .msg-menu-dropdown {
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 2px);
 }
 
 /* ── 加载指示器 ── */
@@ -1096,6 +1225,9 @@ body { font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-se
   .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; z-index: 50; transition: left 0.25s ease; box-shadow: none; }
   .sidebar.open { left: 0; box-shadow: 4px 0 20px rgba(0,0,0,0.15); }
   .chat-header .menu-btn { display: block; }
+  .chat-header .header-actions { gap: 4px; }
+  .chat-header .header-actions button { padding: 5px 7px; }
+  .chat-search-panel { left: 8px; right: 8px; max-height: min(420px, calc(100% - 128px)); }
   .sidebar-backdrop {
     display: none;
     position: fixed;
