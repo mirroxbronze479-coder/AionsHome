@@ -53,10 +53,12 @@ from routes import connor_wallet as connor_wallet_routes
 from routes import health as health_routes
 from routes import phone_screen as phone_screen_routes
 from routes import search as search_routes
+from routes import autonomy as autonomy_routes
 from activity import pc_tracker, pc_display_tracker
 from memory import auto_digest
 from chatroom import _connor_1v1_auto_digest_loop
 from fund import fund_scheduler
+from autonomy import idle_autonomy_mgr
 
 
 # ── 自动记忆总结定时任务 ──────────────────────────
@@ -134,7 +136,9 @@ async def lifespan(app: FastAPI):
     # 自动记忆总结定时任务
     digest_task = asyncio.create_task(_auto_digest_loop())
     cr_digest_task = asyncio.create_task(_connor_1v1_auto_digest_loop())
+    idle_autonomy_mgr.start()
     yield
+    idle_autonomy_mgr.stop()
     cr_digest_task.cancel()
     digest_task.cancel()
     fund_scheduler.stop()
@@ -205,6 +209,7 @@ app.include_router(connor_wallet_routes.router)
 app.include_router(health_routes.router)
 app.include_router(phone_screen_routes.router)
 app.include_router(search_routes.router)
+app.include_router(autonomy_routes.router)
 
 
 # 页面

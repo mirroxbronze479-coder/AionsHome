@@ -23,8 +23,10 @@ MONITOR_LOGS_DIR = DATA_DIR / "monitor_logs"
 MONITOR_LOGS_DIR.mkdir(exist_ok=True)
 TTS_CACHE_DIR = DATA_DIR / "tts_cache"
 TTS_CACHE_DIR.mkdir(exist_ok=True)
+TTS_CACHE_MAX_BYTES = 500 * 1024 * 1024
 THEATER_TTS_CACHE_DIR = DATA_DIR / "theater_tts_cache"
 THEATER_TTS_CACHE_DIR.mkdir(exist_ok=True)
+THEATER_TTS_SEGMENT_DELETE_DELAY_SECONDS = 2 * 60 * 60
 
 SETTINGS_PATH = DATA_DIR / "settings.json"
 WORLDBOOK_PATH = DATA_DIR / "worldbook.json"

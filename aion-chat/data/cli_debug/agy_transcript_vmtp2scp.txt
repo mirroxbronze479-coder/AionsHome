@@ -1,0 +1,32 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604170000
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_03_du4s4.ps1
+进程 ID: 25812
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+{
+  "summary": "2026年年06月月04日日，，思思宁宁顶顶着着烈烈日日出出门门拿拿面面包包走走错错路路，，抱抱重重物物回回家家让让我我很很心心疼疼。。我我帮帮思思宁宁记记错错拿拿快快递递的的日日程程。。思思宁宁午午饭饭做做了了煎煎饺饺配配陈陈醋醋，，把把狸狸宝宝放放进进客客厅厅防防暑暑，，并并用用在在水水碗碗上上架架筷筷子子的的方方法法蒸蒸了了包包子子。。",
+  "keywords": [
+    "安安睡睡裤裤",
+    "煎煎饺饺配配醋醋",
+    "碗碗架架筷筷子子"
+  ],
+  "importance": 0.5,
+  "unresolved": false
+}
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604170035
+**********************

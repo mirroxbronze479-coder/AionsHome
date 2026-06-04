@@ -11,7 +11,8 @@ from typing import Optional, List
 
 import httpx
 
-from config import SETTINGS, MODELS, save_settings, get_key, get_sentinel_config, load_worldbook, save_worldbook, load_chat_status, TTS_CACHE_DIR, THEATER_TTS_CACHE_DIR
+from config import SETTINGS, MODELS, save_settings, get_key, get_sentinel_config, load_worldbook, save_worldbook, load_chat_status, TTS_CACHE_DIR, TTS_CACHE_MAX_BYTES, THEATER_TTS_CACHE_DIR
+from tts import cleanup_tts_cache_dir
 
 router = APIRouter()
 
@@ -296,6 +297,7 @@ async def tts_synthesize(body: TTSRequest):
             if safe_id:
                 cache_path = TTS_CACHE_DIR / f"{safe_id}.mp3"
                 cache_path.write_bytes(audio_data)
+                cleanup_tts_cache_dir(TTS_CACHE_DIR, TTS_CACHE_MAX_BYTES, skip={cache_path})
         return Response(content=audio_data, media_type="audio/mpeg")
     except Exception as e:
         return Response(content=json.dumps({"error": str(e)}), status_code=500, media_type="application/json")

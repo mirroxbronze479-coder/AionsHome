@@ -24,6 +24,16 @@ from location import load_location_status
 
 router = APIRouter()
 
+SEEKY_EVENT_PHRASES = {
+    "feed": "投喂了",
+    "clean": "清理了",
+    "play": "玩耍了",
+    "tease": "逗弄了",
+    "scare": "吓唬了",
+    "tap_glass": "拍打了玻璃",
+    "threaten": "威胁了",
+}
+
 
 # ── 上报 ──────────────────────────────────────────
 
@@ -149,6 +159,36 @@ def _timeline_item(ts: float, kind: str, actor: str, title: str, detail: str = "
     }
 
 
+def _idle_event_timeline_title(row, actor: str, shown_diary_ids: set[str], shown_moment_ids: set[str]) -> Optional[str]:
+    action = str(row["action"] or "")
+    result_type = str(row["result_type"] or "")
+    result_id = str(row["result_id"] or "")
+    try:
+        meta = json.loads(row["metadata"] or "{}")
+    except Exception:
+        meta = {}
+
+    if action == "select":
+        return None
+    if action == "seeky_interaction":
+        phrase = SEEKY_EVENT_PHRASES.get(str(meta.get("seeky_action") or ""))
+        return f"{actor}对Seeky{phrase}" if phrase else row["title"]
+    if action == "home_dynamics_result":
+        return None
+    if action.endswith("_result") and result_type == "message":
+        return None
+    if action == "memory_browse_result":
+        if result_type == "diary" and result_id in shown_diary_ids:
+            return None
+        if result_type == "moment" and result_id in shown_moment_ids:
+            return None
+        if result_type not in ("diary", "moment"):
+            return None
+    if action not in ("home_dynamics", "memory_browse", "memory_browse_result", "seeky_interaction"):
+        return None
+    return row["title"]
+
+
 @router.get("/api/timeline")
 async def get_timeline(hours: int = 24, limit: int = 300):
     hours = max(1, min(hours, 24 * 30))
@@ -157,6 +197,8 @@ async def get_timeline(hours: int = 24, limit: int = 300):
     names = _timeline_names()
     user_name = _actor_name("user", names)
     items = []
+    shown_moment_ids: set[str] = set()
+    shown_diary_ids: set[str] = set()
 
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
@@ -169,6 +211,7 @@ async def get_timeline(hours: int = 24, limit: int = 300):
         for r in await cur.fetchall():
             actor = _actor_name(r["author"], names)
             atts = _json_list(r["attachments"])
+            shown_moment_ids.add(str(r["id"]))
             title = f"{actor} 发布了朋友圈"
             if atts:
                 title += f"（{len(atts)}张图）"
@@ -181,6 +224,7 @@ async def get_timeline(hours: int = 24, limit: int = 300):
         )
         for r in await cur.fetchall():
             actor = _actor_name(r["author"], names)
+            shown_diary_ids.add(str(r["id"]))
             detail = r["title"] or _clip(r["content"])
             items.append(_timeline_item(r["created_at"], "diary", actor, f"{actor} 发布了日记", _clip(detail), r["id"]))
 
@@ -197,6 +241,21 @@ async def get_timeline(hours: int = 24, limit: int = 300):
                 r["created_at"], "gift", actor,
                 f"{actor} 给 {user_name} 送了礼物",
                 _clip(r["message"]), r["id"], atts,
+            ))
+
+        cur = await db.execute(
+            "SELECT id, actor, action, title, detail, target_type, target_id, result_type, result_id, metadata, created_at FROM idle_events "
+            "WHERE created_at >= ? ORDER BY created_at DESC LIMIT ?",
+            (cutoff, limit),
+        )
+        for r in await cur.fetchall():
+            actor = _actor_name(r["actor"], names)
+            title = _idle_event_timeline_title(r, actor, shown_diary_ids, shown_moment_ids)
+            if not title:
+                continue
+            items.append(_timeline_item(
+                r["created_at"], "idle_event", actor,
+                title, _clip(r["detail"]), r["id"],
             ))
 
     status = load_location_status()

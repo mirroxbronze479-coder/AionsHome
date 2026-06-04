@@ -83,6 +83,9 @@ AionApp/local.properties
 # ── 其他 ──
 *.mp3
 !public/*.mp3
+!public/**/*.mp3
+!public/card/
+!public/card/**
 *.log
 .DS_Store
 Thumbs.db

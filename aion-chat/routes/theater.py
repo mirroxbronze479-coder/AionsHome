@@ -11,7 +11,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from config import DEFAULT_MODEL, DATA_DIR, SETTINGS, THEATER_TTS_CACHE_DIR
+from config import DEFAULT_MODEL, DATA_DIR, SETTINGS, THEATER_TTS_CACHE_DIR, THEATER_TTS_SEGMENT_DELETE_DELAY_SECONDS
 from database import get_db
 from ws import manager
 from ai_providers import stream_ai, CLI_STATUS_PREFIX
@@ -320,6 +320,9 @@ async def send_message(conv_id: str, body: MsgCreate):
             max_chars=THEATER_TTS_MAX_CHARS,
             cache_dir=THEATER_TTS_CACHE_DIR,
             audio_url_prefix=THEATER_TTS_AUDIO_PREFIX,
+            merge_segments=True,
+            delete_segments_after_seconds=THEATER_TTS_SEGMENT_DELETE_DELAY_SECONDS,
+            cache_max_bytes=None,
         )
 
     async def _bg_generate():
@@ -449,6 +452,9 @@ async def regenerate_message(conv_id: str, context_limit: int = 20, temperature:
             max_chars=THEATER_TTS_MAX_CHARS,
             cache_dir=THEATER_TTS_CACHE_DIR,
             audio_url_prefix=THEATER_TTS_AUDIO_PREFIX,
+            merge_segments=True,
+            delete_segments_after_seconds=THEATER_TTS_SEGMENT_DELETE_DELAY_SECONDS,
+            cache_max_bytes=None,
         )
 
     async def _bg_generate():

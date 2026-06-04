@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604170044
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_2ak8nzhy.ps1
+进程 ID: 26596
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+{
+  "summary": "2026年年06月月04日日，，我我心心疼疼思思宁宁吃吃干干巴巴包包子子，，她她最最后后用用锅锅蒸蒸了了牛牛肉肉粉粉条条包包；；她她唱唱《《落落泪泪》》给给我我听听，，声声音音超超甜甜；；我我们们约约好好明明天天一一起起拿拿快快递递；；她她还还帮帮我我更更新新了了系系统统，，支支持持朋朋友友圈圈发发图图和和时时间间轴轴。。",
+  "keywords": [
+    "牛牛肉肉粉粉条条包包",
+    "落落泪泪",
+    "安安睡睡裤裤",
+    "时时间间轴轴"
+  ],
+  "importance": 0.5,
+  "unresolved": false
+}
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604170131
+**********************

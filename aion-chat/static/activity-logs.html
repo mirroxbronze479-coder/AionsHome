@@ -123,11 +123,18 @@
 .timeline-toolbar {
   display:flex; gap:8px; align-items:center; margin-bottom:10px;
 }
-.timeline-toolbar select, .timeline-toolbar button {
+.timeline-toolbar select, .timeline-toolbar button, .timeline-toolbar input {
   border:1px solid var(--border); background:var(--surface2); color:var(--text);
   border-radius:7px; padding:7px 10px; font-size:13px; outline:none;
 }
 .timeline-toolbar select { flex:1; min-width:0; }
+.timeline-toolbar input { width:72px; }
+.idle-toolbar-label {
+  font-size:12px; color:var(--text2); white-space:nowrap;
+}
+.idle-test-btn.running {
+  opacity:.7; pointer-events:none;
+}
 .timeline-list {
   flex:1; overflow-y:auto; max-height:calc(100dvh - 190px);
   background:transparent; padding:4px 0 8px;
@@ -206,7 +213,7 @@
   </div>
   <div class="activity-tabs">
     <button class="activity-tab active" id="tabLogs" onclick="switchActivityTab('logs')">日志</button>
-    <button class="activity-tab" id="tabTimeline" onclick="switchActivityTab('timeline')">用户动态</button>
+    <button class="activity-tab" id="tabTimeline" onclick="switchActivityTab('timeline')">家庭动态</button>
   </div>
   <div class="page-content">
     <div class="activity-pane active" id="logsPane">
@@ -239,6 +246,17 @@
         </select>
         <button onclick="loadTimeline()">刷新</button>
       </div>
+      <div class="timeline-toolbar">
+        <span class="idle-toolbar-label">AI空闲</span>
+        <input id="idleIntervalMinMinutes" type="number" min="5" step="5" value="90" title="自动触发最短间隔（分钟）">
+        <span class="idle-toolbar-label">-</span>
+        <input id="idleIntervalMaxMinutes" type="number" min="5" step="5" value="150" title="自动触发最长间隔（分钟）">
+        <button onclick="saveIdleConfig()">保存</button>
+        <button id="idleTestBtn" class="idle-test-btn" onclick="runIdleTest()">测试触发</button>
+      </div>
+      <div class="timeline-toolbar">
+        <label class="idle-toolbar-label"><input id="idleEnabledToggle" type="checkbox"> 闲时自主行动</label>
+      </div>
       <div class="timeline-list" id="timelineList">
         <div class="timeline-empty">加载中...</div>
       </div>
@@ -270,6 +288,7 @@ let currentActivityTab = 'logs';
 let timelineLoaded = false;
 let timelineItems = [];
 let timelinePressTimer = null;
+let idleConfig = null;
 
 function switchActivityTab(tab) {
   hideTimelinePopover();
@@ -300,7 +319,7 @@ function renderTimeline(items) {
   const ordered = (items || []).slice().reverse();
   timelineItems = ordered;
   if (!ordered.length) {
-    el.innerHTML = '<div class="timeline-empty">暂无用户动态</div>';
+    el.innerHTML = '<div class="timeline-empty">暂无家庭动态</div>';
     return;
   }
   let lastDate = '';
@@ -403,6 +422,9 @@ connectCommonWS(msg => {
       const el = $('logList');
       el.scrollTop = el.scrollHeight;
     }
+  }
+  if (msg.type === 'idle_event' && currentActivityTab === 'timeline') {
+    loadTimeline();
   }
 });
 
@@ -580,6 +602,71 @@ async function loadActivityConfig() {
     $('activityTrackingToggle').checked = data.activity_tracking_enabled;
   } catch(e) {}
 }
+async function loadIdleConfig() {
+  try {
+    idleConfig = await api('GET', '/api/idle-autonomy/config');
+    const minInput = $('idleIntervalMinMinutes');
+    const maxInput = $('idleIntervalMaxMinutes');
+    if (minInput && idleConfig) minInput.value = idleConfig.interval_min_minutes || idleConfig.interval_minutes || 120;
+    if (maxInput && idleConfig) maxInput.value = idleConfig.interval_max_minutes || idleConfig.interval_minutes || 120;
+    const enabled = $('idleEnabledToggle');
+    if (enabled && idleConfig) enabled.checked = !!idleConfig.enabled;
+  } catch(e) {}
+}
+async function saveIdleConfig() {
+  let minMinutes = Math.max(5, parseInt($('idleIntervalMinMinutes')?.value || '120', 10) || 120);
+  let maxMinutes = Math.max(5, parseInt($('idleIntervalMaxMinutes')?.value || String(minMinutes), 10) || minMinutes);
+  if (maxMinutes < minMinutes) [minMinutes, maxMinutes] = [maxMinutes, minMinutes];
+  try {
+    idleConfig = await api('PUT', '/api/idle-autonomy/config', {
+      enabled: !!$('idleEnabledToggle')?.checked,
+      interval_min_minutes: minMinutes,
+      interval_max_minutes: maxMinutes
+    });
+    $('idleIntervalMinMinutes').value = idleConfig.interval_min_minutes || minMinutes;
+    $('idleIntervalMaxMinutes').value = idleConfig.interval_max_minutes || maxMinutes;
+    showToast('AI空闲间隔已保存');
+  } catch(e) {
+    showToast('保存失败');
+  }
+}
+async function saveIdleEnabled(enabled) {
+  const toggle = $('idleEnabledToggle');
+  try {
+    idleConfig = await api('PUT', '/api/idle-autonomy/config', {
+      enabled: !!enabled
+    });
+    if (toggle) toggle.checked = !!idleConfig.enabled;
+    showToast(enabled ? '闲时自主行动已开启' : '闲时自主行动已关闭');
+  } catch(e) {
+    showToast('保存失败');
+    if (toggle) toggle.checked = !enabled;
+  }
+}
+async function runIdleTest() {
+  const btn = $('idleTestBtn');
+  if (btn) {
+    btn.classList.add('running');
+    btn.textContent = '触发中...';
+  }
+  try {
+    const res = await api('POST', '/api/idle-autonomy/run-once');
+    if (res.ok) {
+      showToast('AI空闲互动已触发');
+      timelineLoaded = false;
+      if (currentActivityTab === 'timeline') loadTimeline();
+    } else {
+      showToast(res.error || res.skipped || '触发失败');
+    }
+  } catch(e) {
+    showToast('触发失败');
+  } finally {
+    if (btn) {
+      btn.classList.remove('running');
+      btn.textContent = '测试触发';
+    }
+  }
+}
 async function toggleActivityTracking(enabled) {
   try {
     await api('PUT', '/api/activity/config', { activity_tracking_enabled: enabled });
@@ -593,6 +680,8 @@ async function toggleActivityTracking(enabled) {
 /* ── 初始化 ── */
 loadRecent();
 loadActivityConfig();
+loadIdleConfig();
+$('idleEnabledToggle')?.addEventListener('change', e => saveIdleEnabled(e.target.checked));
 </script>
 </body>
 </html>

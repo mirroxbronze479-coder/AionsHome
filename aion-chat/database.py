@@ -402,6 +402,23 @@ async def init_db():
             pass
         # ── 聊天室总结锚点表 ──
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS idle_events (
+                id TEXT PRIMARY KEY,
+                actor TEXT NOT NULL,
+                action TEXT NOT NULL,
+                title TEXT NOT NULL,
+                detail TEXT DEFAULT '',
+                target_type TEXT DEFAULT '',
+                target_id TEXT DEFAULT '',
+                result_type TEXT DEFAULT '',
+                result_id TEXT DEFAULT '',
+                metadata TEXT DEFAULT '{}',
+                created_at REAL NOT NULL
+            )
+        """)
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_idle_events_created ON idle_events(created_at DESC)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_idle_events_actor ON idle_events(actor, created_at DESC)")
+        await db.execute("""
             CREATE TABLE IF NOT EXISTS chatroom_digest_anchors (
                 room_id TEXT PRIMARY KEY,
                 anchor_ts REAL NOT NULL DEFAULT 0

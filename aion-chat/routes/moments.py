@@ -13,7 +13,10 @@ from pydantic import BaseModel
 from config import DEFAULT_MODEL, SETTINGS, load_worldbook
 from database import get_db
 from ws import manager as ws_manager
-from ai_providers import stream_ai, CLI_STATUS_PREFIX
+from ai_providers import (
+    stream_ai, CLI_STATUS_PREFIX, MODELS,
+    _messages_have_images, _sentinel_describe_images,
+)
 from chatroom import (
     load_chatroom_config, send_to_connor, stream_connor_cli,
     _read_connor_persona, recall_chatroom_memories,
@@ -67,6 +70,16 @@ def _normalize_attachments(raw: Any) -> list:
     return result
 
 
+async def _prepare_moment_messages_for_model(messages: list[dict], model_key: str) -> list[dict]:
+    cfg = MODELS.get(model_key) or {}
+    provider = str(cfg.get("provider") or "")
+    key = str(model_key or "").strip().lower()
+    needs_sentinel = key == "codex" or (not cfg.get("vision", True)) or provider in {"codex_cli", "antigravity_cli"}
+    if needs_sentinel and _messages_have_images(messages):
+        return await _sentinel_describe_images(messages)
+    return messages
+
+
 async def _get_moment_with_comments(moment_id: str) -> Optional[dict]:
     """获取一条朋友圈及其评论和反应"""
     async with get_db() as db:
@@ -99,9 +112,13 @@ def _format_moment_for_prompt(moment: dict) -> str:
 
     author_display = name_map.get(moment["author"], moment["author"])
     ts = datetime.fromtimestamp(moment["created_at"]).strftime("%Y-%m-%d %H:%M")
+    attachments = _normalize_attachments(moment.get("attachments"))
     lines = [f"[朋友圈] {author_display} 发布于 {ts}：", moment["content"]]
 
     # 反应
+    if attachments:
+        lines.append(f"[配图] 这条朋友圈包含 {len(attachments)} 张图片，请结合图片内容评论。")
+
     reactions = moment.get("reactions", [])
     likes = [name_map.get(r["author"], r["author"]) for r in reactions if r["type"] == "like"]
     dislikes = [name_map.get(r["author"], r["author"]) for r in reactions if r["type"] == "dislike"]
@@ -257,7 +274,11 @@ def _build_moment_reply_messages(
 
     # 4. 朋友圈内容 + 评论
     moment_text = _format_moment_for_prompt(moment)
-    messages.append({"role": "user", "content": moment_text})
+    moment_msg = {"role": "user", "content": moment_text}
+    moment_attachments = _normalize_attachments(moment.get("attachments"))
+    if moment_attachments:
+        moment_msg["attachments"] = moment_attachments
+    messages.append(moment_msg)
 
     # 5. 任务指令
     if target_comment_id:
@@ -333,25 +354,27 @@ async def _ai_reply_to_moment(who: str, moment_id: str, target_comment_id: str =
                 _row = await _cur.fetchone()
             _model = _row["model"] if _row else DEFAULT_MODEL
             _temp = SETTINGS.get("temperature")
-            async for chunk in stream_ai(messages, _model, temperature=_temp):
+            model_messages = await _prepare_moment_messages_for_model(messages, _model)
+            async for chunk in stream_ai(model_messages, _model, temperature=_temp):
                 if chunk.startswith(CLI_STATUS_PREFIX):
                     continue
                 full_text += chunk
         else:
             # Connor: 尝试 HTTP 服务，失败则走配置模型
-            result = await send_to_connor(messages[-1]["content"])
+            result = None
             if result and result != "__CONNOR_STILL_PROCESSING__":
                 full_text = result
             else:
                 cfg = load_chatroom_config()
                 _connor_key = (cfg.get("connor_model") or "Codex").strip() or "Codex"
+                model_messages = await _prepare_moment_messages_for_model(messages, _connor_key)
                 if _connor_key == "Codex":
-                    async for chunk in stream_connor_cli(messages=messages):
+                    async for chunk in stream_connor_cli(messages=model_messages):
                         if chunk.startswith(CLI_STATUS_PREFIX):
                             continue
                         full_text += chunk
                 else:
-                    async for chunk in stream_ai(messages, _connor_key, {}):
+                    async for chunk in stream_ai(model_messages, _connor_key, {}):
                         if chunk.startswith(CLI_STATUS_PREFIX):
                             continue
                         full_text += chunk

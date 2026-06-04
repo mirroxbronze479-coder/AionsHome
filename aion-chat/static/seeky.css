@@ -146,8 +146,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 50% 40%, rgba(120,215,255,0.24), transparent 36%),
-    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(224,242,255,0.64));
+    linear-gradient(180deg, rgba(246,252,255,0.82), rgba(213,239,249,0.72));
   backdrop-filter: blur(22px) saturate(1.18);
   -webkit-backdrop-filter: blur(22px) saturate(1.18);
   box-shadow: var(--shadow);
@@ -160,7 +159,8 @@ button {
   inset: 12px;
   pointer-events: none;
   border-radius: 8px;
-  border: 1px dashed rgba(20,87,217,0.16);
+  border: 1px solid rgba(20,87,217,0.12);
+  box-shadow: inset 0 0 32px rgba(255,255,255,0.52);
 }
 
 .pet-stage {
@@ -170,78 +170,587 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: clamp(18px, 4vh, 44px) 16px 10px;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: clamp(14px, 3vh, 28px) 16px 10px;
 }
 
 .speech-bubble {
   position: relative;
+  flex: 1 1 112px;
   z-index: 3;
-  width: min(680px, 88vw);
-  min-height: 46px;
-  max-height: 92px;
-  overflow: hidden;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(20,87,217,0.18);
-  background: rgba(255,255,255,0.96);
-  box-shadow: 0 12px 32px rgba(28,82,150,0.12);
+  width: min(900px, 92vw);
+  min-height: 86px;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(77,164,225,0.28);
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255,255,255,0.95), rgba(255,255,255,0) 22%),
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(237,250,255,0.96));
+  box-shadow: 0 12px 32px rgba(28,82,150,0.12), inset 0 -1px 0 rgba(90,183,233,0.12);
   color: var(--ink);
-  font-size: 15px;
-  line-height: 1.55;
-  text-align: center;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .speech-bubble::after {
+  content: none;
+  position: absolute;
+  left: 22px;
+  bottom: -10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(244,252,255,0.96);
+  border: 1px solid rgba(77,164,225,0.22);
+  box-shadow:
+    20px 13px 0 -5px rgba(244,252,255,0.94),
+    20px 13px 0 -4px rgba(77,164,225,0.18);
+}
+
+.speech-bubble::before {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -10px;
+  right: 16px;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(112,208,246,0.32);
+  box-shadow: 13px 12px 0 -2px rgba(112,208,246,0.20);
+}
+
+.speech-bubble::-webkit-scrollbar {
+  width: 6px;
+}
+
+.speech-bubble::-webkit-scrollbar-thumb {
+  background: rgba(21,85,214,0.18);
+  border-radius: 999px;
+}
+
+.pet-chat-log {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pet-chat-row {
+  display: flex;
+  flex-direction: column;
+  max-width: min(78%, 560px);
+}
+
+.pet-chat-row.seeky {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.pet-chat-row.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.pet-chat-speaker {
+  margin: 0 8px 3px;
+  color: rgba(89,118,164,0.82);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.pet-chat-row.actor .pet-chat-speaker::before,
+.history-msg.actor .history-name::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: -2px;
+  background: linear-gradient(135deg, #7fb8ff, #8fded2);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.72);
+}
+
+.pet-chat-bubble {
+  position: relative;
+  padding: 9px 12px 10px;
+  border-radius: 17px;
+  font-size: 14px;
+  line-height: 1.48;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow: 0 8px 18px rgba(28,82,150,0.10);
+}
+
+.pet-chat-row.seeky .pet-chat-bubble {
+  border-bottom-left-radius: 7px;
+  border: 1px solid rgba(78,170,219,0.20);
+  background:
+    radial-gradient(circle at 14% 12%, rgba(255,255,255,0.88), rgba(255,255,255,0) 28%),
+    linear-gradient(180deg, rgba(239,252,255,0.98), rgba(218,244,255,0.94));
+  color: #163966;
+}
+
+.pet-chat-row.user .pet-chat-bubble {
+  border-bottom-right-radius: 7px;
+  background: linear-gradient(135deg, #1a67dc, #0b93ee);
+  color: white;
+}
+
+.pet-chat-row.event {
+  align-self: center;
+  max-width: min(92%, 620px);
+}
+
+.pet-event-chip {
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(62,122,205,0.12);
+  background: rgba(227,244,255,0.76);
+  color: rgba(70,101,148,0.88);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.aquarium {
+  position: relative;
+  z-index: 2;
+  width: min(900px, 92vw);
+  height: clamp(270px, 46vh, 470px);
+  flex: 0 1 clamp(270px, 46vh, 470px);
+  margin: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(27, 121, 169, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.66) 0 2px, transparent 2px),
+    radial-gradient(circle at 24% 18%, rgba(255,255,255,0.58), transparent 18%),
+    radial-gradient(circle at 78% 16%, rgba(255,214,142,0.22), transparent 20%),
+    linear-gradient(180deg, rgba(95,211,224,0.62) 0%, rgba(26,145,193,0.58) 48%, rgba(25,111,169,0.72) 82%),
+    linear-gradient(0deg, rgba(240,206,132,0.94) 0 17%, transparent 17%);
+  box-shadow:
+    inset 0 22px 44px rgba(255,255,255,0.38),
+    inset 0 -28px 36px rgba(28,94,128,0.22),
+    0 18px 42px rgba(20,87,146,0.16);
+}
+
+.aquarium::before,
+.aquarium::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.aquarium::before {
+  background:
+    linear-gradient(105deg, transparent 4%, rgba(255,255,255,0.30) 10%, transparent 17%),
+    linear-gradient(112deg, transparent 42%, rgba(255,255,255,0.18) 48%, transparent 55%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 18px);
+  mix-blend-mode: screen;
+  animation: waterShimmer 8s ease-in-out infinite;
+}
+
+.aquarium::after {
+  border: 9px solid rgba(255,255,255,0.30);
+  border-bottom-color: rgba(50,106,134,0.18);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.42),
+    inset 0 0 42px rgba(1,42,82,0.16);
+}
+
+.tank-light {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 26%;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.72), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.34), transparent);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.tank-food-layer,
+.tank-waste-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.tank-waste-layer {
+  z-index: 4;
+  pointer-events: none;
+}
+
+.food-pellet {
+  position: absolute;
+  left: var(--x);
+  top: -8%;
+  width: clamp(8px, 1.4vw, 13px);
+  height: clamp(8px, 1.4vw, 13px);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.82), rgba(255,255,255,0) 28%),
+    radial-gradient(circle, #ffca62 0 44%, #dd7f36 45% 70%, #9a4d2a 71%);
+  box-shadow:
+    0 2px 8px rgba(120,63,16,0.18),
+    inset -1px -2px 3px rgba(105,56,23,0.22);
+  opacity: 0;
+  transform: translate3d(-50%, 0, 0) scale(0.82);
+  animation: pelletDrop var(--drop-time, 1.2s) cubic-bezier(.18,.76,.28,1) forwards;
+}
+
+.food-pellet.eaten {
+  animation: pelletEat 0.28s ease-in forwards;
+}
+
+.waste-clump {
+  position: absolute;
+  left: var(--x);
+  bottom: var(--bottom);
+  width: clamp(24px, 3.1vw, 34px);
+  height: clamp(18px, 2.3vw, 26px);
+  border: 0;
+  border-radius: 52% 48% 46% 54%;
+  background:
+    radial-gradient(circle at 31% 31%, rgba(255,236,177,0.58) 0 9%, transparent 10%),
+    radial-gradient(circle at 68% 64%, rgba(93,61,35,0.34) 0 14%, transparent 15%),
+    linear-gradient(135deg, #8a623e, #5d3e2b);
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.16),
+    0 6px 14px rgba(42,48,38,0.18);
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate3d(-50%, 12px, 0) scale(0.82);
+  opacity: 0;
+  animation: wasteAppear 0.46s ease forwards, wasteBob 4.8s ease-in-out 0.46s infinite;
+}
+
+.waste-clump::before,
+.waste-clump::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(95,64,40,0.88);
+}
+
+.waste-clump::before {
+  left: 4px;
+  top: -4px;
+  width: 52%;
+  height: 62%;
+}
+
+.waste-clump::after {
+  right: 3px;
+  bottom: 1px;
+  width: 48%;
+  height: 52%;
+}
+
+.waste-clump.cleaning {
+  pointer-events: none;
+  animation: wasteClean 0.44s ease-in forwards;
+}
+
+.waste-pop {
+  position: absolute;
+  left: var(--x);
+  bottom: var(--bottom);
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(235,252,255,0.9);
+  box-shadow:
+    12px -7px 0 -2px rgba(235,252,255,0.55),
+    -10px -10px 0 -3px rgba(235,252,255,0.62),
+    3px -19px 0 -3px rgba(235,252,255,0.46);
+  pointer-events: none;
+  animation: cleanBubbles 0.66s ease-out forwards;
+}
+
+.aquarium.is-murky {
+  box-shadow:
+    inset 0 22px 44px rgba(255,255,255,0.28),
+    inset 0 -28px 42px rgba(62,73,53,0.24),
+    0 18px 42px rgba(20,87,146,0.16);
+}
+
+.aquarium.is-murky .tank-light {
+  opacity: 0.62;
+}
+
+.aquarium.is-murky::before {
+  opacity: 0.44;
+  filter: sepia(0.26) saturate(0.8);
+}
+
+.tank-bubbles span {
+  position: absolute;
+  bottom: 15%;
+  width: 11px;
+  height: 11px;
+  border: 1px solid rgba(229,252,255,0.86);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.48);
+  animation: bubbleRise 7s linear infinite;
+}
+
+.tank-bubbles span:nth-child(1) { left: 14%; animation-duration: 6.6s; animation-delay: -2s; }
+.tank-bubbles span:nth-child(2) { left: 27%; width: 7px; height: 7px; animation-duration: 8.2s; animation-delay: -5.1s; }
+.tank-bubbles span:nth-child(3) { left: 62%; width: 9px; height: 9px; animation-duration: 7.3s; animation-delay: -1.4s; }
+.tank-bubbles span:nth-child(4) { left: 74%; width: 13px; height: 13px; animation-duration: 9.6s; animation-delay: -6.2s; }
+.tank-bubbles span:nth-child(5) { left: 88%; width: 6px; height: 6px; animation-duration: 6.8s; animation-delay: -3.7s; }
+
+.tank-plants {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 13%;
+  height: 34%;
+  pointer-events: none;
+}
+
+.plant,
+.plant::before,
+.plant::after {
+  position: absolute;
+  bottom: 0;
   width: 18px;
-  height: 18px;
-  background: rgba(255,255,255,0.96);
-  border-right: 1px solid rgba(20,87,217,0.18);
-  border-bottom: 1px solid rgba(20,87,217,0.18);
-  transform: translateX(-50%) rotate(45deg);
+  height: 88%;
+  border-radius: 90% 12% 90% 12%;
+  background: linear-gradient(180deg, rgba(123,221,166,0.9), rgba(27,139,111,0.88));
+  transform-origin: 50% 100%;
+  animation: plantSway 5.8s ease-in-out infinite;
+}
+
+.plant::before,
+.plant::after {
+  content: "";
+}
+
+.plant::before {
+  left: -16px;
+  height: 76%;
+  transform: rotate(-18deg);
+  animation-delay: -1.3s;
+}
+
+.plant::after {
+  right: -16px;
+  height: 70%;
+  transform: rotate(16deg);
+  animation-delay: -2.1s;
+}
+
+.plant-a { left: 7%; height: 84%; }
+.plant-b { left: 82%; height: 72%; filter: hue-rotate(24deg); animation-delay: -1s; }
+.plant-c { left: 90%; height: 54%; filter: hue-rotate(-18deg); animation-delay: -2.4s; }
+
+.tank-stones {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  height: 12%;
+  background:
+    radial-gradient(ellipse at 10% 68%, rgba(93,113,134,0.92) 0 22px, transparent 23px),
+    radial-gradient(ellipse at 17% 76%, rgba(183,157,126,0.94) 0 18px, transparent 19px),
+    radial-gradient(ellipse at 74% 70%, rgba(97,118,133,0.90) 0 20px, transparent 21px),
+    radial-gradient(ellipse at 84% 75%, rgba(214,174,122,0.94) 0 17px, transparent 18px),
+    repeating-radial-gradient(circle at 50% 100%, rgba(191,152,96,0.34) 0 2px, transparent 2px 8px);
 }
 
 .pet-orbit {
-  position: relative;
+  position: absolute;
   z-index: 2;
-  width: min(48vw, 420px);
-  min-width: 220px;
-  aspect-ratio: 1;
-  margin-top: 24px;
+  left: 8%;
+  top: 38%;
+  --seeky-w: clamp(178px, 28vw, 280px);
+  --seeky-h: calc(var(--seeky-w) * 0.574);
+  width: var(--seeky-w);
+  height: var(--seeky-h);
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: swimPath 14s ease-in-out infinite;
+}
+
+.pet-orbit.seeking {
+  z-index: 5;
+  left: var(--seeky-x, 8%);
+  top: var(--seeky-y, 38%);
+  animation: none;
+  transition: left 0.78s cubic-bezier(.22,.78,.24,1), top 0.78s cubic-bezier(.22,.78,.24,1), transform 0.32s ease;
+  transform: var(--seeky-face, scaleX(-1)) rotate(var(--seeky-tilt, -2deg));
+}
+
+.pet-orbit.petted .pet-avatar {
+  animation: seekyFrames 0.95s steps(6) infinite, petWiggle 0.56s ease;
+}
+
+.pet-orbit.hungry .pet-glow {
+  opacity: 0.54;
+}
+
+.pet-orbit.dirty .pet-avatar {
+  filter: drop-shadow(0 18px 24px rgba(5,64,160,0.18)) saturate(0.86);
+}
+
+.pet-orbit.happy .pet-glow {
+  background: radial-gradient(circle, rgba(255,238,168,0.42), rgba(122,215,255,0.15) 48%, transparent 72%);
+}
+
+.pet-pop-bubble {
+  position: absolute;
+  left: var(--pop-x, 50%);
+  top: var(--pop-y, 34%);
+  z-index: 6;
+  max-width: min(220px, 52vw);
+  padding: 7px 10px 8px;
+  border-radius: 16px 16px 16px 7px;
+  border: 1px solid rgba(75,166,222,0.26);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255,255,255,0.92), rgba(255,255,255,0) 26%),
+    linear-gradient(180deg, rgba(250,254,255,0.96), rgba(226,248,255,0.93));
+  box-shadow: 0 10px 22px rgba(22,91,155,0.16);
+  color: #143a68;
+  font-size: 12px;
+  font-weight: 820;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, 6px, 0) scale(0.92);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.pet-pop-bubble::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(235,249,255,0.94);
+  border: 1px solid rgba(75,166,222,0.18);
+  box-shadow: 12px 8px 0 -5px rgba(235,249,255,0.9);
+}
+
+.pet-pop-bubble.show {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0) scale(1);
 }
 
 .pet-glow {
   position: absolute;
-  width: 74%;
-  height: 74%;
+  width: 82%;
+  height: 82%;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(82,164,255,0.30), rgba(122,215,255,0.12) 48%, transparent 70%);
+  background: radial-gradient(circle, rgba(180,246,255,0.36), rgba(122,215,255,0.12) 48%, transparent 72%);
   filter: blur(4px);
   animation: glowPulse 4.4s ease-in-out infinite;
 }
 
 .pet-avatar {
   position: relative;
-  width: 74%;
-  height: 74%;
-  object-fit: contain;
-  border-radius: 24%;
-  filter: drop-shadow(0 24px 30px rgba(5,64,160,0.26));
-  animation: seekyFloat 3.8s ease-in-out infinite;
+  width: 100%;
+  height: 100%;
+  border-radius: 18%;
+  filter: drop-shadow(0 18px 24px rgba(5,64,160,0.24));
 }
 
-@keyframes seekyFloat {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-14px) rotate(1deg); }
+.seeky-sprite {
+  background: url('/public/seeky_fish_sprite.png?v=fish2') 0 0 / calc(var(--seeky-w) * 6) var(--seeky-h) no-repeat;
+  animation: seekyFrames 0.95s steps(6) infinite;
+}
+
+@keyframes seekyFrames {
+  from { background-position-x: 0; }
+  to { background-position-x: calc(var(--seeky-w) * -6); }
+}
+
+@keyframes swimPath {
+  0% { transform: translate3d(0, 0, 0) rotate(-3deg) scaleX(-1); }
+  18% { transform: translate3d(12vw, -5vh, 0) rotate(4deg) scaleX(-1); }
+  34% { transform: translate3d(26vw, 2vh, 0) rotate(1deg) scaleX(-1); }
+  45% { transform: translate3d(34vw, -4vh, 0) rotate(0deg) scaleX(-1); }
+  49.9% { transform: translate3d(34vw, -4vh, 0) rotate(0deg) scaleX(-1); }
+  50% { transform: translate3d(34vw, -4vh, 0) rotate(0deg) scaleX(1); }
+  68% { transform: translate3d(22vw, 5vh, 0) rotate(-5deg) scaleX(1); }
+  86% { transform: translate3d(8vw, -1vh, 0) rotate(3deg) scaleX(1); }
+  99.9% { transform: translate3d(0, 0, 0) rotate(-3deg) scaleX(1); }
+  100% { transform: translate3d(0, 0, 0) rotate(-3deg) scaleX(-1); }
+}
+
+@keyframes waterShimmer {
+  0%, 100% { opacity: 0.62; transform: translateX(-1.5%); }
+  50% { opacity: 0.92; transform: translateX(1.5%); }
+}
+
+@keyframes pelletDrop {
+  0% { transform: translate3d(-50%, -18px, 0) scale(0.65); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate3d(calc(-50% + var(--drift, 0px)), var(--fall), 0) scale(1); opacity: 1; }
+}
+
+@keyframes pelletEat {
+  0% { opacity: 1; transform: translate3d(calc(-50% + var(--drift, 0px)), var(--fall), 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(calc(-50% + var(--drift, 0px)), var(--fall), 0) scale(0.18); }
+}
+
+@keyframes wasteAppear {
+  to { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+}
+
+@keyframes wasteBob {
+  0%, 100% { transform: translate3d(-50%, 0, 0) rotate(-1deg); }
+  50% { transform: translate3d(-50%, -4px, 0) rotate(1deg); }
+}
+
+@keyframes wasteClean {
+  to { opacity: 0; transform: translate3d(-50%, -18px, 0) scale(0.28); filter: blur(2px); }
+}
+
+@keyframes cleanBubbles {
+  0% { opacity: 0; transform: translate3d(-50%, 0, 0) scale(0.6); }
+  20% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate3d(-50%, -38px, 0) scale(1.5); }
+}
+
+@keyframes petWiggle {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+  24% { transform: translate3d(0, -5px, 0) rotate(-3deg); }
+  52% { transform: translate3d(0, 2px, 0) rotate(3deg); }
+  78% { transform: translate3d(0, -2px, 0) rotate(-2deg); }
+}
+
+@keyframes bubbleRise {
+  0% { transform: translate3d(0, 18px, 0) scale(0.62); opacity: 0; }
+  12% { opacity: 0.8; }
+  82% { opacity: 0.62; }
+  100% { transform: translate3d(18px, -42vh, 0) scale(1.18); opacity: 0; }
+}
+
+@keyframes plantSway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(5deg); }
 }
 
 @keyframes glowPulse {
@@ -250,9 +759,12 @@ button {
 }
 
 .pet-nameplate {
-  z-index: 3;
-  text-align: center;
-  margin-top: -8px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .pet-name {
@@ -263,18 +775,130 @@ button {
 }
 
 .pet-status {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 7;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
-  margin-top: 8px;
-  padding: 0 10px;
+  height: 22px;
+  padding: 0 9px;
   border-radius: 999px;
-  background: rgba(40,152,240,0.13);
-  border: 1px solid rgba(40,152,240,0.24);
+  background: rgba(245,252,255,0.76);
+  border: 1px solid rgba(40,152,240,0.28);
+  box-shadow: 0 6px 16px rgba(22,91,155,0.12);
   color: #1474bf;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 850;
+  letter-spacing: 0;
+}
+
+.care-dock {
+  z-index: 3;
+  width: min(900px, 92vw);
+  display: grid;
+  grid-template-columns: minmax(96px, 132px) 1fr;
+  gap: 10px;
+  align-items: stretch;
+  margin: 0;
+}
+
+.care-action {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(167,105,26,0.22);
+  background: linear-gradient(135deg, #ffe09f, #ffbd67);
+  color: #583516;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(164,105,28,0.13);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.care-action:active {
+  transform: scale(0.97);
+}
+
+.care-action:disabled {
+  cursor: default;
+  filter: grayscale(0.45) opacity(0.68);
+}
+
+.care-action-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.42);
+  color: #a45b24;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.care-stats {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.care-stat {
+  min-width: 0;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 6px;
+  align-content: center;
+  gap: 5px 6px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(62,122,205,0.16);
+  background: rgba(255,255,255,0.58);
+  color: var(--ink);
+}
+
+.care-stat-icon {
+  color: var(--blue-2);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.care-stat-label {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.care-meter {
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(60,113,179,0.13);
+}
+
+.care-meter i {
+  display: block;
+  width: var(--value, 70%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #44c6d9, #74dc9f);
+  transition: width 0.36s ease;
+}
+
+.care-stat.low .care-meter i {
+  background: linear-gradient(90deg, #f06c5d, #ffbd67);
 }
 
 .composer {
@@ -953,22 +1577,102 @@ textarea {
 
   .pet-stage {
     padding-top: 16px;
+    gap: 8px;
   }
 
   .speech-bubble {
-    max-width: 88vw;
+    width: min(100%, 92vw);
+    min-height: 94px;
     font-size: 14px;
   }
 
+  .pet-chat-log {
+    gap: 7px;
+  }
+
+  .pet-chat-row {
+    max-width: 84%;
+  }
+
+  .pet-chat-bubble {
+    padding: 8px 10px 9px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .pet-event-chip {
+    font-size: 11px;
+  }
+
+  .aquarium {
+    width: min(100%, 92vw);
+    height: clamp(235px, 39dvh, 360px);
+    flex-basis: clamp(235px, 39dvh, 360px);
+    margin-top: 0;
+  }
+
+  .pet-status {
+    left: 9px;
+    top: 9px;
+    height: 20px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
   .pet-orbit {
-    width: min(78vw, 330px);
-    min-width: 210px;
-    margin-top: 20px;
+    left: 7%;
+    top: 36%;
+    --seeky-w: clamp(162px, 48vw, 210px);
   }
 
   .pet-avatar {
-    width: 80%;
-    height: 80%;
+    width: 100%;
+    height: 100%;
+  }
+
+  .care-dock {
+    width: min(100%, 92vw);
+    grid-template-columns: 92px 1fr;
+    gap: 7px;
+    margin-top: 0;
+  }
+
+  .care-action {
+    min-height: 42px;
+    font-size: 13px;
+  }
+
+  .care-stats {
+    gap: 5px;
+  }
+
+  .care-stat {
+    min-height: 42px;
+    padding: 7px 6px;
+    gap: 4px;
+  }
+
+  .care-stat-icon {
+    display: none;
+  }
+
+  .care-stat-label {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  @keyframes swimPath {
+    0% { transform: translate3d(0, 0, 0) rotate(-3deg) scaleX(-1); }
+    20% { transform: translate3d(8vw, -4vh, 0) rotate(4deg) scaleX(-1); }
+    38% { transform: translate3d(18vw, 2vh, 0) rotate(1deg) scaleX(-1); }
+    48% { transform: translate3d(24vw, -3vh, 0) rotate(0deg) scaleX(-1); }
+    51.9% { transform: translate3d(24vw, -3vh, 0) rotate(0deg) scaleX(-1); }
+    52% { transform: translate3d(24vw, -3vh, 0) rotate(0deg) scaleX(1); }
+    70% { transform: translate3d(16vw, 5vh, 0) rotate(-5deg) scaleX(1); }
+    88% { transform: translate3d(7vw, -1vh, 0) rotate(3deg) scaleX(1); }
+    99.9% { transform: translate3d(0, 0, 0) rotate(-3deg) scaleX(1); }
+    100% { transform: translate3d(0, 0, 0) rotate(-3deg) scaleX(-1); }
   }
 
   .composer {
@@ -1038,5 +1742,22 @@ textarea {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seeky-sprite,
+  .pet-orbit,
+  .pet-glow,
+  .food-pellet,
+  .waste-clump,
+  .waste-pop,
+  .tank-bubbles span,
+  .plant,
+  .plant::before,
+  .plant::after,
+  .aquarium::before {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

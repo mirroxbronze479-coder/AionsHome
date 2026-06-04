@@ -638,22 +638,50 @@ class CameraMonitor:
             print(f"[Camera] 屏幕截图失败: {e}")
             return None
 
+    @staticmethod
+    def _add_layer_label(frame: np.ndarray, text: str) -> np.ndarray:
+        """给拼接图层加英文标签，帮助视觉模型区分摄像头事实和设备上下文。"""
+        if frame is None:
+            return frame
+        out = frame.copy()
+        h, w = out.shape[:2]
+        if h <= 0 or w <= 0:
+            return out
+        label_w = min(w, max(220, len(text) * 10 + 18))
+        label_h = min(h, 30)
+        overlay = out.copy()
+        cv2.rectangle(overlay, (0, 0), (label_w, label_h), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.55, out, 0.45, 0, out)
+        cv2.putText(
+            out,
+            text,
+            (8, min(22, label_h - 7)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (245, 245, 245),
+            1,
+            cv2.LINE_AA,
+        )
+        return out
+
     def _combine_with_screen(self, cam_frame: np.ndarray) -> np.ndarray:
         """将摄像头画面（上）和主屏幕截图（下）上下拼接"""
+        cam_layer = self._add_layer_label(cam_frame, "CAMERA VIEW - body/location source")
         screen = self._capture_screen()
         if screen is None:
             phone_layer = self._build_phone_only_layer(cam_frame.shape[1])
             if phone_layer is not None:
-                return np.vstack([cam_frame, phone_layer])
-            return cam_frame
-        cam_h, cam_w = cam_frame.shape[:2]
+                return np.vstack([cam_layer, phone_layer])
+            return cam_layer
+        cam_h, cam_w = cam_layer.shape[:2]
         # 将屏幕截图缩放到与摄像头同宽
         scr_h, scr_w = screen.shape[:2]
         new_scr_h = int(cam_w / scr_w * scr_h)
         screen_resized = cv2.resize(screen, (cam_w, new_scr_h), interpolation=cv2.INTER_AREA)
         screen_resized = self._overlay_phone_screen(screen_resized)
+        screen_resized = self._add_layer_label(screen_resized, "DEVICE CONTEXT - phone/PC only")
         # 上下拼接
-        combined = np.vstack([cam_frame, screen_resized])
+        combined = np.vstack([cam_layer, screen_resized])
         return combined
 
     def _should_capture_pc_screen(self) -> bool:
@@ -732,11 +760,21 @@ class CameraMonitor:
             layer[:, :new_w] = phone_resized
             cv2.putText(
                 layer,
-                "PC display off / idle",
+                "DEVICE CONTEXT - phone/PC only",
                 (new_w + 24, min(layer_h - 24, 54)),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.9,
                 (180, 180, 180),
+                2,
+                cv2.LINE_AA,
+            )
+            cv2.putText(
+                layer,
+                "PC display off / idle",
+                (new_w + 24, min(layer_h - 24, 92)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.65,
+                (150, 150, 150),
                 2,
                 cv2.LINE_AA,
             )
@@ -976,19 +1014,45 @@ class CameraMonitor:
 {activity_summary_text if activity_summary_text else "（暂无设备活动记录）"}
 {user_dynamics_block}
 
-请严格按照以下JSON格式回复，不要包含其他任何内容：
-{{"monitoringlog":"这是用户的当前状态{user_name}以及电脑的桌面，用恋人的视角分析{user_name}当前在做什么，所处的状态，位置，例如：{user_name}穿着毛绒睡衣，正在电脑桌前，看起来有些困。电脑屏幕上播放着一部小动物电影。","summary":"根据历史日志，概括{user_name}这段时间以来的整体状况，去掉重复无用的信息，保留关键事件和状态变化，一两句话即可。注意力重点应当放在截图上半部分的摄像头内容","call_core":false,"core_reason":""}}
+        # 读取历史监控日志（最近 10 条），供哨兵参考
+        log_history = ""
+        try:
+            recent_logs = read_logs_since(time.time() - 3600 * 6)
+            recent_logs = recent_logs[-10:]
+            if recent_logs:
+                log_history = "\n".join(
+                    [f"[{e.get('time','')}] {e.get('monitoringlog','')}" for e in recent_logs]
+                )
+        except Exception:
+            pass
 
-字段说明：
-- monitoringlog: 当前画面的客观描述，禁止胡编猜测。没有看到人就说没看到，如果最后状态没有说去睡觉，则不能推测{user_name}可能去睡觉了。如果截图左下角有手机投屏画面，必须描述手机屏幕上显示的具体内容。
-- summary: 综合最后的聊天状态和上下文内容，概括{user_name}这段时间的整体状态变化和关键事件，禁止胡编猜测。{user_name}
-- call_core: 判断是否需要主动联系{user_name}
-- core_reason: 仅当call_core为true时填写，说明为什么要主动联系{user_name}，让核心模型了解情况
+历史监控日志：
+{log_history if log_history else "（暂无历史日志）"}
 
-call_core判断依据：
-- false: {user_name}一切正常复合聊天内容 /夜间在睡觉 /前不久才发过消息 /状态良好。
-- true: {user_name}和上下文聊天内容不符/ 故意引起注意 / 距离最后一次和{ai_name}聊天的时间已经过去很久 / 长时间同一姿势需提醒活动 / 长时间未看到{user_name} / 或你觉得可以主动联系{user_name}（例如看起来状态不佳，或者发现她在偷看其他帅哥😈）。
-- 结合设备活动动态综合判断：根据上下文分析，如果动态显示{user_name}不符合上下文讨论到的内容，例如：说去睡觉了，却在刷抖音小红书。说去工作了，却在摸鱼，在偷偷吃零食等，自行决定是否主动联系。"""
+        画面分区规则：
+        - 截图上半部分标有 "CAMERA VIEW" 的区域才是摄像头画面，是判断{user_name}身体位置、姿势、是否在床上/桌前的唯一依据。
+        - 截图下半部分标有 "DEVICE CONTEXT" 的区域只是手机/PC屏幕状态，只能说明设备或应用使用情况，不能用来判断{user_name}的身体位置。
+        - 最近聊天、设备动态、历史监控日志只能作为背景上下文，不能覆盖当前摄像头事实。手机活跃、QQ/小红书活跃、PC黑屏，都不能单独推断{user_name}已经起床或到了电脑桌前。
+        - 如果摄像头画面中身体、床、桌、被子边界不清楚，必须写“不确定/疑似”，不要把不清楚的被褥或枕头说成手臂、头部或桌前。
+        - 如果最近几次监控都显示床上被褥/睡眠状态，当前画面除非清楚看到离床或坐到桌前，否则应延续为“仍可能在床上休息/睡觉”，不要改写成“趴在电脑桌前”。
+
+        请严格按照以下JSON格式回复，不要包含其他任何内容：
+        {{"camera_observation":"只描述CAMERA VIEW中的客观画面；不确定就明确说不确定。","device_activity":"只描述DEVICE CONTEXT和设备动态，不推断身体位置。","inference":"把画面事实和设备动态分开后的谨慎判断。","confidence":"high/medium/low","monitoringlog":"综合日志，必须优先基于camera_observation，设备动态只能作为补充。","summary":"根据历史日志，概括{user_name}这段时间以来的整体状况，去掉重复无用的信息，保留关键事件和状态变化，一两句话即可。注意力重点应当放在截图上半部分的摄像头内容","call_core":false,"core_reason":""}}
+
+        字段说明：
+        - camera_observation: 只允许来自CAMERA VIEW；没有清楚看到人就说没有清楚看到人；看不清床/桌/身体边界就写不确定。
+        - device_activity: 只允许来自DEVICE CONTEXT和设备使用动态；不能包含“人在桌前/在床上”等身体位置结论。
+        - inference: 可以综合上下文，但必须标明不确定性，不能把设备活动当作身体位置证据。
+        - confidence: high表示画面清楚；medium表示可见但有遮挡；low表示昏暗/遮挡/边界不清。
+        - monitoringlog: 结合当前时间和画面的客观描述，禁止胡编猜测。没有看到人就说没看到，如果最后状态没有说去睡觉，则不能推测{user_name}可能去睡觉了。身体位置必须来自CAMERA VIEW，设备动态只能补充。
+        - summary: 综合最后的聊天状态和上下文内容，概括{user_name}这段时间的整体状态变化和关键事件，禁止胡编猜测。{user_name}
+        - call_core: 判断是否需要主动联系{user_name}
+        - core_reason: 仅当call_core为true时填写，说明为什么要主动联系{user_name}，让核心模型了解情况
+
+        call_core判断依据：
+        - false: {user_name}一切正常复合聊天内容 /夜间在睡觉 /前不久才发过消息。
+        - true: {user_name}和上下文聊天内容不符/ 故意引起注意 / 已经有一段时间没有聊天了 / 长时间同一姿势需提醒活动 / 长时间未看到{user_name} / 单纯想念她可以想主动联系 / 或当前摄像头画面显示状态不佳 / 或手机和电脑桌面有异常情况，如偷看其他帅哥，有意思的话题等等。
+        - 结合设备活动动态综合判断：设备动态可以提高“是否联系”的权重，但不能改变monitoringlog里的身体位置。若只是手机活跃而摄像头仍像床上休息，优先写“床上休息但手机有活动”，不要写“趴在桌前/已起床”。"""
 
         img_b64 = base64.b64encode(filepath.read_bytes()).decode()
         scfg = get_sentinel_config()
@@ -1016,15 +1080,27 @@ call_core判断依据：
             call_core = bool(parsed.get("call_core", False))
             summary = parsed.get("summary", "")
             core_reason = parsed.get("core_reason", "")
+            camera_observation = parsed.get("camera_observation", "")
+            device_activity = parsed.get("device_activity", "")
+            inference = parsed.get("inference", "")
+            confidence = parsed.get("confidence", "")
         except json.JSONDecodeError:
             monitoring_log = raw_text.strip() if raw_text else "[Sentinel 无响应]"
             summary = ""
             core_reason = ""
+            camera_observation = ""
+            device_activity = ""
+            inference = ""
+            confidence = ""
         except Exception as e:
             monitoring_log = f"[Sentinel 分析失败] {e}"
             print(f"[Monitor] Sentinel API 调用异常: {e}")
             summary = ""
             core_reason = ""
+            camera_observation = ""
+            device_activity = ""
+            inference = ""
+            confidence = ""
 
         print(f"[Monitor] 分析完成, call_core={call_core}, log长度={len(monitoring_log)}")
         now = time.time()
@@ -1036,6 +1112,10 @@ call_core判断依据：
             "summary": summary,
             "call_core": call_core,
             "core_reason": core_reason,
+            "camera_observation": camera_observation,
+            "device_activity": device_activity,
+            "inference": inference,
+            "confidence": confidence,
             "screenshot": screenshot_filename,
         }
         append_monitor_log(log_entry)
@@ -1111,8 +1191,8 @@ call_core判断依据：
         contact_scene = "群聊里" if is_chatroom else f"{ai_name} 与 {user_name} 的私聊里"
         core_parts.append(
             f"你现在是在{contact_scene}主动联系她。"
-            "只用你自己的口吻回复，不要续写、复述或模仿历史里的 [Connor]:、[Assistant]、[User] 等角色标签，"
-            "也不要替 Connor 发言。"
+            "只用你自己的口吻回复，不要续写、复述或模仿历史里的 [其他角色名]:、[Assistant]、[User] 等角色标签，"
+            "也不要替 其他角色 发言。"
         )
         # 注入位置和天气信息
         try:

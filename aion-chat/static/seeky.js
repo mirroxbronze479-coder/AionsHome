@@ -14,6 +14,14 @@ let sending = false;
 let toastTimer = null;
 let reviewPollTimer = null;
 let reviewMode = 'compress';
+let petCare = null;
+let livePetMessage = null;
+let feeding = false;
+let petCareTimer = null;
+let petSpeechTimer = null;
+
+const PET_CARE_KEY = 'seeky_pet_care_v1';
+const HOUR_MS = 60 * 60 * 1000;
 
 function esc(text) {
   const div = document.createElement('div');
@@ -42,6 +50,361 @@ function showToast(text) {
   toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function clamp(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function randInt(min, max) {
+  return Math.floor(rand(min, max + 1));
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function clockText(ts = Date.now()) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function nextWasteTime(base = Date.now(), soon = false) {
+  const min = soon ? 0.5 * HOUR_MS : 2.5 * HOUR_MS;
+  const max = soon ? 4 * HOUR_MS : 7 * HOUR_MS;
+  return base + rand(min, max);
+}
+
+function newWaste(createdAt = Date.now()) {
+  return {
+    id: `waste_${createdAt}_${Math.random().toString(36).slice(2, 8)}`,
+    x: rand(17, 84),
+    bottom: rand(8, 22),
+    created_at: createdAt,
+  };
+}
+
+function defaultPetCare() {
+  const now = Date.now();
+  return {
+    fullness: 72,
+    cleanliness: 92,
+    happiness: 76,
+    last_seen_at: now,
+    next_waste_at: nextWasteTime(now),
+    wastes: [],
+    events: [],
+    seeky_x: 8,
+    seeky_y: 38,
+  };
+}
+
+function normalizePetCare(raw) {
+  const base = defaultPetCare();
+  const state = raw && typeof raw === 'object' ? { ...base, ...raw } : base;
+  state.fullness = clamp(state.fullness);
+  state.cleanliness = clamp(state.cleanliness);
+  state.happiness = clamp(state.happiness);
+  state.last_seen_at = Number(state.last_seen_at) || Date.now();
+  state.next_waste_at = Number(state.next_waste_at) || nextWasteTime(Date.now());
+  state.wastes = Array.isArray(state.wastes) ? state.wastes.slice(0, 6) : [];
+  state.events = Array.isArray(state.events) ? state.events.slice(-24) : [];
+  state.seeky_x = clamp(state.seeky_x, 3, 72);
+  state.seeky_y = clamp(state.seeky_y, 18, 64);
+  return state;
+}
+
+function loadPetCareState() {
+  try {
+    petCare = normalizePetCare(JSON.parse(localStorage.getItem(PET_CARE_KEY) || 'null'));
+  } catch {
+    petCare = defaultPetCare();
+  }
+  applyPetCareTime(Date.now(), true);
+  savePetCareState();
+  renderPetCare();
+}
+
+function savePetCareState() {
+  if (!petCare) return;
+  petCare.last_seen_at = Date.now();
+  localStorage.setItem(PET_CARE_KEY, JSON.stringify(petCare));
+}
+
+function applyPetCareTime(now = Date.now(), includeOfflineWaste = false) {
+  if (!petCare) return;
+  const lastSeen = Number(petCare.last_seen_at) || now;
+  const elapsedHours = clamp((now - lastSeen) / HOUR_MS, 0, 24 * 14);
+  if (elapsedHours > 0) {
+    petCare.fullness = clamp(petCare.fullness - elapsedHours * 3.2);
+    petCare.cleanliness = clamp(petCare.cleanliness - elapsedHours * 0.7 - petCare.wastes.length * 0.35);
+    const hungryPenalty = petCare.fullness < 35 ? elapsedHours * 1.2 : 0;
+    const dirtyPenalty = petCare.cleanliness < 45 ? elapsedHours * 0.9 : 0;
+    petCare.happiness = clamp(petCare.happiness - elapsedHours * 0.55 - hungryPenalty - dirtyPenalty);
+  }
+
+  let spawned = 0;
+  while (petCare.next_waste_at <= now && petCare.wastes.length < 6) {
+    if (!includeOfflineWaste && spawned >= 1) break;
+    petCare.wastes.push(newWaste(petCare.next_waste_at));
+    petCare.cleanliness = clamp(petCare.cleanliness - 10);
+    petCare.happiness = clamp(petCare.happiness - 3);
+    petCare.next_waste_at = nextWasteTime(petCare.next_waste_at);
+    spawned += 1;
+  }
+  if (petCare.next_waste_at <= now) {
+    petCare.next_waste_at = nextWasteTime(now);
+  }
+  petCare.last_seen_at = now;
+}
+
+function setMeter(id, value) {
+  const el = $(id);
+  if (!el) return;
+  const next = clamp(value);
+  el.style.setProperty('--value', `${Math.round(next)}%`);
+  el.classList.toggle('low', next < 34);
+}
+
+function petCareStatusText() {
+  if (feeding) return 'FEEDING';
+  if (!petCare) return 'ONLINE';
+  if (petCare.cleanliness < 34 || petCare.wastes.length >= 3) return 'CLEAN ME';
+  if (petCare.fullness < 28) return 'HUNGRY';
+  if (petCare.happiness > 78) return 'HAPPY';
+  return 'ONLINE';
+}
+
+function refreshPetStatus() {
+  const status = $('petStatus');
+  if (status) status.textContent = petCareStatusText();
+}
+
+function renderPetCare() {
+  if (!petCare) return;
+  setMeter('fullnessStat', petCare.fullness);
+  setMeter('cleanStat', petCare.cleanliness);
+  setMeter('happyStat', petCare.happiness);
+
+  const aquarium = document.querySelector('.aquarium');
+  if (aquarium) aquarium.classList.toggle('is-murky', petCare.cleanliness < 52 || petCare.wastes.length >= 2);
+
+  const orbit = document.querySelector('.pet-orbit');
+  if (orbit) {
+    orbit.classList.toggle('hungry', petCare.fullness < 34);
+    orbit.classList.toggle('dirty', petCare.cleanliness < 48);
+    orbit.classList.toggle('happy', petCare.happiness > 74);
+  }
+
+  const wasteLayer = $('wasteLayer');
+  if (wasteLayer) {
+    const signature = petCare.wastes.map(item => `${item.id}:${item.x.toFixed(1)}:${item.bottom.toFixed(1)}`).join('|');
+    if (wasteLayer.dataset.signature !== signature) {
+      wasteLayer.dataset.signature = signature;
+      wasteLayer.innerHTML = petCare.wastes.map(item => `
+        <button class="waste-clump" type="button" data-waste-id="${esc(item.id)}"
+          title="清理一下"
+          style="--x:${item.x.toFixed(2)}%;--bottom:${item.bottom.toFixed(2)}%"></button>
+      `).join('');
+    }
+  }
+  refreshPetStatus();
+}
+
+function showTemporaryPetBubble(text, tone = 'normal', ms = 2600) {
+  const pop = $('petPopBubble');
+  if (!pop) return;
+  const aquarium = document.querySelector('.aquarium');
+  const avatar = $('petAvatar');
+  if (aquarium && avatar) {
+    const tankRect = aquarium.getBoundingClientRect();
+    const avatarRect = avatar.getBoundingClientRect();
+    const x = clamp(((avatarRect.left + avatarRect.width * 0.48 - tankRect.left) / tankRect.width) * 100, 18, 82);
+    const y = clamp(((avatarRect.top + avatarRect.height * 0.08 - tankRect.top) / tankRect.height) * 100, 8, 72);
+    pop.style.setProperty('--pop-x', `${x.toFixed(2)}%`);
+    pop.style.setProperty('--pop-y', `${y.toFixed(2)}%`);
+  }
+  pop.textContent = (text || '').replace(/\s+/g, ' ').trim();
+  pop.dataset.tone = tone;
+  pop.classList.toggle('show', Boolean(pop.textContent));
+  clearTimeout(petSpeechTimer);
+  petSpeechTimer = setTimeout(() => {
+    pop.classList.remove('show');
+    setTimeout(() => {
+      if (!pop.classList.contains('show')) {
+        pop.textContent = '';
+        delete pop.dataset.tone;
+      }
+    }, 180);
+  }, ms);
+}
+
+function addPetEventMessage(text, createdAt = Date.now()) {
+  if (!petCare || !text) return;
+  petCare.events.push({
+    id: `event_${createdAt}_${Math.random().toString(36).slice(2, 7)}`,
+    role: 'event',
+    content: text,
+    created_at: createdAt,
+  });
+  petCare.events = petCare.events.slice(-24);
+  savePetCareState();
+  renderMainChat();
+}
+
+function sprinkleFoodPellets() {
+  const layer = $('foodLayer');
+  const aquarium = document.querySelector('.aquarium');
+  if (!layer || !aquarium) return [];
+  layer.innerHTML = '';
+  const rect = aquarium.getBoundingClientRect();
+  return Array.from({ length: randInt(3, 6) }, (_, index) => {
+    const x = rand(22, 78);
+    const y = rand(30, 68);
+    const el = document.createElement('span');
+    el.className = 'food-pellet';
+    el.style.setProperty('--x', `${x.toFixed(2)}%`);
+    el.style.setProperty('--fall', `${Math.max(90, rect.height * ((y + 8) / 100)).toFixed(1)}px`);
+    el.style.setProperty('--drift', `${rand(-18, 18).toFixed(1)}px`);
+    el.style.setProperty('--drop-time', `${(1 + index * 0.08 + rand(0, 0.28)).toFixed(2)}s`);
+    layer.appendChild(el);
+    return { x, y, el };
+  });
+}
+
+async function moveSeekyToPoint(x, y) {
+  const orbit = document.querySelector('.pet-orbit');
+  if (!orbit || !petCare) return;
+  const nextX = clamp(x - 13, 3, 72);
+  const nextY = clamp(y - 10, 18, 64);
+  const face = nextX >= petCare.seeky_x ? 'scaleX(-1)' : 'scaleX(1)';
+  petCare.seeky_x = nextX;
+  petCare.seeky_y = nextY;
+  orbit.style.setProperty('--seeky-x', `${nextX.toFixed(2)}%`);
+  orbit.style.setProperty('--seeky-y', `${nextY.toFixed(2)}%`);
+  orbit.style.setProperty('--seeky-face', face);
+  orbit.style.setProperty('--seeky-tilt', `${rand(-5, 5).toFixed(1)}deg`);
+  orbit.classList.add('seeking');
+  await sleep(820);
+}
+
+function releaseSeeky() {
+  const orbit = document.querySelector('.pet-orbit');
+  if (!orbit) return;
+  orbit.classList.remove('seeking');
+  orbit.style.removeProperty('--seeky-x');
+  orbit.style.removeProperty('--seeky-y');
+  orbit.style.removeProperty('--seeky-face');
+  orbit.style.removeProperty('--seeky-tilt');
+}
+
+function addWasteSoon() {
+  if (!petCare || petCare.wastes.length >= 6) return;
+  petCare.wastes.push(newWaste());
+  petCare.cleanliness = clamp(petCare.cleanliness - 12);
+  petCare.happiness = clamp(petCare.happiness - 4);
+  petCare.next_waste_at = Math.max(Date.now() + HOUR_MS, nextWasteTime(Date.now()));
+  savePetCareState();
+  renderPetCare();
+  showTemporaryPetBubble('＞﹏＜', 'pet', 3200);
+}
+
+async function feedSeeky() {
+  if (!petCare || feeding) return;
+  if (petCare.fullness > 94) {
+    showTemporaryPetBubble('我已经圆滚滚啦，等一会儿再吃。', 'pet');
+    showToast('Seeky 已经很饱');
+    return;
+  }
+
+  feeding = true;
+  $('feedBtn').disabled = true;
+  refreshPetStatus();
+  showTemporaryPetBubble('开饭！我游过去吃。', 'pet', 3600);
+
+  const pellets = sprinkleFoodPellets();
+  await sleep(760);
+  for (const pellet of pellets) {
+    await moveSeekyToPoint(pellet.x, pellet.y);
+    pellet.el.classList.add('eaten');
+    petCare.fullness = clamp(petCare.fullness + 7);
+    petCare.happiness = clamp(petCare.happiness + 4);
+    renderPetCare();
+    await sleep(250);
+    pellet.el.remove();
+  }
+
+  releaseSeeky();
+  petCare.next_waste_at = Math.min(petCare.next_waste_at || Infinity, nextWasteTime(Date.now(), true));
+  savePetCareState();
+  renderPetCare();
+
+  if (Math.random() < 0.38) {
+    setTimeout(addWasteSoon, rand(2600, 7200));
+  }
+  showToast('Seeky 吃饱了一点');
+  showTemporaryPetBubble('ヾ(≧▽≦*)o', 'pet');
+  feeding = false;
+  $('feedBtn').disabled = false;
+  refreshPetStatus();
+}
+
+function cleanWaste(id, button) {
+  if (!petCare || !id) return;
+  const target = petCare.wastes.find(item => item.id === id);
+  if (!target) return;
+  petCare.wastes = petCare.wastes.filter(item => item.id !== id);
+  petCare.cleanliness = clamp(petCare.cleanliness + 16);
+  petCare.happiness = clamp(petCare.happiness + 3);
+  savePetCareState();
+
+  if (button) {
+    button.classList.add('cleaning');
+    const pop = document.createElement('span');
+    pop.className = 'waste-pop';
+    pop.style.setProperty('--x', `${target.x.toFixed(2)}%`);
+    pop.style.setProperty('--bottom', `${target.bottom.toFixed(2)}%`);
+    $('wasteLayer')?.appendChild(pop);
+    setTimeout(() => {
+      pop.remove();
+      renderPetCare();
+    }, 520);
+  } else {
+    renderPetCare();
+  }
+  showToast('清理好了');
+  addPetEventMessage(`${clockText()} 你给 Seeky 清理了水族缸`);
+  showTemporaryPetBubble(petCare.wastes.length ? '主人真好！' : '(❁´◡`❁)', 'pet');
+}
+
+function petSeeky() {
+  if (!petCare) return;
+  const orbit = document.querySelector('.pet-orbit');
+  orbit?.classList.remove('petted');
+  void orbit?.offsetWidth;
+  orbit?.classList.add('petted');
+  setTimeout(() => orbit?.classList.remove('petted'), 640);
+  petCare.happiness = clamp(petCare.happiness + 8);
+  petCare.fullness = clamp(petCare.fullness - 0.4);
+  savePetCareState();
+  renderPetCare();
+  const lines = ['我贴过来啦~', '收到摸摸信号！', '我绕个圈给你看！', ' .｡. o(≧▽≦)o .｡.:*☆', '被摸摸了！', '再摸一下!~'];
+  showTemporaryPetBubble(lines[randInt(0, lines.length - 1)], 'pet');
+}
+
+function startPetCareClock() {
+  if (petCareTimer) clearInterval(petCareTimer);
+  petCareTimer = setInterval(() => {
+    applyPetCareTime(Date.now(), false);
+    savePetCareState();
+    renderPetCare();
+  }, 60 * 1000);
+  window.addEventListener('beforeunload', savePetCareState);
 }
 
 function goHome() {
@@ -85,20 +448,107 @@ function petName() {
   return seekyConfig.name || 'Seeky';
 }
 
-function showPetBubble(text, tone = 'normal') {
+function seekyMessageName(role) {
+  if (role === 'user') return '你';
+  if (role === 'aion') return 'Aion';
+  if (role === 'connor') return 'Connor';
+  return petName();
+}
+
+function normalizeSeekyMessageRole(msg) {
+  const role = msg?.role || 'assistant';
+  if (role !== 'user') return role;
+  const content = (msg?.content || '').trim();
+  if (/^\[(aion|aions?|ai\s*on|AIon)[^\]]*\]/i.test(content)) return 'aion';
+  if (/^\[(connor)[^\]]*\]/i.test(content)) return 'connor';
+  return role;
+}
+
+function seekyMessageSide(role) {
+  return role === 'user' ? 'user' : 'seeky';
+}
+
+function mainChatItems() {
+  const historyItems = messages
+    .filter(msg => (msg.content || '').trim())
+    .map(msg => ({
+      id: msg.id,
+      role: normalizeSeekyMessageRole(msg),
+      content: msg.content,
+      created_at: Number(msg.created_at || 0) * 1000,
+    }));
+  const eventItems = (petCare?.events || []).map(item => ({
+    id: item.id,
+    role: 'event',
+    content: item.content,
+    created_at: Number(item.created_at || 0),
+  }));
+  const items = [...historyItems, ...eventItems].sort((a, b) => a.created_at - b.created_at);
+  const latest = items.slice(-4);
+  if (livePetMessage?.content) {
+    const last = latest[latest.length - 1];
+    if (!last || last.role !== livePetMessage.role || last.content !== livePetMessage.content) {
+      latest.push(livePetMessage);
+    }
+  }
+  if (!latest.length) {
+    latest.push({
+      id: 'welcome',
+      role: 'assistant',
+      content: '我在这里，等你叫我。',
+      created_at: Date.now(),
+    });
+  }
+  return latest.slice(-5);
+}
+
+function renderMainChat() {
   const bubble = $('speechBubble');
+  if (!bubble) return;
+  bubble.innerHTML = `
+    <div class="pet-chat-log">
+      ${mainChatItems().map(renderMainChatItem).join('')}
+    </div>`;
+  requestAnimationFrame(() => {
+    bubble.scrollTop = bubble.scrollHeight;
+  });
+}
+
+function renderMainChatItem(item) {
+  if (item.role === 'event') {
+    return `<div class="pet-chat-row event"><div class="pet-event-chip">${esc(item.content)}</div></div>`;
+  }
+  const isUser = item.role === 'user';
+  const name = isUser ? '你' : petName();
+  return `
+    <div class="pet-chat-row ${isUser ? 'user' : 'seeky'}">
+      <div class="pet-chat-speaker">${esc(name)}</div>
+      <div class="pet-chat-bubble">${esc(item.content)}</div>
+    </div>`;
+}
+
+function showPetBubble(text, tone = 'normal') {
   const raw = (text || `我在这里，等你叫我。`).replace(/\s+/g, ' ').trim();
-  bubble.textContent = raw.length > 54 ? `${raw.slice(0, 54)}...` : raw;
-  bubble.dataset.tone = tone;
+  const role = tone === 'user' ? 'user' : (tone === 'event' ? 'event' : 'assistant');
+  livePetMessage = {
+    id: `live_${Date.now()}`,
+    role,
+    content: raw || `我在这里，等你叫我。`,
+    created_at: Date.now() + 1,
+  };
+  const bubble = $('speechBubble');
+  if (bubble) bubble.dataset.tone = tone;
+  renderMainChat();
 }
 
 function updatePetBubbleFromHistory() {
   const lastAssistant = [...messages].reverse().find(msg => msg.role === 'assistant' && msg.content.trim());
   if (lastAssistant) {
-    showPetBubble(lastAssistant.content);
+    livePetMessage = null;
   } else {
-    showPetBubble(`我在这里，等你叫我。`);
+    livePetMessage = null;
   }
+  renderMainChat();
 }
 
 function renderHistory() {
@@ -121,6 +571,33 @@ function renderHistoryMessage(message) {
     </div>`;
 }
 
+function renderMainChatItem(item) {
+  if (item.role === 'event') {
+    return `<div class="pet-chat-row event"><div class="pet-event-chip">${esc(item.content)}</div></div>`;
+  }
+  const isUser = item.role === 'user';
+  const isActor = item.role === 'aion' || item.role === 'connor';
+  const name = seekyMessageName(item.role);
+  const side = seekyMessageSide(item.role);
+  return `
+    <div class="pet-chat-row ${side} ${isActor ? 'actor' : ''}">
+      <div class="pet-chat-speaker">${esc(name)}</div>
+      <div class="pet-chat-bubble">${esc(item.content)}</div>
+    </div>`;
+}
+
+function renderHistoryMessage(message) {
+  const role = normalizeSeekyMessageRole(message);
+  const isUser = role === 'user';
+  const name = seekyMessageName(role);
+  const actorCls = isUser ? 'user' : `assistant ${role === 'aion' || role === 'connor' ? 'actor' : ''}`;
+  return `
+    <div class="history-msg ${actorCls}" data-msg-id="${esc(message.id)}">
+      <div class="history-name">${esc(name)}</div>
+      <div class="history-bubble">${esc(message.content)}</div>
+    </div>`;
+}
+
 function scrollHistoryToBottom() {
   const box = $('historyList');
   requestAnimationFrame(() => {
@@ -131,6 +608,7 @@ function scrollHistoryToBottom() {
 function appendMessage(message) {
   messages.push(message);
   renderHistory();
+  renderMainChat();
 }
 
 function updateMessageContent(id, content) {
@@ -142,10 +620,15 @@ function updateMessageContent(id, content) {
     if (bubble) bubble.textContent = content;
   }
   scrollHistoryToBottom();
+  renderMainChat();
 }
 
 function setStatus(text) {
-  $('petStatus').textContent = text ? 'THINKING' : 'ONLINE';
+  if (text) {
+    $('petStatus').textContent = 'THINKING';
+  } else {
+    refreshPetStatus();
+  }
 }
 
 function setSending(value) {
@@ -215,7 +698,6 @@ async function sendMessage(event) {
   autoSizeInput();
   setSending(true);
   setStatus(`${petName()} 正在接收信号...`);
-  showPetBubble(`收到：${text}`, 'user');
 
   appendMessage({
     id: `local_${Date.now()}_u`,
@@ -737,6 +1219,12 @@ function bindEvents() {
   $('saveReviewBtn').addEventListener('click', () => saveReviewEdits(false).catch(err => showToast(`保存失败：${err.message}`)));
   $('discardReviewBtn').addEventListener('click', discardMemoryReview);
   $('applyReviewBtn').addEventListener('click', applyMemoryReview);
+  $('feedBtn').addEventListener('click', feedSeeky);
+  $('petAvatar').addEventListener('click', petSeeky);
+  $('wasteLayer').addEventListener('click', event => {
+    const button = event.target.closest('.waste-clump');
+    if (button) cleanWaste(button.dataset.wasteId, button);
+  });
   $('reviewList').addEventListener('change', event => {
     if (!event.target.classList.contains('review-action')) return;
     const row = event.target.closest('.review-item');
@@ -775,7 +1263,11 @@ function bindEvents() {
 bindEvents();
 setDateRange('compressStartDateInput', 'compressEndDateInput', 190, 30);
 setReviewMode('compress');
-loadInitialData().catch(err => {
+loadPetCareState();
+startPetCareClock();
+loadInitialData().then(() => {
+  renderPetCare();
+}).catch(err => {
   showToast(`Seeky 启动失败：${err.message}`);
   console.error(err);
 });

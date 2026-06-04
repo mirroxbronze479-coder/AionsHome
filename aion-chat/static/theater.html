@@ -319,6 +319,7 @@ let models = [];
 let ttsEnabled = false;
 let ttsVoice = "";
 let ttsQueue = new Map();
+let ttsMergedUrls = new Map();
 let ttsPlaying = false;
 let currentAudio = null;
 
@@ -513,6 +514,9 @@ function handleSync(msg) {
       break;
     case 'tts_done':
       handleTTSDone(d);
+      break;
+    case 'tts_merged':
+      if (d.msg_id && d.url) ttsMergedUrls.set(d.msg_id, d.url);
       break;
   }
 }
@@ -1040,19 +1044,27 @@ function playNextTTS() {
 async function replayTTS(msgId) {
   const safeId = msgId.replace(/[^a-zA-Z0-9_\-]/g, '');
   const chunks = [];
+  const mergedUrl = ttsMergedUrls.get(msgId) || `/api/theater/tts/audio/${safeId}`;
+  try {
+    const mergedRes = await fetch(mergedUrl, { method: 'HEAD' });
+    if (mergedRes.ok) chunks.push(mergedUrl);
+  } catch(e) {}
+
   let misses = 0;
-  for (let seq = 0; seq < 200; seq++) {
-    try {
-      const res = await fetch(`/api/theater/tts/audio/${safeId}_s${seq}`, { method: 'HEAD' });
-      if (res.ok) {
-        chunks.push(`/api/theater/tts/audio/${safeId}_s${seq}`);
-        misses = 0;
-      } else if (chunks.length > 0 && ++misses >= 8) {
-        break;
-      } else if (chunks.length === 0 && seq >= 8) {
-        break;
-      }
-    } catch(e) { break; }
+  if (!chunks.length) {
+    for (let seq = 0; seq < 200; seq++) {
+      try {
+        const res = await fetch(`/api/theater/tts/audio/${safeId}_s${seq}`, { method: 'HEAD' });
+        if (res.ok) {
+          chunks.push(`/api/theater/tts/audio/${safeId}_s${seq}`);
+          misses = 0;
+        } else if (chunks.length > 0 && ++misses >= 8) {
+          break;
+        } else if (chunks.length === 0 && seq >= 8) {
+          break;
+        }
+      } catch(e) { break; }
+    }
   }
   if (!chunks.length) { showToast('暂无音频缓存'); return; }
   // 停止当前播放

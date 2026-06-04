@@ -47,17 +47,56 @@
 
     <main class="pet-room">
       <section class="pet-stage">
-        <div class="speech-bubble" id="speechBubble">我在这里，等你叫我。</div>
+        <div class="care-dock" aria-label="Seeky 照顾面板">
+          <button class="care-action" id="feedBtn" type="button">
+            <span class="care-action-icon">●</span>
+            <span>喂食</span>
+          </button>
+          <div class="care-stats">
+            <div class="care-stat" id="fullnessStat">
+              <span class="care-stat-icon">◐</span>
+              <span class="care-stat-label">饱饱</span>
+              <span class="care-meter"><i></i></span>
+            </div>
+            <div class="care-stat" id="cleanStat">
+              <span class="care-stat-icon">◇</span>
+              <span class="care-stat-label">干净</span>
+              <span class="care-meter"><i></i></span>
+            </div>
+            <div class="care-stat" id="happyStat">
+              <span class="care-stat-icon">✦</span>
+              <span class="care-stat-label">开心</span>
+              <span class="care-meter"><i></i></span>
+            </div>
+          </div>
+        </div>
 
-        <div class="pet-orbit">
-          <div class="pet-glow"></div>
-          <img class="pet-avatar" id="petAvatar" src="/public/funIcon_0022_Seeky.png" alt="Seeky" draggable="false">
+        <div class="aquarium" aria-label="Seeky 的小水族箱">
+          <div class="tank-light"></div>
+          <div class="pet-status" id="petStatus">ONLINE</div>
+          <div class="tank-bubbles" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="tank-food-layer" id="foodLayer" aria-hidden="true"></div>
+          <div class="tank-waste-layer" id="wasteLayer" aria-label="水族箱清理区"></div>
+          <div class="tank-plants" aria-hidden="true">
+            <span class="plant plant-a"></span>
+            <span class="plant plant-b"></span>
+            <span class="plant plant-c"></span>
+          </div>
+          <div class="tank-stones" aria-hidden="true"></div>
+          <div class="pet-pop-bubble" id="petPopBubble" aria-live="polite"></div>
+          <div class="pet-orbit">
+            <div class="pet-glow"></div>
+            <div class="pet-avatar seeky-sprite" id="petAvatar" role="img" aria-label="Seeky"></div>
+          </div>
         </div>
 
         <div class="pet-nameplate">
           <div class="pet-name" id="petName">Seeky</div>
-          <div class="pet-status" id="petStatus">ONLINE</div>
         </div>
+
+        <div class="speech-bubble" id="speechBubble">我在这里，等你叫我。</div>
       </section>
 
       <form class="composer" id="composer">

@@ -9,9 +9,38 @@ import re, asyncio, logging
 from pathlib import Path
 import httpx
 
-from config import get_key, TTS_CACHE_DIR
+from config import get_key, TTS_CACHE_DIR, TTS_CACHE_MAX_BYTES
 
 log = logging.getLogger("tts")
+
+
+def cleanup_tts_cache_dir(cache_dir: Path = TTS_CACHE_DIR, max_bytes: int = TTS_CACHE_MAX_BYTES, *, skip: set[Path] | None = None):
+    """Delete oldest cached MP3 files until the directory is under max_bytes."""
+    skip_resolved = {p.resolve() for p in (skip or set())}
+    files = []
+    total = 0
+    for path in cache_dir.glob("*.mp3"):
+        try:
+            resolved = path.resolve()
+            stat = path.stat()
+        except OSError:
+            continue
+        total += stat.st_size
+        if resolved not in skip_resolved:
+            files.append((stat.st_mtime, stat.st_size, path))
+
+    if total <= max_bytes:
+        return
+
+    for _mtime, size, path in sorted(files, key=lambda item: item[0]):
+        try:
+            path.unlink()
+            total -= size
+            log.info("TTS cache cleanup removed %s", path.name)
+        except OSError as e:
+            log.warning("TTS cache cleanup failed for %s: %s", path, e)
+        if total <= max_bytes:
+            break
 
 # 需要从 TTS 文本中剥除的特殊标签
 _STRIP_PATTERNS = [
@@ -72,6 +101,9 @@ class TTSStreamer:
         max_chars: int = 200,
         cache_dir: Path | None = None,
         audio_url_prefix: str = "/api/tts/audio",
+        merge_segments: bool = False,
+        delete_segments_after_seconds: int | None = None,
+        cache_max_bytes: int | None = TTS_CACHE_MAX_BYTES,
     ):
         self.msg_id = msg_id
         self.voice = voice
@@ -85,6 +117,10 @@ class TTSStreamer:
         self._buffer = ""       # 原始文本缓冲
         self._seq = 0           # 分段序号
         self._tasks: list[asyncio.Task] = []
+        self._segment_paths: dict[int, Path] = {}
+        self._merge_segments = merge_segments
+        self._delete_segments_after_seconds = delete_segments_after_seconds
+        self._cache_max_bytes = cache_max_bytes
 
     async def _notify(self, payload: dict):
         """通过 WebSocket 或 SSE Queue 推送事件"""
@@ -204,6 +240,55 @@ class TTSStreamer:
             "data": {"msg_id": self.msg_id}
         })
 
+        if self._merge_segments:
+            asyncio.create_task(self._finalize_merged_audio())
+
+    async def _finalize_merged_audio(self):
+        safe_id = re.sub(r'[^a-zA-Z0-9_\-]', '', self.msg_id)
+        if not safe_id:
+            return
+        expected = list(range(self._seq))
+        if not expected:
+            return
+        paths = [self._segment_paths.get(seq) for seq in expected]
+        if any(path is None or not path.exists() for path in paths):
+            log.warning("TTS merge skipped for %s: missing one or more segments", self.msg_id)
+            return
+
+        merged_path = self._cache_dir / f"{safe_id}.mp3"
+        try:
+            await asyncio.to_thread(self._merge_mp3_files, paths, merged_path)
+            await self._notify({
+                "type": "tts_merged",
+                "data": {
+                    "msg_id": self.msg_id,
+                    "url": f"{self._audio_url_prefix}/{safe_id}"
+                }
+            })
+            log.info("TTS merged audio ready: msg=%s segments=%d", self.msg_id, len(paths))
+        except Exception as e:
+            log.error("TTS merge failed for %s: %s", self.msg_id, e)
+            return
+
+        if self._delete_segments_after_seconds is not None:
+            asyncio.create_task(self._delete_segments_later(paths, self._delete_segments_after_seconds))
+
+    @staticmethod
+    def _merge_mp3_files(paths: list[Path], merged_path: Path):
+        tmp_path = merged_path.with_suffix(".tmp")
+        with tmp_path.open("wb") as out:
+            for path in paths:
+                out.write(path.read_bytes())
+        tmp_path.replace(merged_path)
+
+    async def _delete_segments_later(self, paths: list[Path], delay_seconds: int):
+        await asyncio.sleep(max(0, delay_seconds))
+        for path in paths:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError as e:
+                log.warning("TTS delayed segment cleanup failed for %s: %s", path, e)
+
     async def _synthesize(self, text: str, seq: int, safe_id: str):
         """调用硅基流动 TTS 合成 → 保存文件 → WS 推送"""
         key = get_key("siliconflow")
@@ -237,6 +322,9 @@ class TTSStreamer:
 
             cache_path = self._cache_dir / f"{chunk_name}.mp3"
             cache_path.write_bytes(resp.content)
+            self._segment_paths[seq] = cache_path
+            if self._cache_max_bytes and self._cache_dir.resolve() == TTS_CACHE_DIR.resolve():
+                await asyncio.to_thread(cleanup_tts_cache_dir, self._cache_dir, self._cache_max_bytes, skip={cache_path})
 
             await self._notify({
                 "type": "tts_chunk",

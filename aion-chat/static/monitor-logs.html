@@ -18,6 +18,8 @@
 .log-time { color:var(--text2); font-size:11px; font-family:monospace; margin-right:6px; }
 .log-text { color:var(--text); }
 .log-core { color:#e65100; font-style:italic; }
+.log-debug { color:var(--text2); font-size:11px; margin-top:2px; white-space:pre-wrap; }
+.log-debug b { color:var(--text); font-weight:600; }
 .log-empty { padding:24px; text-align:center; color:var(--text3); font-size:14px; }
 .chat-status-bar { padding:8px 12px; border-top:1px solid var(--border); margin-top:8px; display:flex; flex-direction:column; gap:4px; font-size:12px; }
 .chat-status-label { color:var(--text2); white-space:nowrap; }
@@ -57,16 +59,9 @@ connectCommonWS(msg => {
     const today = new Date().toISOString().slice(0, 10);
     if ($("logDateSelect").value === today) {
       const e = msg.data;
-      const isCore = e.monitoringlog && e.monitoringlog.startsWith("🧠");
-      const cls = isCore ? "log-core" : "log-text";
-      const callTag = e.call_core ? ' <span style="color:#d32f2f;font-size:11px">[唤醒Core]</span>' : '';
-      const summaryTag = e.summary ? `<div style="color:#1a73e8;font-size:11px;margin-top:2px">📋 概况: ${escHtml(e.summary)}</div>` : '';
-      const reasonTag = e.core_reason ? `<div style="color:#e65100;font-size:11px;margin-top:2px">⚡ 唤醒原因: ${escHtml(e.core_reason)}</div>` : '';
       const el = $("logList");
       if (el.querySelector(".log-empty")) el.innerHTML = "";
-      el.insertAdjacentHTML("beforeend",
-        `<div class="log-entry"><span class="log-time">${escHtml(e.time || '')}</span><span class="${cls}">${escHtml(e.monitoringlog || '')}</span>${callTag}${summaryTag}${reasonTag}</div>`
-      );
+      el.insertAdjacentHTML("beforeend", renderMonitorEntry(e));
       el.scrollTop = el.scrollHeight;
     }
   }
@@ -113,16 +108,24 @@ async function loadLogDate() {
     const entries = data.entries;
     const el = $("logList");
     if (!entries || entries.length === 0) { el.innerHTML = '<div class="log-empty">该日暂无日志</div>'; return; }
-    el.innerHTML = entries.map(e => {
-      const isCore = e.monitoringlog && e.monitoringlog.startsWith("🧠");
-      const cls = isCore ? "log-core" : "log-text";
-      const callTag = e.call_core ? ' <span style="color:#d32f2f;font-size:11px">[唤醒Core]</span>' : '';
-      const summaryTag = e.summary ? `<div style="color:#1a73e8;font-size:11px;margin-top:2px">📋 概况: ${escHtml(e.summary)}</div>` : '';
-      const reasonTag = e.core_reason ? `<div style="color:#e65100;font-size:11px;margin-top:2px">⚡ 唤醒原因: ${escHtml(e.core_reason)}</div>` : '';
-      return `<div class="log-entry"><span class="log-time">${escHtml(e.time || '')}</span><span class="${cls}">${escHtml(e.monitoringlog || '')}</span>${callTag}${summaryTag}${reasonTag}</div>`;
-    }).join("");
+    el.innerHTML = entries.map(renderMonitorEntry).join("");
     el.scrollTop = el.scrollHeight;
   } catch(e) { $("logList").innerHTML = '<div class="log-empty">加载失败</div>'; }
+}
+
+function renderMonitorEntry(e) {
+  const isCore = e.monitoringlog && e.monitoringlog.startsWith("🧠");
+  const cls = isCore ? "log-core" : "log-text";
+  const callTag = e.call_core ? ' <span style="color:#d32f2f;font-size:11px">[唤醒Core]</span>' : '';
+  const summaryTag = e.summary ? `<div style="color:#1a73e8;font-size:11px;margin-top:2px">📋 概况: ${escHtml(e.summary)}</div>` : '';
+  const reasonTag = e.core_reason ? `<div style="color:#e65100;font-size:11px;margin-top:2px">⚡ 唤醒原因: ${escHtml(e.core_reason)}</div>` : '';
+  const debugParts = [];
+  if (e.camera_observation) debugParts.push(`<b>视野</b>: ${escHtml(e.camera_observation)}`);
+  if (e.device_activity) debugParts.push(`<b>设备</b>: ${escHtml(e.device_activity)}`);
+  if (e.inference) debugParts.push(`<b>判断</b>: ${escHtml(e.inference)}`);
+  if (e.confidence) debugParts.push(`<b>置信</b>: ${escHtml(e.confidence)}`);
+  const debugTag = debugParts.length ? `<div class="log-debug">${debugParts.join("\n")}</div>` : '';
+  return `<div class="log-entry"><span class="log-time">${escHtml(e.time || '')}</span><span class="${cls}">${escHtml(e.monitoringlog || '')}</span>${callTag}${summaryTag}${reasonTag}${debugTag}</div>`;
 }
 </script>
 </body>

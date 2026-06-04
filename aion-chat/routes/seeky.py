@@ -271,7 +271,16 @@ async def _build_prompt(config: dict) -> list[dict]:
             "不要声称读取了 Aion、Connor、世界书、记忆库、股市或新闻数据，除非用户直接贴给你。"
         ),
     }]
-    prompt.extend({"role": msg["role"], "content": msg["content"]} for msg in history)
+    actor_names = {"aion": "Aion", "connor": "Connor"}
+    for msg in history:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role in actor_names:
+            prompt.append({"role": "user", "content": f"[{actor_names[role]}] {content}"})
+        elif role == "assistant":
+            prompt.append({"role": "assistant", "content": content})
+        else:
+            prompt.append({"role": "user", "content": content})
     return prompt
 
 
