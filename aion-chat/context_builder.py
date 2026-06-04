@@ -465,7 +465,7 @@ async def build_memory_blocks(
 # ══════════════════════════════════════════════════
 
 # 系统消息过滤关键词（只保留包含这些关键词的系统消息）
-SYSTEM_MSG_CONTEXT_KEYWORDS = ('查看了监控', '搜索了', '点歌', '点了一首', '推荐了', '查看了动态', '视频通话')
+SYSTEM_MSG_CONTEXT_KEYWORDS = ('搜索了', '点歌', '点了一首', '推荐了', '查看了动态', '视频通话')
 
 # 聊天室图片标记 [[image:/uploads/xxx.jpg]] / [[image:/cr-uploads/xxx.jpg]]
 # 这些标记会泄漏文件路径到 LLM 上下文，污染 instant_digest 关键词，

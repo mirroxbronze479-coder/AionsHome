@@ -182,6 +182,172 @@ body[data-theme="dark"] .dock::before {
 .badge-dot.show { display: block; }
 
 /* ── Toast 提示 ── */
+.global-search-trigger {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  margin: 14px 24px 0;
+  border: 1px solid rgba(255,255,255,0.42);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.34);
+  color: #3a2e22;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  cursor: pointer;
+}
+body[data-theme="dark"] .global-search-trigger {
+  border-color: rgba(157,166,255,0.26);
+  background: rgba(9,14,45,0.42);
+  color: #f4f6ff;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+}
+.global-search-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  padding: max(34px, env(safe-area-inset-top)) 14px max(22px, env(safe-area-inset-bottom));
+  background: rgba(30,22,14,0.34);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.global-search-overlay.show { display: flex; }
+.global-search-panel {
+  width: min(680px, 100%);
+  max-height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255,255,255,0.46);
+  border-radius: 18px;
+  background: rgba(255,249,244,0.94);
+  box-shadow: 0 18px 48px rgba(0,0,0,0.22);
+  overflow: hidden;
+}
+body[data-theme="dark"] .global-search-panel {
+  border-color: rgba(157,166,255,0.24);
+  background: rgba(9,14,45,0.94);
+}
+.global-search-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(120,95,70,0.18);
+}
+body[data-theme="dark"] .global-search-head { border-bottom-color: rgba(157,166,255,0.16); }
+.global-search-head input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid rgba(120,95,70,0.22);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.72);
+  color: #2f261d;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+body[data-theme="dark"] .global-search-head input {
+  border-color: rgba(157,166,255,0.22);
+  background: rgba(255,255,255,0.08);
+  color: #f4f6ff;
+}
+.global-search-head button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ff8359;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.global-search-head .global-search-close {
+  width: 36px;
+  padding: 10px 0;
+  background: rgba(0,0,0,0.08);
+  color: #49392b;
+  font-size: 18px;
+}
+body[data-theme="dark"] .global-search-head .global-search-close {
+  background: rgba(255,255,255,0.10);
+  color: #f4f6ff;
+}
+.global-search-meta {
+  padding: 9px 14px 0;
+  color: rgba(58,46,34,0.68);
+  font-size: 12px;
+}
+body[data-theme="dark"] .global-search-meta { color: rgba(244,246,255,0.66); }
+.global-search-results {
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.global-search-item {
+  border: 1px solid rgba(120,95,70,0.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.58);
+  padding: 10px 12px;
+  color: #2f261d;
+  cursor: pointer;
+  text-align: left;
+}
+body[data-theme="dark"] .global-search-item {
+  border-color: rgba(157,166,255,0.16);
+  background: rgba(255,255,255,0.07);
+  color: #f4f6ff;
+}
+.global-search-item:active { transform: scale(0.99); }
+.gsi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.gsi-badge {
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(255,131,89,0.16);
+  color: #9a4328;
+  font-size: 11px;
+  font-weight: 700;
+}
+body[data-theme="dark"] .gsi-badge {
+  background: rgba(255,131,89,0.20);
+  color: #ffb79e;
+}
+.gsi-time {
+  color: rgba(58,46,34,0.56);
+  font-size: 11px;
+}
+body[data-theme="dark"] .gsi-time { color: rgba(244,246,255,0.56); }
+.gsi-title {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: rgba(58,46,34,0.70);
+}
+body[data-theme="dark"] .gsi-title { color: rgba(244,246,255,0.70); }
+.gsi-snippet {
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.gsi-snippet mark {
+  border-radius: 3px;
+  background: #ffe08a;
+  color: #513b00;
+  padding: 0 2px;
+}
+
 .toast {
   position: absolute;
   bottom: 110px;
@@ -225,6 +391,8 @@ body[data-theme="dark"] .dock::before {
     </div>
 
     <!-- 应用网格 -->
+    <button class="global-search-trigger" onclick="openGlobalSearch()">搜索聊天记录</button>
+
     <div class="app-grid" id="appGrid"></div>
 
     <!-- 底部 Dock -->
@@ -232,6 +400,18 @@ body[data-theme="dark"] .dock::before {
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <div class="global-search-overlay" id="globalSearchOverlay">
+      <div class="global-search-panel">
+        <form class="global-search-head" id="globalSearchForm">
+          <input id="globalSearchInput" type="search" maxlength="80" autocomplete="off" placeholder="搜一句话、关键词或名字">
+          <button type="submit">搜索</button>
+          <button type="button" class="global-search-close" onclick="closeGlobalSearch()" title="关闭">×</button>
+        </form>
+        <div class="global-search-meta" id="globalSearchMeta">会搜索群聊和两边私聊</div>
+        <div class="global-search-results" id="globalSearchResults"></div>
+      </div>
+    </div>
 
   </div>
 
@@ -328,6 +508,97 @@ function openApp(url) {
 }
 
 /* ── Toast ── */
+let globalSearchItems = [];
+function hsEsc(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+function hsTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function openGlobalSearch() {
+  document.getElementById('globalSearchOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('globalSearchInput').focus(), 0);
+}
+function closeGlobalSearch() {
+  document.getElementById('globalSearchOverlay').classList.remove('show');
+}
+function hsSnippet(content, keyword) {
+  const text = String(content || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const needle = String(keyword || '').toLocaleLowerCase();
+  const lower = text.toLocaleLowerCase();
+  const idx = needle ? lower.indexOf(needle) : -1;
+  if (idx < 0) return text.length > 110 ? text.slice(0, 110) + '...' : text;
+  const start = Math.max(0, idx - 32);
+  const end = Math.min(text.length, idx + keyword.length + 70);
+  return `${start > 0 ? '...' : ''}${text.slice(start, end)}${end < text.length ? '...' : ''}`;
+}
+function hsHighlight(text, keyword) {
+  const value = String(text || '');
+  const needle = String(keyword || '');
+  if (!needle) return hsEsc(value);
+  const idx = value.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase());
+  if (idx < 0) return hsEsc(value);
+  return hsEsc(value.slice(0, idx)) + '<mark>' + hsEsc(value.slice(idx, idx + needle.length)) + '</mark>' + hsEsc(value.slice(idx + needle.length));
+}
+function renderGlobalSearch(items, keyword) {
+  const list = document.getElementById('globalSearchResults');
+  if (!items.length) {
+    list.innerHTML = '<div class="global-search-meta">没有匹配的聊天记录</div>';
+    return;
+  }
+  list.innerHTML = items.map((item, idx) => {
+    const snippet = hsSnippet(item.content || '', keyword);
+    const title = `${item.target_title || item.source_label || ''} · ${item.speaker_name || ''}`;
+    return `<button class="global-search-item" type="button" onclick="openGlobalSearchResult(${idx})">
+      <div class="gsi-top"><span class="gsi-badge">${hsEsc(item.source_label || '')}</span><span class="gsi-time">${hsEsc(hsTime(item.created_at))}</span></div>
+      <div class="gsi-title">${hsEsc(title)}</div>
+      <div class="gsi-snippet">${hsHighlight(snippet, keyword)}</div>
+    </button>`;
+  }).join('');
+}
+async function runGlobalSearch(e) {
+  e?.preventDefault();
+  const input = document.getElementById('globalSearchInput');
+  const meta = document.getElementById('globalSearchMeta');
+  const keyword = input.value.trim();
+  if (!keyword) {
+    meta.textContent = '会搜索群聊和两边私聊';
+    document.getElementById('globalSearchResults').innerHTML = '';
+    return;
+  }
+  meta.textContent = '搜索中...';
+  try {
+    const res = await fetch(`/api/search/messages?q=${encodeURIComponent(keyword)}&limit=80`);
+    const data = await res.json();
+    globalSearchItems = Array.isArray(data.items) ? data.items : [];
+    meta.textContent = globalSearchItems.length ? `找到 ${globalSearchItems.length} 条，点击可跳转` : '没有匹配的聊天记录';
+    renderGlobalSearch(globalSearchItems, keyword);
+  } catch(e) {
+    meta.textContent = '搜索失败';
+  }
+}
+function openGlobalSearchResult(index) {
+  const item = globalSearchItems[index];
+  if (!item) return;
+  closeGlobalSearch();
+  if (window.parent !== window) {
+    if (typeof window.parent.jumpToGlobalSearchTarget === 'function') {
+      window.parent.jumpToGlobalSearchTarget(item);
+      return;
+    }
+    if (item.url && typeof window.parent.openSubPage === 'function' && !item.url.startsWith('/chat?')) {
+      window.parent.openSubPage(item.url);
+      return;
+    }
+  }
+  if (item.url) window.location.href = item.url;
+}
+
 let toastTimer = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -353,6 +624,13 @@ renderApps();
 updateClock();
 setInterval(updateClock, 15000);
 document.getElementById('clockWidget').addEventListener('click', toggleAionTheme);
+document.getElementById('globalSearchForm').addEventListener('submit', runGlobalSearch);
+document.getElementById('globalSearchOverlay').addEventListener('click', e => {
+  if (e.target.id === 'globalSearchOverlay') closeGlobalSearch();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGlobalSearch();
+});
 
 /* ── 朋友圈未读红点检查 ── */
 async function checkMomentsUnread() {

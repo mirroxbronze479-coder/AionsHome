@@ -52,6 +52,7 @@ from routes import wallet as wallet_routes
 from routes import connor_wallet as connor_wallet_routes
 from routes import health as health_routes
 from routes import phone_screen as phone_screen_routes
+from routes import search as search_routes
 from activity import pc_tracker, pc_display_tracker
 from memory import auto_digest
 from chatroom import _connor_1v1_auto_digest_loop
@@ -203,6 +204,7 @@ app.include_router(wallet_routes.router)
 app.include_router(connor_wallet_routes.router)
 app.include_router(health_routes.router)
 app.include_router(phone_screen_routes.router)
+app.include_router(search_routes.router)
 
 
 # 页面

@@ -64,6 +64,35 @@ def get_chatroom_names() -> tuple[str, str, str]:
     return user_name, ai_name, connor_name
 
 
+def _json_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if not isinstance(value, str):
+        return []
+    text = value.strip()
+    if not text:
+        return []
+    try:
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, list) else []
+    except Exception:
+        return [text]
+
+
+def _source_ids_for_chatroom_memory(mem: dict) -> list[str]:
+    ids = []
+    for raw in _json_list(mem.get("source_msg_id")):
+        source_id = str(raw).strip()
+        if not source_id:
+            continue
+        if ":" not in source_id:
+            source_id = f"chatroom:{source_id}"
+        ids.append(source_id)
+    return ids
+
+
 def display_name_for_sender(sender: str) -> str:
     user_name, ai_name, connor_name = get_chatroom_names()
     return {"user": user_name, "assistant": ai_name, "aion": ai_name, "connor": connor_name}.get(sender, sender)
@@ -423,6 +452,28 @@ async def fetch_chatroom_source_details(memories: list[dict], keywords: list[str
     matched_rows = []
 
     for mem in memories:
+        source_ids = _source_ids_for_chatroom_memory(mem)
+        if source_ids:
+            async with get_db() as db:
+                db.row_factory = aiosqlite.Row
+                for source_id in source_ids:
+                    if ":" not in source_id:
+                        continue
+                    prefix, raw_id = source_id.split(":", 1)
+                    if prefix != "chatroom":
+                        continue
+                    cur = await db.execute(
+                        "SELECT sender, content, created_at FROM chatroom_messages WHERE id=? AND sender != 'system'",
+                        (raw_id,),
+                    )
+                    row = await cur.fetchone()
+                    if row:
+                        key = (row["created_at"], row["content"][:80])
+                        if key not in seen:
+                            seen.add(key)
+                            matched_rows.append(row)
+            continue
+
         start_ts = mem.get("source_start_ts")
         end_ts = mem.get("source_end_ts")
         if not start_ts or not end_ts:
@@ -777,7 +828,7 @@ def _parse_digest_result(raw: str) -> Optional[dict]:
 async def build_aion_group_context(
     room_id: str,
     room_messages: list[dict],
-    context_minutes: int = 30,
+    context_limit: int = 30,
     query_text: str = "",
     query_keywords: list[str] = None,
     *,
@@ -787,7 +838,7 @@ async def build_aion_group_context(
     """为 Aion 在群聊中构建完整上下文（含系统能力、记忆召回、时间感知）。
     room_messages 仅用于提取 recent_for_digest，实际消息历史由统一时间线构建。"""
     history = []
-    context_limit = max(1, int(context_minutes or 30))
+    context_limit = max(1, int(context_limit or 30))
 
     # 0. 注入世界书（和主聊天一致的人设）
     wb = load_worldbook()
@@ -866,7 +917,7 @@ async def build_aion_group_context(
 async def build_connor_group_context(
     room_id: str,
     room_messages: list[dict],
-    context_minutes: int = 30,
+    context_limit: int = 30,
     query_text: str = "",
     query_keywords: list[str] = None,
     *,
@@ -877,7 +928,7 @@ async def build_connor_group_context(
     room_messages 仅用于提取 recent_for_digest，实际消息历史由统一时间线构建。
     返回 (history, digest_result)。"""
     history = []
-    context_limit = max(1, int(context_minutes or 30))
+    context_limit = max(1, int(context_limit or 30))
 
     wb = load_worldbook()
     user_name, ai_name, connor_name = get_chatroom_names()
@@ -963,7 +1014,7 @@ async def build_connor_group_context(
 async def build_connor_1v1_context(
     room_id: str,
     room_messages: list[dict],
-    context_minutes: int = 30,
+    context_limit: int = 30,
     query_text: str = "",
     query_keywords: list[str] = None,
     *,
@@ -973,7 +1024,7 @@ async def build_connor_1v1_context(
     """为 Connor 1v1 聊天构建 messages 列表（含前置哨兵、背景浮现、原文追溯、附件图片）。
     返回 (messages, digest_result)。"""
     messages = []
-    context_limit = max(1, int(context_minutes or 30))
+    context_limit = max(1, int(context_limit or 30))
 
     wb = load_worldbook()
     user_name, _, _ = get_chatroom_names()

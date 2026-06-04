@@ -82,8 +82,14 @@ async function init() {
   worldBook = await api("GET", "/api/worldbook");
   try { chatroomConfig = await api("GET", "/api/chatroom/config"); } catch(e) { chatroomConfig = {}; }
   conversations = await api("GET", "/api/conversations");
+  const initParams = new URLSearchParams(location.search);
+  const targetConvId = initParams.get('conv');
+  const targetMsgId = initParams.get('msg');
   const lastId = localStorage.getItem('aion_last_conv');
-  if (lastId && conversations.find(c => c.id === lastId)) {
+  if (targetConvId && conversations.find(c => c.id === targetConvId)) {
+    await selectConv(targetConvId);
+    if (targetMsgId) setTimeout(() => jumpToChatMessage(targetConvId, targetMsgId), 100);
+  } else if (lastId && conversations.find(c => c.id === lastId)) {
     await selectConv(lastId);
   } else {
     renderConvList();
@@ -1439,7 +1445,16 @@ function renderMessages() {
 
     // 系统提示消息（居中显示）
     if (m.role === "system") {
-      return `<div class="msg-row system" id="m_${m.id}"><div class="system-notice">${escHtml(m.content)}</div></div>`;
+      return `
+      <div class="msg-row system" id="m_${m.id}" data-msg-id="${m.id}">
+        <div class="system-notice">
+          <span class="system-notice-text">${escHtml(m.content)}</span>
+          <button class="msg-dots system-dots" onclick="event.stopPropagation();toggleMsgMenu('${m.id}')">&#8943;</button>
+          <div class="msg-menu" id="menu_${m.id}">
+            <button onclick="delMsg('${m.id}');closeMsgMenus()">删除</button>
+          </div>
+        </div>
+      </div>`;
     }
 
     const roleLabel = isUser ? (worldBook.user_name || '你') : (worldBook.ai_name || 'AI');
@@ -1468,7 +1483,7 @@ function renderMessages() {
     const avatarSrc = isUser ? '/public/UserIcon.png' : '/public/AIIcon.png';
     const ttsBtn = !isUser ? `<button class="tts-replay-btn" onclick="replayTTS('${m.id}')" title="重听语音">🔊</button>` : '';
     return `
-    <div class="msg-row ${m.role}" id="m_${m.id}">
+    <div class="msg-row ${m.role}" id="m_${m.id}" data-msg-id="${m.id}">
       <div class="msg-avatar-col">
         <img class="msg-avatar" src="${avatarSrc}" alt="">
         ${ttsBtn}
@@ -1833,6 +1848,10 @@ async function unstarFromPanel(msgId) {
 
 async function jumpToStarredMsg(convId, msgId) {
   closeStarredPanel();
+  await jumpToChatMessage(convId, msgId);
+}
+
+async function jumpToChatMessage(convId, msgId) {
   _suppressScrollBottom = true;
   try {
     // 如果不在当前对话，先切换
@@ -1865,6 +1884,18 @@ async function jumpToStarredMsg(convId, msgId) {
     requestAnimationFrame(() => { _suppressScrollBottom = false; });
   }
 }
+
+window.jumpToGlobalSearchTarget = async function(target) {
+  if (!target) return;
+  if (target.source === 'aion_private') {
+    closeSubPage(true);
+    await jumpToChatMessage(target.target_id, target.id);
+    return;
+  }
+  if (target.url) {
+    openSubPage(target.url);
+  }
+};
 
 // ── 音乐卡片 ──
 function renderMusicCards(msgId) {
@@ -3688,10 +3719,76 @@ function toggleMsgMenu(id) {
   closeMsgMenus();
   if (!wasOpen && menu) menu.classList.add('show');
 }
+function showMsgMenuForRow(row) {
+  const id = row?.getAttribute?.('data-msg-id');
+  if (!id) return;
+  const menu = document.getElementById('menu_' + id);
+  if (!menu) return;
+  closeMsgMenus();
+  menu.classList.add('show');
+}
 function closeMsgMenus() {
   document.querySelectorAll('.msg-menu.show').forEach(m => m.classList.remove('show'));
 }
-document.addEventListener('click', closeMsgMenus);
+function msgMenuRowFromTarget(target) {
+  if (!target || target.closest?.('.msg-menu, button, input, textarea, a')) return null;
+  return target.closest?.('.msg-row[data-msg-id]');
+}
+$("messages").addEventListener('contextmenu', e => {
+  const row = msgMenuRowFromTarget(e.target);
+  if (!row || !document.getElementById('menu_' + row.getAttribute('data-msg-id'))) return;
+  e.preventDefault();
+  e.stopPropagation();
+  showMsgMenuForRow(row);
+});
+
+let msgLongPressTimer = null;
+let msgLongPressPoint = null;
+let msgLongPressOpened = false;
+
+function clearMsgLongPress() {
+  if (msgLongPressTimer) clearTimeout(msgLongPressTimer);
+  msgLongPressTimer = null;
+  msgLongPressPoint = null;
+}
+
+$("messages").addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const row = msgMenuRowFromTarget(e.target);
+  if (!row || !document.getElementById('menu_' + row.getAttribute('data-msg-id'))) return;
+  msgLongPressOpened = false;
+  msgLongPressPoint = { x: e.clientX, y: e.clientY, row };
+  msgLongPressTimer = setTimeout(() => {
+    msgLongPressOpened = true;
+    showMsgMenuForRow(row);
+    try { navigator.vibrate?.(12); } catch {}
+  }, 520);
+});
+
+$("messages").addEventListener('pointermove', e => {
+  if (!msgLongPressPoint) return;
+  const dx = Math.abs(e.clientX - msgLongPressPoint.x);
+  const dy = Math.abs(e.clientY - msgLongPressPoint.y);
+  if (dx > 8 || dy > 8) clearMsgLongPress();
+});
+
+['pointerup', 'pointercancel', 'pointerleave'].forEach(type => {
+  $("messages").addEventListener(type, e => {
+    if (msgLongPressOpened) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    clearMsgLongPress();
+  });
+});
+
+document.addEventListener('click', () => {
+  if (msgLongPressOpened) {
+    msgLongPressOpened = false;
+    return;
+  }
+  closeMsgMenus();
+});
 
 function autoResize(el) {
   el.style.height = "auto";
@@ -4337,7 +4434,7 @@ document.getElementById('subPageFrame').addEventListener('load', () => {
     syncSubPageChromeFromFrame();
   });
 });
-function closeSubPage() {
+function closeSubPage(skipReload = false) {
   const ov = $('subPageOverlay');
   if (!ov.classList.contains('show')) return;
   ov.classList.remove('show');
@@ -4346,7 +4443,7 @@ function closeSubPage() {
   currentSubPage = null;
   applyAionTheme(localStorage.getItem('aion_chat_theme') || document.body.dataset.theme || 'dark');
   // 回到聊天页后重新加载消息列表（拿到后台生成完成的新消息）
-  if (currentConvId) {
+  if (!skipReload && currentConvId) {
     api("GET", `/api/conversations/${currentConvId}/messages?limit=${MSG_PAGE_SIZE}`).then(msgs => {
       currentMessages = msgs;
       hasMoreMessages = msgs.length >= MSG_PAGE_SIZE;

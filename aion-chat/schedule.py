@@ -20,6 +20,7 @@ from routes.music import MUSIC_CMD_PATTERN
 from tts import TTSStreamer
 
 log = logging.getLogger("schedule")
+BACKGROUND_CLI_META = {"antigravity_print_timeout": "90s"}
 
 # ── 文本指令正则 ──────────────────────────────────
 ALARM_CMD = re.compile(r"\[ALARM:(.+?)\|(.+?)\]")
@@ -69,6 +70,14 @@ def _parse_dt(raw: str) -> str | None:
         except ValueError:
             continue
     return None
+
+
+def _is_schedule_time_stale(dt_text: str, *, grace_seconds: int = 90) -> bool:
+    try:
+        dt = datetime.strptime(dt_text.replace("T", " "), "%Y-%m-%d %H:%M")
+    except ValueError:
+        return False
+    return dt.timestamp() < time.time() - grace_seconds
 
 
 # ── ScheduleManager ───────────────────────────────
@@ -357,7 +366,7 @@ class ScheduleManager:
                             alarm_tts.feed(chunk)
                 else:
                     _temp = SETTINGS.get("temperature")
-                    async for chunk in stream_ai(messages, _connor_model, temperature=_temp):
+                    async for chunk in stream_ai(messages, _connor_model, meta=BACKGROUND_CLI_META, temperature=_temp):
                         if chunk.startswith(CLI_STATUS_PREFIX):
                             continue
                         full_text += chunk
@@ -376,7 +385,7 @@ class ScheduleManager:
             full_text = ""
             try:
                 _temp = SETTINGS.get("temperature")
-                async for chunk in stream_ai(messages, model_key, temperature=_temp):
+                async for chunk in stream_ai(messages, model_key, meta=BACKGROUND_CLI_META, temperature=_temp):
                     if chunk.startswith(CLI_STATUS_PREFIX):
                         continue
                     full_text += chunk
@@ -496,11 +505,17 @@ class ScheduleManager:
 
         # 获取最近 1 小时的设备活动摘要（6 条）
         activity_summary_text = ""
+        user_dynamics_text = ""
         try:
-            from activity import get_activity_summary_for_prompt
+            from activity import get_activity_summary_for_prompt, get_user_dynamics_for_prompt
             activity_summary_text = get_activity_summary_for_prompt(6)
+            user_dynamics_text = get_user_dynamics_for_prompt(hours=1)
         except Exception:
             pass
+        user_dynamics_block = (
+            f"\n以下是{user_name}过去一小时的用户关键动态：\n{user_dynamics_text}\n"
+            if user_dynamics_text else ""
+        )
 
         # 触发提示词（两种来源共用）
         trigger_prompt = (
@@ -517,6 +532,7 @@ class ScheduleManager:
                 f"\n以下是{user_name}过去一小时的设备使用动态（手机/电脑应用使用情况，每10分钟一条摘要）：\n"
                 f"{activity_summary_text}\n"
             )
+        trigger_prompt += user_dynamics_block
         if fname:
             trigger_prompt += f"\n请根据画面内容、设备活动动态和之前的对话上下文，自然地回应。"
         else:
@@ -610,7 +626,7 @@ class ScheduleManager:
                             monitor_tts.feed(chunk)
                 else:
                     _temp = SETTINGS.get("temperature")
-                    async for chunk in stream_ai(messages, _connor_model, temperature=_temp):
+                    async for chunk in stream_ai(messages, _connor_model, meta=BACKGROUND_CLI_META, temperature=_temp):
                         if chunk.startswith(CLI_STATUS_PREFIX):
                             continue
                         full_text += chunk
@@ -628,7 +644,7 @@ class ScheduleManager:
             full_text = ""
             try:
                 _temp = SETTINGS.get("temperature")
-                async for chunk in stream_ai(messages, model_key, temperature=_temp):
+                async for chunk in stream_ai(messages, model_key, meta=BACKGROUND_CLI_META, temperature=_temp):
                     if chunk.startswith(CLI_STATUS_PREFIX):
                         continue
                     full_text += chunk
@@ -709,10 +725,12 @@ async def process_schedule_commands(full_text: str, conv_id: str = None, origin:
             raw_dt, content = match.group(1), match.group(2)
             dt = _parse_dt(raw_dt)
             log.info("ALARM detected: raw_dt=%s parsed=%s content=%s", raw_dt, dt, content)
-            if dt and content.strip():
+            if dt and content.strip() and not _is_schedule_time_stale(dt):
                 await _add_schedule("alarm", dt, content.strip(), origin, origin_room_id)
                 if conv_id:
                     await _sys_msg(conv_id, f"{ai_name} 设置了 {dt.replace('T', ' ')} 的闹铃：{content.strip()}")
+            elif dt and content.strip():
+                log.warning("ALARM skipped because trigger time is stale: raw_dt=%s parsed=%s content=%s", raw_dt, dt, content)
             else:
                 log.warning("ALARM skipped: dt=%s content=%s", dt, content)
         except Exception as e:
@@ -725,10 +743,12 @@ async def process_schedule_commands(full_text: str, conv_id: str = None, origin:
             raw_dt, content = match.group(1), match.group(2)
             dt = _parse_dt(raw_dt)
             log.info("REMINDER detected: raw_dt=%s parsed=%s content=%s", raw_dt, dt, content)
-            if dt and content.strip():
+            if dt and content.strip() and not _is_schedule_time_stale(dt):
                 await _add_schedule("reminder", dt, content.strip(), origin, origin_room_id)
                 if conv_id:
                     await _sys_msg(conv_id, f"{ai_name} 设置了 {dt.replace('T', ' ')} 的日程：{content.strip()}")
+            elif dt and content.strip():
+                log.warning("REMINDER skipped because trigger time is stale: raw_dt=%s parsed=%s content=%s", raw_dt, dt, content)
             else:
                 log.warning("REMINDER skipped: dt=%s content=%s", dt, content)
         except Exception as e:
@@ -741,10 +761,12 @@ async def process_schedule_commands(full_text: str, conv_id: str = None, origin:
             raw_dt, content = match.group(1), match.group(2)
             dt = _parse_dt(raw_dt)
             log.info("MONITOR detected: raw_dt=%s parsed=%s content=%s", raw_dt, dt, content)
-            if dt and content.strip():
+            if dt and content.strip() and not _is_schedule_time_stale(dt):
                 await _add_schedule("monitor", dt, content.strip(), origin, origin_room_id)
                 if conv_id:
                     await _sys_msg(conv_id, f"{ai_name} 设置了 {dt.replace('T', ' ')} 的查岗：{content.strip()}")
+            elif dt and content.strip():
+                log.warning("MONITOR skipped because trigger time is stale: raw_dt=%s parsed=%s content=%s", raw_dt, dt, content)
             else:
                 log.warning("MONITOR skipped: dt=%s content=%s", dt, content)
         except Exception as e:

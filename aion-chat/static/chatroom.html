@@ -56,8 +56,19 @@
           <button class="reply-once-btn aion" id="replyAionBtn" onclick="triggerReplyOnce('aion')" style="display:none">AI 说</button>
           <button class="reply-once-btn connor" id="replyConnorBtn" onclick="triggerReplyOnce('connor')" style="display:none">Connor 说</button>
           <button class="ai-chat-btn" id="aiChatBtn" onclick="triggerAiChat()" style="display:none">💬 让他们聊</button>
+          <button id="chatSearchBtn" onclick="openChatSearch()" title="搜索聊天记录">搜索</button>
           <button onclick="openSettings()">⚙️</button>
         </div>
+      </div>
+
+      <div class="chat-search-panel" id="chatSearchPanel">
+        <form class="chat-search-form" id="chatSearchForm">
+          <input id="chatSearchInput" type="search" maxlength="80" autocomplete="off" placeholder="搜索聊天记录">
+          <button type="submit">搜索</button>
+          <button type="button" class="chat-search-close" onclick="closeChatSearch()" title="关闭">×</button>
+        </form>
+        <div class="chat-search-meta" id="chatSearchMeta">输入关键词后回车</div>
+        <div class="chat-search-results" id="chatSearchResults"></div>
       </div>
 
       <div class="messages" id="messages">
@@ -107,7 +118,7 @@
         <div class="settings-inline-row">
           <div class="field">
             <label>跨窗口上下文（条）</label>
-            <input id="setContextMin" type="number" min="5" max="120" value="30">
+            <input id="setContextLimit" type="number" min="5" max="120" value="30">
           </div>
           <div class="field" id="fieldAiRounds">
             <label>AI 互聊回合上限</label>
@@ -186,7 +197,7 @@
   <div class="memory-overlay" id="memoryOverlay">
     <div class="memory-panel">
       <div class="panel-header">
-        <span>📚 记忆库</span>
+        <span>📚 记忆库<span id="memCountBadge" style="margin-left:8px;color:var(--text3);font-size:12px;font-weight:400;"></span></span>
         <button class="close-btn" onclick="closeMemory()">✕</button>
       </div>
       <div class="panel-body">
@@ -222,11 +233,21 @@
     </div>
     <!-- 原文追溯浮层 -->
     <div id="memSourceOverlay" style="display:none; position:absolute; inset:0; background:var(--bg); z-index:20; overflow-y:auto; padding:12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="position:sticky;top:-12px;z-index:2;display:flex; justify-content:space-between; align-items:center; margin:-12px -12px 10px; padding:12px; background:var(--bg); border-bottom:1px solid var(--border);">
         <span style="font-weight:600;">📜 原文记录</span>
         <button class="close-btn" onclick="closeMemSource()">✕</button>
       </div>
+      <div id="memSourceSummary" style="color:var(--text3);font-size:12px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="mem-add-btn" style="padding:6px 10px;flex:none;background:var(--bubble-other);color:var(--text);" onclick="setMemSourceSelection('recommended')">恢复预选</button>
+        <button class="mem-add-btn" style="padding:6px 10px;flex:none;background:var(--bubble-other);color:var(--text);" onclick="setMemSourceSelection('all')">全选</button>
+        <button class="mem-add-btn" style="padding:6px 10px;flex:none;background:var(--bubble-other);color:var(--text);" onclick="setMemSourceSelection('none')">全不选</button>
+        <button class="mem-add-btn" id="memSourceSaveBtn" style="padding:6px 12px;flex:none;" onclick="saveMemSourceSelection()">保存筛选</button>
+      </div>
       <div id="memSourceList"></div>
+      <div style="position:sticky;bottom:-12px;z-index:2;margin:12px -12px -12px;padding:10px 12px;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+        <button class="mem-add-btn" style="padding:8px 18px;flex:none;background:var(--bubble-other);color:var(--text);" onclick="closeMemSource()">关闭</button>
+      </div>
     </div>
   </div>
 

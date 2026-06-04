@@ -321,6 +321,12 @@ button {
   filter: grayscale(0.6) opacity(0.55);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.5) opacity(0.58);
+  transform: none;
+}
+
 .side-drawer,
 .history-panel,
 .config-panel,
@@ -366,7 +372,24 @@ button {
 }
 
 .review-panel {
-  width: min(760px, calc(100vw - 28px));
+  top: 8px;
+  bottom: 8px;
+  width: min(960px, calc(100vw - 28px));
+  gap: 7px;
+  padding: 10px;
+}
+
+.review-panel .panel-head {
+  min-height: 34px;
+}
+
+.review-panel .panel-title {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.review-panel .panel-subtitle {
+  display: none;
 }
 
 .drawer-backdrop {
@@ -426,6 +449,12 @@ button {
 .drawer-item:hover,
 .ghost-btn:hover {
   background: rgba(235,247,255,0.92);
+}
+
+.drawer-item.archived {
+  color: var(--muted);
+  background: rgba(255,255,255,0.42);
+  border-style: dashed;
 }
 
 .drawer-divider {
@@ -507,20 +536,20 @@ textarea {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .field span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 850;
 }
 
 .field input,
 .field select {
   width: 100%;
-  height: 40px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0 9px;
 }
 
 .persona-field {
@@ -550,8 +579,26 @@ textarea {
   flex: 0 0 auto;
 }
 
+.review-toolbar .save-btn,
+.review-toolbar .ghost-btn {
+  min-height: 36px;
+  font-size: 13px;
+}
+
 .review-date-field {
   flex: 0 0 auto;
+}
+
+.review-intro {
+  display: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(62,122,205,0.14);
+  background: rgba(235,247,255,0.64);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.55;
 }
 
 .review-mode-tabs {
@@ -577,8 +624,8 @@ textarea {
 
 .review-mode-fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .review-mode-fields.hidden {
@@ -593,13 +640,13 @@ textarea {
 
 .review-status {
   flex: 0 0 auto;
-  padding: 10px 12px;
+  padding: 7px 10px;
   border-radius: 8px;
   border: 1px solid rgba(62,122,205,0.14);
   background: rgba(235,247,255,0.72);
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .review-list {
@@ -607,6 +654,9 @@ textarea {
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  border-top: 1px solid rgba(62,122,205,0.10);
+  border-bottom: 1px solid rgba(62,122,205,0.10);
+  padding-top: 7px;
 }
 
 .review-empty {
@@ -620,15 +670,78 @@ textarea {
   font-weight: 760;
 }
 
+.review-empty.small {
+  height: auto;
+  min-height: 64px;
+  padding: 16px;
+  border: 1px dashed rgba(62,122,205,0.18);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.48);
+}
+
+.review-section {
+  margin-bottom: 10px;
+}
+
+.review-section-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 9px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(62,122,205,0.14);
+  border-radius: 8px;
+  background: rgba(235,247,255,0.96);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.review-section-head b {
+  min-width: 28px;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(20,87,217,0.12);
+  color: var(--blue);
+  font-size: 12px;
+}
+
+.review-section-head.danger {
+  background: rgba(255,239,239,0.96);
+  border-color: rgba(217,75,75,0.20);
+}
+
+.review-section-head.danger b {
+  background: rgba(217,75,75,0.12);
+  color: #c94343;
+}
+
+.review-section-head.muted {
+  background: rgba(255,255,255,0.88);
+}
+
 .review-item {
   display: grid;
   grid-template-columns: 82px minmax(0, 1fr);
   gap: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 8px;
+  margin-bottom: 7px;
   border-radius: 8px;
   border: 1px solid rgba(62,122,205,0.15);
   background: rgba(255,255,255,0.70);
+}
+
+.review-old-item {
+  background: rgba(255,255,255,0.54);
+  border-color: rgba(217,75,75,0.16);
 }
 
 .review-seq {
@@ -639,6 +752,19 @@ textarea {
   color: var(--blue);
   font-weight: 900;
   font-size: 13px;
+}
+
+.review-seq em {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(217,75,75,0.10);
+  color: #c94343;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .review-action {
@@ -686,6 +812,25 @@ textarea {
   color: var(--muted);
   font-size: 11px;
   font-weight: 820;
+}
+
+.review-old-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.review-old-keywords span {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(62,122,205,0.08);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .review-quotes {
@@ -832,11 +977,18 @@ textarea {
 
   .side-drawer,
   .history-panel,
-  .config-panel,
-  .review-panel {
+  .config-panel {
     top: 80px;
     bottom: 10px;
     width: calc(100vw - 20px);
+  }
+
+  .review-panel {
+    top: 6px;
+    bottom: 6px;
+    width: calc(100vw - 12px);
+    padding: 8px;
+    gap: 6px;
   }
 
   .side-drawer {
@@ -854,7 +1006,32 @@ textarea {
   }
 
   .review-mode-fields {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .review-date-field span {
+    font-size: 10px;
+  }
+
+  .field input,
+  .field select {
+    height: 32px;
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .review-toolbar .save-btn,
+  .review-toolbar .ghost-btn,
+  .review-footer .ghost-btn,
+  .review-footer .danger-btn {
+    min-height: 34px;
+    font-size: 13px;
+  }
+
+  .review-status {
+    padding: 6px 8px;
+    font-size: 12px;
   }
 
   .review-seq {

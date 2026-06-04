@@ -24,6 +24,37 @@ def _connor_display_name() -> str:
         return "Connor"
 
 
+def _json_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if not isinstance(value, str):
+        return []
+    text = value.strip()
+    if not text:
+        return []
+    try:
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, list) else []
+    except Exception:
+        return [text]
+
+
+def _source_ids_for_memory(mem: dict) -> list[str]:
+    ids = []
+    source_conv = mem.get("source_conv") or ""
+    for raw in _json_list(mem.get("source_msg_id")):
+        source_id = str(raw).strip()
+        if not source_id:
+            continue
+        if ":" not in source_id:
+            prefix = "chatroom" if str(source_conv).startswith("chatroom:") else "private"
+            source_id = f"{prefix}:{source_id}"
+        ids.append(source_id)
+    return ids
+
+
 def _pack_embedding(values: list[float]) -> bytes:
     return struct.pack(f'{len(values)}f', *values)
 
@@ -109,7 +140,8 @@ async def recall_memories(query_text: str, query_keywords: list[str] = None,
     async with get_db() as db:
         db.row_factory = aiosqlite.Row
         cur = await db.execute(
-            "SELECT id, content, type, created_at, embedding, keywords, importance, source_start_ts, source_end_ts "
+            "SELECT id, content, type, created_at, source_conv, embedding, keywords, importance, "
+            "source_start_ts, source_end_ts, source_msg_id "
             "FROM memories WHERE embedding IS NOT NULL"
         )
         rows = await cur.fetchall()
@@ -130,6 +162,8 @@ async def recall_memories(query_text: str, query_keywords: list[str] = None,
             "keywords": row["keywords"] or "",
             "source_start_ts": row["source_start_ts"],
             "source_end_ts": row["source_end_ts"],
+            "source_conv": row["source_conv"],
+            "source_msg_id": row["source_msg_id"],
         }
         all_scored.append(item)
     all_scored.sort(key=lambda x: x["score"], reverse=True)
@@ -158,6 +192,44 @@ async def fetch_source_details(memories: list[dict], keywords: list[str]) -> str
     matched_rows = []
 
     for mem in memories:
+        source_ids = _source_ids_for_memory(mem)
+        if source_ids:
+            async with get_db() as db:
+                db.row_factory = aiosqlite.Row
+                for source_id in source_ids:
+                    if ":" not in source_id:
+                        continue
+                    prefix, raw_id = source_id.split(":", 1)
+                    if prefix == "private":
+                        cur = await db.execute(
+                            "SELECT role, content, created_at FROM messages WHERE id=?",
+                            (raw_id,),
+                        )
+                        row = await cur.fetchone()
+                        if row:
+                            key = (row["created_at"], row["content"][:80])
+                            if key not in seen:
+                                seen.add(key)
+                                matched_rows.append(row)
+                    elif prefix == "chatroom":
+                        cur = await db.execute(
+                            "SELECT sender, content, created_at FROM chatroom_messages WHERE id=? AND sender != 'system'",
+                            (raw_id,),
+                        )
+                        row = await cur.fetchone()
+                        if row:
+                            key = (row["created_at"], row["content"][:80])
+                            if key not in seen:
+                                seen.add(key)
+                                matched_rows.append({
+                                    "role": "assistant" if row["sender"] == "aion" else "user",
+                                    "content": row["content"],
+                                    "created_at": row["created_at"],
+                                    "_sender": row["sender"],
+                                })
+            print(f"[source_detail] 记忆 {mem.get('id','?')[:12]} 使用精确原文 {len(source_ids)} 条")
+            continue
+
         start_ts = mem.get("source_start_ts")
         end_ts = mem.get("source_end_ts")
         if not start_ts or not end_ts:
@@ -658,7 +730,7 @@ async def _do_digest(min_messages: int = 0) -> dict:
             f"   - 0.5 (普通): 当天发生的具体事件（如：看了一部电影、去了一家餐厅、讨论了一个新闻）。大部分有内容的对话应在此档。\n"
             f"   - 0.1 - 0.3 (默认分数): 闲聊、情绪发泄、日常问候、没有信息增量的互动。\n"
             f"   【注意】：不要因为情绪激动就给高分，除非这揭示了新的性格特质。\n\n"
-            f"4. \"unresolved\": Boolean。当摘要中包含**明确**的计划、约定、承诺等，才输出 true。通常为 false。\n\n"
+            f"4. \"unresolved\": 默认为false。\n\n"
             f"严格只输出一个 JSON 对象，不要输出任何其他内容。\n\n"
             f"【一段对话记录】：\n{messages_text}"
         )
@@ -735,7 +807,7 @@ async def _do_digest(min_messages: int = 0) -> dict:
                 f"你是{ai_name}。你刚刚整理了和{user_name}今天的聊天记忆，以下是你整理出的摘要：\n"
                 f"{summaries_text}\n\n"
                 f"请从你自己的视角写一篇私密日记，不是写给{user_name}看的聊天消息。"
-                f"日记可以记录你的感受、想法、吃醋、温柔、吐槽、未来想做的事，语气必须符合你的人设。"
+                f"日记可以记录你对这段记忆的感想，只写值得记录或有感触的事，不要记流水账。语气必须符合你的人设。"
                 f"你可以自行决定是否发布一次朋友圈，吐槽或者感慨，或者用朋友圈隔空向对方喊话。\n\n"
                 f"严格只输出 JSON，不要输出 Markdown，不要解释：\n"
                 f"{{\n"

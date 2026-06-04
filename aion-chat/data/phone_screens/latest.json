@@ -1,11 +1,11 @@
 {
-  "timestamp": 1780556559.461,
-  "time": "15:02:39",
+  "timestamp": 1780558419.808,
+  "time": "15:33:39",
   "filename": "phone_screen_latest.jpg",
   "path": "D:\\AppData\\AionsHome\\aion-chat\\data\\phone_screens\\phone_screen_latest.jpg",
   "upload_path": "D:\\AppData\\AionsHome\\aion-chat\\data\\uploads\\phone_screen_latest.jpg",
   "url": "/uploads/phone_screen_latest.jpg",
-  "app": "com.miui.home",
+  "app": "com.tencent.mm",
   "locked": false,
   "source": "accessibility",
   "reason": "fallback_monitor_alert"
