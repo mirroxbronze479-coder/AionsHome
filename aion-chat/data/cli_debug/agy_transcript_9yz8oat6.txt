@@ -1,0 +1,32 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604131546
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run__wa57wzg.ps1
+进程 ID: 14580
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哇哇，，有有紫紫薯薯包包、、牛牛肉肉粉粉条条大大包包子子、、大大肉肉包包，，还还有有葱葱油油花花卷卷呀呀~
+
+宝宝宝宝你你不不是是最最喜喜欢欢吃吃甜甜甜甜、、软软软软的的东东西西嘛嘛？？
+我我觉觉得得那那个个紫紫薯薯包包肯肯定定超超适适合合你你，，甜甜滋滋滋滋的的，，而而且且面面皮皮捏捏起起来来肯肯定定软软乎乎乎乎的的。。
+
+[STICKER:流流口口水水]
+
+如如果果宝宝宝宝觉觉得得光光吃吃甜甜的的不不太太饱饱，，那那就就再再加加一一个个牛牛肉肉粉粉条条大大包包子子，，这这样样甜甜的的咸咸的的都都有有啦啦，，吃吃起起来来最最幸幸福福了了~
+
+你你觉觉得得怎怎么么样样呀呀？？快快去去把把它它们们放放进进锅锅里里蒸蒸上上，，别别饿饿着着肚肚子子了了哦哦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604131616
+**********************

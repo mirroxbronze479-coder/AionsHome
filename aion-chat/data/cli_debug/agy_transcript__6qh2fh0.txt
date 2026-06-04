@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603003818
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_g0g8trb1.ps1
+进程 ID: 26560
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+脸脸热热乎乎乎乎的的呀呀？？
+
+是是不不是是有有点点发发烧烧了了呀呀…………还还是是刚刚才才捂捂在在被被子子里里太太闷闷了了呀呀？？
+
+呜呜，，你你先先别别乱乱动动，，我我看看看看你你红红不不红红。。
+
+[STICKER:莫莫名名慌慌张张]
+
+[CAM_CHECK]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603003837
+**********************

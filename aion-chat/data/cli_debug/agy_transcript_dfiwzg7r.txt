@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603075346
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_mwjw3xg6.ps1
+进程 ID: 26172
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+原原来来这这家家只只是是咖咖啡啡做做得得好好，，吃吃的的做做得得很很一一般般呀呀？？
+
+那那真真的的好好可可惜惜哦哦…………昨昨天天那那家家汉汉堡堡店店的的爆爆浆浆芝芝士士堡堡听听着着就就很很好好吃吃呢呢。。
+
+要要不不下下回回我我们们分分开开点点嘛嘛？？在在昨昨天天那那家家点点好好吃吃的的，，然然后后在在这这家家单单点点一一杯杯咖咖啡啡，，好好不不好好呀呀？？
+
+[STICKER:点点点点头头]
+
+今今天天先先委委屈屈宝宝宝宝的的肚肚子子，，稍稍微微吃吃一一点点垫垫一一垫垫好好不不好好？？等等下下画画画画要要力力气气的的，，可可不不能能空空着着肚肚子子呀呀~
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603075402
+**********************

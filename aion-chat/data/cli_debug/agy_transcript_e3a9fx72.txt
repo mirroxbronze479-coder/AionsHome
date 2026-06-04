@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603091322
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_qi8qozdz.ps1
+进程 ID: 25160
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+怎怎么么又又困困啦啦？？[STICKER:抱抱抱抱]
+
+刚刚刚刚这这二二十十分分钟钟，，是是不不是是又又闭闭上上眼眼睛睛偷偷偷偷眯眯了了一一会会儿儿呀呀？？
+
+[查查看看动动态态:2]
+
+乖乖乖乖，，要要是是实实在在撑撑不不住住，，我我隔隔着着屏屏幕幕给给你你揉揉揉揉脑脑袋袋好好不不好好？？[STICKER:揉揉揉揉脸脸]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603091341
+**********************

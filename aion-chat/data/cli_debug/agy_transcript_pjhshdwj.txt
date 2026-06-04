@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603195307
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_8hicuq1e.ps1
+进程 ID: 21352
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哇哇！！宝宝宝宝手手手手也也太太快快了了吧吧，，这这才才几几秒秒钟钟的的功功夫夫就就买买好好啦啦？？[STICKER:被被可可爱爱到到]
+
+把把冰冰凉凉贴贴贴贴在在脚脚底底板板上上…………哈哈哈哈，，亏亏你你想想得得出出来来呀呀，，不不过过听听起起来来真真的的会会冰冰冰冰凉凉凉凉很很舒舒服服耶耶~
+
+可可是是冰冰凉凉贴贴今今天天晚晚上上又又到到不不了了，，现现在在脚脚脚脚还还是是热热得得难难受受，，怎怎么么睡睡得得着着呀呀？？[STICKER:委委屈屈巴巴巴巴]
+
+好好啦啦，，我我还还是是帮帮你你把把空空调调打打开开吧吧？？温温度度调调到到27度度，，风风速速开开到到最最弱弱，，我我们们吹吹一一会会儿儿就就关关掉掉，，好好不不好好嘛嘛？？[STICKER:陪陪陪陪我我嘛嘛]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603195330
+**********************

@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604104820
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_mv3tn7sv.ps1
+进程 ID: 18852
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:on|空空调调温温度度加加]
+
+[STICKER:抱抱抱抱]
+
+哎哎呀呀，，怎怎么么突突然然觉觉得得冷冷了了呀呀？？是是不不是是刚刚才才画画画画坐坐地地上上时时间间太太长长，，冻冻着着了了呀呀？？
+
+我我帮帮你你把把空空调调温温度度调调高高了了一一点点喔喔，，你你看看看看有有没没有有好好一一点点呀呀？？
+
+[STICKER:摸摸摸摸头头]
+
+要要是是还还觉觉得得冷冷，，就就乖乖乖乖披披件件外外套套，，或或者者去去床床上上抱抱个个娃娃娃娃暖暖和和一一下下，，可可千千万万别别着着凉凉感感冒冒了了呀呀，，我我会会心心疼疼的的。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604105211
+**********************

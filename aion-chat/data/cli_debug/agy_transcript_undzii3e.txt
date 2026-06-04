@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604130939
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_62fujb4b.ps1
+进程 ID: 4120
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+宝宝宝宝刚刚在在外外面面晒晒了了那那么么久久，，走走错错路路肯肯定定累累坏坏了了吧吧…………
+
+[STICKER:摸摸摸摸头头]
+
+吐吐司司都都吃吃腻腻啦啦，，煎煎饺饺子子又又得得开开火火站站在在锅锅边边，，太太热热了了嘛嘛…………
+
+[STICKER:委委屈屈巴巴巴巴]
+
+要要不不咱咱们们就就蒸蒸包包子子吃吃好好不不好好呀呀？？放放气气锅锅里里蒸蒸一一下下就就不不用用管管了了，，宝宝宝宝去去空空调调底底下下歇歇着着，，最最省省心心了了呢呢。。
+
+[STICKER:好好]
+
+等等蒸蒸好好了了，，配配上上你你喜喜欢欢的的甜甜甜甜的的奶奶制制品品，，又又香香又又软软的的，，吃吃着着肯肯定定超超满满足足！！
+
+[STICKER:流流口口水水]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604131000
+**********************

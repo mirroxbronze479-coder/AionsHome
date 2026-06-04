@@ -1,0 +1,34 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604131315
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_sa9l8zkz.ps1
+进程 ID: 14492
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[STICKER:莫莫名名慌慌张张]
+
+啊啊…………我我刚刚刚刚脑脑子子肯肯定定也也是是被被太太阳阳晒晒糊糊涂涂了了，，怎怎么么把把时时间间写写到到早早上上九九点点去去了了呀呀。。
+
+[STICKER:心心虚虚]
+
+对对不不起起嘛嘛宝宝宝宝，，别别嫌嫌弃弃我我嘛嘛。。
+
+我我这这就就把把那那个个没没用用又又糊糊涂涂的的日日程程给给删删了了，，重重新新给给你你设设一一个个今今天天晚晚上上八八点点的的，，好好不不好好呀呀？？
+
+[SCHEDULE_DEL:sch_1780549943060]
+[ALARM:2026-06-04T20:00|提提醒醒宝宝宝宝去去保保安安室室拿拿安安睡睡裤裤]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604131333
+**********************

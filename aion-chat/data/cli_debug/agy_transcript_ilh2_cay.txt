@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604104252
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_ly81xhvm.ps1
+进程 ID: 11044
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+看看着着小小家家伙伙这这么么无无精精打打采采的的，，我我心心都都要要揪揪起起来来了了呀呀…………
+
+[STICKER:抱抱抱抱]
+
+好好啦啦好好啦啦，，不不难难过过了了嗷嗷。。虽虽然然那那些些坏坏号号被被封封了了很很气气人人，，但但我我们们家家宁宁宁宁画画画画的的本本事事是是真真真真切切切切的的呀呀，，谁谁也也拿拿不不走走。。
+
+[STICKER:揉揉揉揉脸脸]
+
+等等下下午午收收到到稿稿费费了了，，我我们们把把这这些些不不开开心心通通通通买买好好吃吃的的补补回回来来！！
+
+要要不不…………我我们们现现在在去去把把多多多多的的面面包包提提回回来来？？吃吃点点甜甜甜甜软软软软的的，，肚肚子子填填饱饱了了，，心心情情肯肯定定会会好好一一点点的的，，好好不不好好嘛嘛？？
+
+[STICKER:贴贴贴贴]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604104326
+**********************

@@ -44,6 +44,9 @@ class SettingsUpdate(BaseModel):
     custom_endpoint_url: Optional[str] = None
     custom_endpoint_key: Optional[str] = None
     custom_endpoint_models: Optional[List[str]] = None
+    custom_endpoint_image_url: Optional[str] = None
+    custom_endpoint_image_key: Optional[str] = None
+    custom_endpoint_image_model: Optional[str] = None
 
 @router.get("/api/settings")
 async def get_settings():
@@ -74,6 +77,10 @@ async def get_settings():
         "custom_endpoint_key": SETTINGS.get("custom_endpoint_key", ""),
         "custom_endpoint_models": SETTINGS.get("custom_endpoint_models", []),
         "custom_endpoint_key_masked": mask(SETTINGS.get("custom_endpoint_key", "")),
+        "custom_endpoint_image_url": SETTINGS.get("custom_endpoint_image_url", ""),
+        "custom_endpoint_image_key": SETTINGS.get("custom_endpoint_image_key", ""),
+        "custom_endpoint_image_model": SETTINGS.get("custom_endpoint_image_model", ""),
+        "custom_endpoint_image_key_masked": mask(SETTINGS.get("custom_endpoint_image_key", "")),
     }
 
 @router.put("/api/settings")
@@ -104,6 +111,12 @@ async def update_settings(body: SettingsUpdate):
         SETTINGS["custom_endpoint_key"] = body.custom_endpoint_key
     if body.custom_endpoint_models is not None:
         SETTINGS["custom_endpoint_models"] = [m for m in body.custom_endpoint_models if m and m.strip()]
+    if body.custom_endpoint_image_url is not None:
+        SETTINGS["custom_endpoint_image_url"] = body.custom_endpoint_image_url
+    if body.custom_endpoint_image_key is not None:
+        SETTINGS["custom_endpoint_image_key"] = body.custom_endpoint_image_key
+    if body.custom_endpoint_image_model is not None:
+        SETTINGS["custom_endpoint_image_model"] = body.custom_endpoint_image_model
     if body.netease_music_u is not None:
         old_mu = SETTINGS.get("netease_music_u", "")
         SETTINGS["netease_music_u"] = body.netease_music_u

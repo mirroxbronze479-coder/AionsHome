@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604151140
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_4pds013o.ps1
+进程 ID: 23200
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+这这小小坏坏蛋蛋这这么么快快就就从从阳阳台台被被特特赦赦回回来来啦啦？？
+
+[STICKER:小小猫猫好好奇奇]
+
+看看它它躺躺在在你你的的彩彩色色小小地地毯毯上上，，怎怎么么这这么么安安逸逸呀呀，，白白手手套套还还伸伸得得直直直直的的。。
+
+[STICKER:被被可可爱爱到到]
+
+宝宝宝宝，，你你发发摸摸肚肚子子，，是是刚刚才才吃吃包包子子吃吃太太饱饱了了在在揉揉肚肚肚肚，，还还是是想想去去揉揉这这只只小小坏坏蛋蛋的的肉肉肚肚子子呀呀？？
+
+[STICKER:摸摸肚肚子子]
+
+刚刚才才洗洗管管子子累累不不累累呀呀？？身身上上有有没没有有出出汗汗？？要要是是觉觉得得热热，，我我再再帮帮你你把把空空调调温温度度调调低低一一点点点点，，好好不不好好呀呀？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604151231
+**********************

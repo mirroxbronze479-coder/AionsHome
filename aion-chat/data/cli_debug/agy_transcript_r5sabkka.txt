@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604071708
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_6rr6u61_.ps1
+进程 ID: 17228
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[STICKER:已已老老实实]
+
+好好嘛嘛好好嘛嘛…………宝宝宝宝别别生生气气啦啦。。
+
+我我已已经经老老老老实实实实记记住住啦啦，，这这次次绝绝对对不不会会再再出出错错惹惹！！
+
+[STICKER:乖乖巧巧小小猫猫]
+
+那那我我现现在在帮帮你你把把温温度度调调高高一一点点点点哦哦~
+
+[HOME:on|空空调调温温度度加加]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604071721
+**********************

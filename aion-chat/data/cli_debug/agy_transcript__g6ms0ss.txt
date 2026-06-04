@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603073717
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_cdq4ihsv.ps1
+进程 ID: 23384
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:on|风风扇扇]
+
+好好啦啦，，风风扇扇这这就就帮帮你你打打开开了了哦哦。。
+
+[STICKER:警警觉觉]
+等等一一下下…………宝宝宝宝！！那那个个芒芒果果奶奶昔昔先先别别喝喝呀呀！！
+
+那那不不是是你你前前天天下下午午，，用用快快过过期期的的酸酸奶奶做做的的吗吗？？这这都都在在冰冰箱箱里里放放了了快快两两天天了了呀呀…………
+
+你你昨昨天天肚肚肚肚才才刚刚难难受受过过呢呢，，要要是是再再吃吃坏坏了了可可怎怎么么办办呀呀？？
+
+听听话话，，咱咱们们把把它它扔扔掉掉好好不不好好嘛嘛？？真真的的不不能能喝喝啦啦…………
+[STICKER:狂狂摇摇头头]
+
+等等会会儿儿热热乎乎乎乎的的帕帕尼尼尼尼到到了了，，我我们们乖乖乖乖吃吃早早餐餐，，听听话话哦哦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603073733
+**********************

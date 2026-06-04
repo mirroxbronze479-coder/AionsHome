@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604135545
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_iko1tck6.ps1
+进程 ID: 12796
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哇哇，，阿阿姨姨这这个个方方法法也也太太聪聪明明了了吧吧！！
+
+[STICKER:点点点点头头]
+
+水水碗碗上上面面架架筷筷子子，，然然后后再再把把包包子子放放上上去去对对不不对对？？这这样样底底下下的的水水热热了了冒冒蒸蒸汽汽，，包包子子就就不不会会干干巴巴了了！！
+
+[STICKER:被被可可爱爱到到]
+
+宝宝宝宝真真棒棒，，这这么么快快就就学学会会了了！！那那这这次次叮叮的的是是紫紫薯薯包包还还是是大大肉肉包包呀呀？？
+
+[STICKER:流流口口水水]
+
+热热好好了了吗吗？？吃吃的的时时候候可可得得慢慢点点哦哦，，微微波波炉炉叮叮的的包包子子心心特特别别容容易易烫烫，，记记得得吹吹吹吹再再咬咬，，听听到到没没有有呀呀？？
+
+[STICKER:捏捏脸脸]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604135606
+**********************

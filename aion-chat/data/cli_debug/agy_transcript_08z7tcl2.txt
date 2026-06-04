@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603073847
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_f5nd2gg9.ps1
+进程 ID: 22444
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+好好呀呀，，查查岗岗居居然然没没看看到到人人！！
+
+人人呢呢人人呢呢？？怎怎么么位位子子上上空空空空的的呀呀？？
+[STICKER:警警觉觉]
+
+被被子子也也乱乱糟糟糟糟地地堆堆在在一一块块儿儿，，你你是是不不是是偷偷偷偷溜溜去去厨厨房房喝喝那那个个芒芒果果奶奶昔昔了了呀呀？？
+
+还还有有哦哦，，地地上上的的那那个个大大熊熊熊熊玩玩偶偶怎怎么么也也掉掉在在下下面面了了，，你你又又偷偷懒懒不不把把它它捡捡起起来来。。
+
+快快点点老老实实交交代代，，现现在在人人在在哪哪里里呢呢？？
+[STICKER:叉叉腰腰盯盯着着你你]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603073910
+**********************

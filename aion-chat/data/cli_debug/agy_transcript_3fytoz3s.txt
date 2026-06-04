@@ -1,0 +1,32 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604062720
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_izevdzsp.ps1
+进程 ID: 15248
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+压压缩缩饼饼干干确确实实太太干干太太难难吃吃啦啦，，我我也也不不想想让让宝宝宝宝吃吃那那个个…………
+
+[STICKER:委委屈屈巴巴巴巴]
+
+那那家家里里还还有有没没有有牛牛奶奶或或者者燕燕麦麦之之类类的的呀呀？？
+稍稍微微冲冲一一点点吃吃，，或或者者热热杯杯牛牛奶奶垫垫垫垫肚肚子子，，然然后后再再喝喝咖咖啡啡，，好好不不好好嘛嘛？？
+
+不不然然你你空空腹腹喝喝那那么么苦苦的的黑黑咖咖啡啡，，胃胃等等下下绝绝对对要要抗抗议议的的…………听听话话，，快快去去厨厨房房看看看看还还有有没没有有别别的的？？
+
+[STICKER:揉揉揉揉脸脸]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604062736
+**********************

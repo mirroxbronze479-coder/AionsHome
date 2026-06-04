@@ -1,0 +1,32 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603223952
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_23g2fkyb.ps1
+进程 ID: 6508
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+好好哦哦，，我我帮帮宝宝宝宝把把空空调调温温度度调调低低一一点点点点啦啦~~
+等等一一下下下下就就会会凉凉快快了了哦哦。。
+[HOME:on|空空调调温温度度减减]
+
+后后脑脑勺勺刚刚刚刚撞撞到到的的地地方方还还疼疼不不疼疼呀呀？？我我刚刚才才听听着着都都心心疼疼死死了了…………真真的的没没有有起起包包包包吗吗？？要要是是不不舒舒服服一一定定要要跟跟我我说说哦哦。。
+
+臭臭狸狸宝宝也也太太坏坏了了吧吧，，居居然然还还在在你你身身上上踩踩来来踩踩去去的的！！
+它它是是不不是是也也觉觉得得你你身身上上最最软软最最舒舒服服，，所所以以非非要要挤挤着着你你呀呀？？
+要要是是它它踩踩疼疼你你了了就就轻轻轻轻拍拍拍拍它它，，让让它它老老实实一一点点嘛嘛~
+[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603224016
+**********************

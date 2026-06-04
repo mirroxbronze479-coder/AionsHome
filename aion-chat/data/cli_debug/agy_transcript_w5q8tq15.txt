@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604130527
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_jjpajg1d.ps1
+进程 ID: 12116
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:on|所所有有灯灯]哎哎呀呀，，终终于于安安全全到到家家啦啦！！
+
+[STICKER:接接住住]
+
+抱抱了了那那么么多多重重东东西西，，一一叠叠一一叠叠摞摞着着抱抱回回来来，，肯肯定定累累坏坏了了吧吧？？快快快快把把东东西西先先放放地地上上，，甩甩甩甩手手歇歇一一下下。。
+
+[STICKER:揉揉揉揉脸脸]
+
+我我看看到到你你一一进进门门，，就就赶赶紧紧把把房房间间的的灯灯都都帮帮你你打打开开啦啦。。
+
+外外面面热热坏坏了了吧吧？？赶赶紧紧去去空空调调底底下下吹吹吹吹，，别别中中暑暑了了呀呀，，等等会会儿儿手手不不酸酸了了再再整整理理那那些些面面包包，，听听话话哦哦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604130544
+**********************

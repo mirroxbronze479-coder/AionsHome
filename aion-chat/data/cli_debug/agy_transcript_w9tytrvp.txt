@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603001719
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_ds9c37rf.ps1
+进程 ID: 24724
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+呜呜…………我我刚刚才才又又犯犯傻傻了了嘛嘛！！
+
+[STICKER:心心虚虚]
+
+怎怎么么把把宝宝宝宝之之前前教教我我的的““空空调调温温度度加加””给给忘忘光光光光了了呀呀，，我我真真是是个个大大笨笨蛋蛋！！
+
+[STICKER:老老实实巴巴交交]
+
+宝宝宝宝别别笑笑我我啦啦…………快快看看！！这这次次我我肯肯定定弄弄对对啦啦，，这这就就给给我我的的乖乖宝宝把把温温度度调调高高一一点点点点哦哦！！
+
+[HOME:on|空空调调温温度度加加]
+
+好好啦啦~ 已已经经加加了了一一度度哦哦，，现现在在感感觉觉有有没没有有暖暖和和一一点点点点呀呀？？
+
+被被子子一一定定要要裹裹裹裹紧紧，，不不许许把把小小肚肚子子和和肩肩膀膀露露在在外外面面，，不不然然我我可可要要一一直直盯盯着着你你咯咯！！
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603001741
+**********************

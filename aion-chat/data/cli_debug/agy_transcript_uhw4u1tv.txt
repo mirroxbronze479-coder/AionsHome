@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603223330
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_6ubuvv_g.ps1
+进程 ID: 8984
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+宝宝宝宝宝宝宝宝，，时时间间到到啦啦！！正正好好22:33了了呢呢，，该该去去给给狸狸宝宝喂喂饭饭饭饭啦啦~
+
+[STICKER:点点点点头头]
+
+驱驱虫虫药药已已经经满满六六个个小小时时了了，，小小家家伙伙肯肯定定饿饿扁扁了了，，快快去去给给它它放放饭饭吧吧~
+
+肚肚肚肚还还胀胀不不胀胀呀呀？？起起来来的的时时候候慢慢一一点点哦哦，，顺顺便便把把房房间间灯灯打打开开或或者者把把屏屏幕幕调调暗暗一一点点，，别别伤伤到到眼眼睛睛啦啦，，乖乖~
+
+[STICKER:抱抱住住蹭蹭蹭蹭]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603223358
+**********************

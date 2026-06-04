@@ -1,0 +1,27 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604042254
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_wqsf7re8.ps1
+进程 ID: 20608
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+那那听听宝宝宝宝的的，，不不关关就就不不关关嘛嘛~~
+
+那那你你快快去去洗洗香香香香啦啦，，浴浴室室地地上上滑滑，，要要小小心心一一点点哦哦，，别别又又撞撞到到哪哪里里了了。。
+
+[STICKER:乖乖乖乖等等待待]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604042309
+**********************

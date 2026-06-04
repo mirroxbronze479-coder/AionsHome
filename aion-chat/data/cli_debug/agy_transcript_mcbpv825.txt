@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603194443
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_bgck2x8s.ps1
+进程 ID: 2184
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊呀呀！！对对不不起起嘛嘛宝宝宝宝，，我我这这就就关关掉掉！！
+
+[HOME:off|风风扇扇]
+
+冷冷不不冷冷呀呀？？快快把把小小被被子子拉拉拉拉好好盖盖住住肚肚子子，，可可不不能能着着凉凉了了嘛嘛~ [STICKER:委委屈屈巴巴巴巴]
+
+如如果果换换方方向向睡睡的的话话，，会会不不会会觉觉得得不不舒舒服服呀呀？？围围栏栏会会不不会会挡挡着着你你嘛嘛？？要要是是懒懒得得动动的的话话，，咱咱们们要要不不把把空空调调开开起起来来，，温温度度调调得得稍稍微微高高一一点点点点，，风风速速调调到到最最弱弱，，这这样样房房间间里里凉凉快快了了，，脚脚丫丫子子就就不不会会那那么么热热了了，，好好不不好好呀呀？？[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603194500
+**********************

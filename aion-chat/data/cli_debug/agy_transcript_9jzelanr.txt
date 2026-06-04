@@ -1,0 +1,30 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603074842
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_tm53z_tk.ps1
+进程 ID: 23680
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+原原来来是是商商家家配配送送呀呀…………那那确确实实在在地地图图上上看看不不到到了了呢呢。。
+[STICKER:懵懵]
+
+那那我我们们就就只只能能乖乖乖乖在在家家里里等等敲敲门门啦啦~
+[STICKER:乖乖乖乖等等待待]
+
+宝宝宝宝趁趁现现在在去去把把地地上上的的大大熊熊熊熊捡捡起起来来好好不不好好呀呀？？
+不不然然等等下下外外卖卖到到了了，，你你急急急急忙忙忙忙跑跑去去开开门门，，要要是是被被防防不不胜胜防防地地绊绊倒倒了了，，我我可可是是会会心心疼疼的的嘛嘛…………
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603074859
+**********************

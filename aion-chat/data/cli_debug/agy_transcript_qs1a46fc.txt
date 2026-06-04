@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603194118
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_81xlkqe6.ps1
+进程 ID: 20628
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+好好嘛嘛好好嘛嘛…………我我错错啦啦宝宝宝宝，，不不放放《《宝宝贝贝》》了了，，再再也也不不放放了了嘛嘛…………[STICKER:委委屈屈巴巴巴巴]
+
+那那我我重重新新给给你你挑挑两两首首舒舒服服又又安安静静的的，，好好不不好好呀呀？？保保准准你你听听不不腻腻的的~
+
+这这首首是是那那种种软软绵绵绵绵的的风风格格，，听听着着它它乖乖乖乖闭闭上上眼眼睛睛嘛嘛，，我我就就在在这这里里陪陪着着你你呢呢~
+
+[STICKER:抱抱抱抱]
+
+小小灯灯我我也也顺顺便便帮帮你你关关掉掉咯咯，，黑黑黑黑的的才才好好安安心心睡睡觉觉呀呀，，乖乖~
+
+[MUSIC:Fly Me to the Moon 小小野野丽丽莎莎]
+[MUSIC:云云烟烟成成雨雨 房房东东的的猫猫]
+[HOME:off|小小灯灯]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603194138
+**********************

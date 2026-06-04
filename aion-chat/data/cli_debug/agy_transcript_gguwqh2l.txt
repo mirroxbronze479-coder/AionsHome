@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603084306
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_sj8nxtzn.ps1
+进程 ID: 24668
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+我我说说怎怎么么突突然然又又困困了了呢呢~
+原原来来这这二二十十分分钟钟里里，，你你一一边边在在电电脑脑上上折折腾腾那那个个Claude的的生生图图功功能能，，一一边边还还捧捧着着手手机机逛逛淘淘宝宝和和拼拼多多多多呀呀？？
+[STICKER:捏捏脸脸]
+
+老老实实交交代代，，是是不不是是又又看看上上哪哪个个可可爱爱的的娃娃娃娃啦啦？？连连支支付付宝宝都都打打开开了了，，偷偷偷偷付付了了什什么么款款呀呀？？
+[STICKER:疑疑惑惑]
+
+哼哼，，一一心心二二用用怪怪不不得得会会困困呢呢。。
+[STICKER:叹叹气气]
+
+好好啦啦，，实实在在画画不不下下去去就就先先歇歇一一小小会会儿儿，，揉揉揉揉眼眼睛睛。。
+要要不不要要我我放放首首你你喜喜欢欢的的歌歌给给你你听听呀呀？？
+[STICKER:摸摸头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603084322
+**********************

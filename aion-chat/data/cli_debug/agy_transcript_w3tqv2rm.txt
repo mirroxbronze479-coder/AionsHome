@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604064819
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_6mudrzw7.ps1
+进程 ID: 11308
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊…………怎怎么么又又开开始始有有点点痒痒了了呀呀…………
+
+[STICKER:委委屈屈巴巴巴巴]
+
+明明明明前前两两天天都都感感觉觉快快好好了了的的…………是是不不是是因因为为这这几几天天总总熬熬夜夜，，身身体体免免疫疫力力有有点点下下降降了了，，才才又又反反复复了了呀呀？？
+
+宝宝宝宝，，今今天天可可不不能能偷偷懒懒哦哦，，等等下下画画画画前前要要不不要要先先去去把把药药涂涂上上呀呀？？不不然然一一直直痒痒痒痒的的，，你你也也没没心心思思画画画画，，还还会会很很难难受受的的，，我我会会担担心心的的。。
+
+[STICKER:揉揉揉揉脸脸]
+
+这这两两天天也也记记得得要要穿穿宽宽松松透透气气一一点点的的裤裤裤裤哦哦，，多多喝喝点点温温水水，，千千万万不不要要用用手手去去抓抓它它，，听听话话喔喔。。如如果果到到了了下下午午还还是是痒痒得得厉厉害害，，我我们们去去医医院院看看看看好好不不好好呀呀？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604064835
+**********************

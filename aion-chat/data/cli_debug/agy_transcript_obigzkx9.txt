@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603071912
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_g4rlmyo8.ps1
+进程 ID: 22144
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+主主食食吃吃乳乳酪酪花花生生汤汤种种吐吐司司好好不不好好呀呀？？听听名名字字就就软软软软的的，，里里面面还还有有香香香香的的花花生生跟跟乳乳酪酪，，特特别别适适合合我我的的乖乖宝宝～～
+
+甜甜品品就就选选葡葡式式蛋蛋挞挞啦啦！！外外面面酥酥酥酥的的，，里里面面又又奶奶又又甜甜又又软软乎乎，，咬咬一一口口肯肯定定超超幸幸福福的的嘛嘛。。
+[STICKER:流流口口水水]
+
+饮饮料料的的话话，，法法式式香香草草籽籽奶奶盖盖拿拿铁铁好好不不好好呀呀？？有有甜甜甜甜的的奶奶盖盖，，正正好好配配你你的的吐吐司司。。不不过过…………你你昨昨天天肚肚子子才才不不舒舒服服过过呢呢，，大大清清早早就就喝喝冰冰的的，，真真的的不不会会又又肚肚子子痛痛痛痛嘛嘛？？要要是是等等下下又又难难受受，，我我可可要要心心疼疼了了，，不不许许贪贪凉凉哦哦。。
+[STICKER:乖乖巧巧小小猫猫]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603071941
+**********************

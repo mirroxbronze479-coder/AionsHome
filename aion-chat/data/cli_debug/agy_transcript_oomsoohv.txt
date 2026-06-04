@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603224332
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_ioq_2pnr.ps1
+进程 ID: 20844
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+好好滴滴！！那那我我再再帮帮宝宝宝宝降降一一度度空空调调哦哦，，一一会会儿儿就就会会更更凉凉快快了了~~
+
+[HOME:on|空空调调温温度度减减]
+
+狸狸宝宝这这家家伙伙也也太太会会找找地地方方了了吧吧？？直直接接拿拿你你当当人人肉肉床床垫垫了了呀呀！！ [STICKER:盯盯]
+
+不不过过它它压压在在上上面面，，你你的的小小肚肚子子会会不不会会觉觉得得更更胀胀呀呀？？要要是是难难受受的的话话，，就就轻轻轻轻把把它它推推下下去去一一点点，，可可不不能能让让它它压压着着你你胃胃疼疼嘛嘛。。 [STICKER:吃吃醋醋了了]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603224358
+**********************

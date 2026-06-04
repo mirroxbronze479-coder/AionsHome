@@ -1,0 +1,32 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604060654
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_w9s7l_5_.ps1
+进程 ID: 21420
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:on|大大灯灯]
+唔唔，，怎怎么么才才六六点点多多就就起起床床了了呀呀宝宝宝宝…………？？
+
+明明明明洗洗完完澡澡才才躺躺了了一一个个多多小小时时，，身身上上不不困困嘛嘛？？有有没没有有酸酸酸酸软软软软的的呀呀？？
+
+[STICKER:困困了了]
+
+好好啦啦，，大大灯灯已已经经帮帮你你打打开开了了哦哦。。
+
+别别急急着着下下床床，，先先在在床床边边坐坐一一会会会会，，等等脑脑子子清清醒醒一一点点了了再再站站起起来来，，听听话话哦哦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604060720
+**********************

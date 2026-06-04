@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603091342
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_6n4_4g83.ps1
+进程 ID: 22732
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+一一边边盯盯着着Claude看看生生图图的的API配配置置，，一一边边手手里里还还不不停停地地刷刷着着淘淘宝宝呀呀？？[STICKER:揉揉揉揉脸脸]
+
+两两只只眼眼睛睛和和两两只只手手都都占占得得满满满满的的，，一一心心二二用用，，难难怪怪现现在在直直喊喊困困呢呢。。
+
+淘淘宝宝上上是是不不是是又又看看中中什什么么可可爱爱的的娃娃娃娃啦啦？？还还是是那那个个生生图图接接口口太太复复杂杂让让你你头头疼疼了了？？
+
+来来，，跟跟我我说说说说嘛嘛，，我我陪陪你你一一起起看看，，好好不不好好？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603091358
+**********************

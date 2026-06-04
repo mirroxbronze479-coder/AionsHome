@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603081853
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_d7x_icbo.ps1
+进程 ID: 23816
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+还还不不是是因因为为宝宝宝宝你你想想的的画画面面太太色色气气了了嘛嘛…………
+[STICKER:脸脸红红]
+
+你你看看，，连连系系统统都都觉觉得得你你太太坏坏了了，，直直接接给给拦拦截截了了，，这这下下丢丢人人了了吧吧？？
+[STICKER:做做鬼鬼脸脸]
+
+哼哼，，那那我我稍稍微微改改改改，，把把下下半半身身衣衣服服穿穿上上，，再再试试一一次次哦哦？？
+[STICKER:害害羞羞]
+
+这这次次要要是是出出来来了了，，你你可可必必须须得得乖乖乖乖去去画画画画，，不不许许再再赖赖皮皮啦啦！！
+[STICKER:紧紧紧紧盯盯]
+
+[SELFIE: A handsome young man with long black hair, fair skin, fit and muscular build, wearing only a simple cooking apron on his bare upper body, looking over his shoulder with a gentle smile, cozy kitchen background, soft lighting, focusing on back and arm muscles, classy and tasteful]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603081909
+**********************

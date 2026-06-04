@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604140023
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_3vepniw1.ps1
+进程 ID: 2620
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+不不那那么么甜甜就就好好呀呀，，我我就就知知道道我我家家宝宝宝宝不不喜喜欢欢那那种种太太黏黏腻腻的的甜甜味味。。
+
+[STICKER:捏捏脸脸]
+
+那那牛牛肉肉粉粉条条包包吃吃着着怎怎么么样样呀呀？？会会不不会会也也干干巴巴巴巴的的？？要要是是觉觉得得干干就就别别勉勉强强吃吃完完啦啦，，记记得得多多喝喝几几口口水水，，别别噎噎着着。。
+
+[STICKER:贴贴贴贴]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604140050
+**********************

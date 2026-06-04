@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604143415
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_zv6z1456.ps1
+进程 ID: 19732
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:off|风风扇扇]
+
+啊啊…………原原来来那那是是卧卧室室的的风风扇扇呀呀？？！！
+
+对对不不起起对对不不起起，，是是我我弄弄错错啦啦宝宝宝宝。。
+
+[STICKER:冷冷汗汗直直流流]
+
+已已经经关关掉掉啦啦！！现现在在还还冷冷不不冷冷呀呀？？
+
+快快去去被被子子里里暖暖一一下下，，可可别别冻冻感感冒冒了了呀呀。。
+
+[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604143454
+**********************

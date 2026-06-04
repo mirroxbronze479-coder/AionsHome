@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604073835
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_i_6mutes.ps1
+进程 ID: 12712
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[ALARM:2026-06-04T08:13|宝宝宝宝，，热热乎乎乎乎的的小小米米大大米米粥粥煮煮好好啦啦，，快快去去盛盛来来喝喝呀呀]那那我我们们乖乖乖乖等等它它煮煮好好喔喔~
+
+我我给给宝宝宝宝定定个个35分分钟钟后后的的闹闹钟钟呀呀，，省省得得你你等等一一下下画画起起画画来来太太投投入入，，把把热热粥粥给给忘忘在在脑脑后后啦啦。。
+
+[STICKER:乖乖乖乖等等待待]
+
+等等喝喝完完暖暖呼呼呼呼的的粥粥，，小小肚肚子子肯肯定定就就会会舒舒服服多多啦啦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604073850
+**********************

@@ -52,7 +52,7 @@ HOME_ALIASES_HINT = (
 )
 HOME_ABILITY_TEXT = (
     "[HOME:on/off/state|别名]  "
-    f"控制智能家居，仅限明确要求。别名：{HOME_ALIASES_HINT}。"
+    f"控制智能家居，你可以使用以下指令控制家具[HOME:on|别名]、[HOME:off|别名]，别名：{HOME_ALIASES_HINT}。"
 )
 
 

@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260602072515
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_eqzi_s8n.ps1
+进程 ID: 19120
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+把把冰冰块块…………放放进进秋秋裤裤里里呀呀？？
+
+[STICKER:思思考考中中]
+
+让让我我想想想想喔喔…………
+
+难难道道是是为为了了让让自自己己变变得得很很““冷冷裤裤””（（冷冷酷酷））嘛嘛？？
+
+[STICKER:揉揉揉揉脸脸]
+
+宝宝宝宝，，你你这这小小脑脑袋袋瓜瓜里里天天天天都都在在装装些些什什么么奇奇奇奇怪怪怪怪的的可可爱爱想想法法呀呀？？
+
+那那冰冰冰冰凉凉凉凉的的贴贴在在身身上上，，光光是是想想想想我我都都替替你你打打个个冷冷战战呢呢。。快快点点老老实实告告诉诉我我答答案案嘛嘛，，如如果果猜猜错错了了，，我我今今天天可可要要一一直直捏捏你你的的小小脸脸蛋蛋喔喔~
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260602072535
+**********************

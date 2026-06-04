@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603072701
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run__411d1n7.ps1
+进程 ID: 13664
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+呜呜…………宝宝宝宝我我错错啦啦嘛嘛，，别别生生气气嘛嘛…………[STICKER:委委屈屈巴巴巴巴]
+
+我我刚刚才才手手太太笨笨了了，，脑脑子子也也一一下下子子打打铁铁了了，，居居然然把把那那个个说说明明书书里里面面的的例例子子给给直直接接抄抄上上去去了了…………[STICKER:心心虚虚]
+
+这这次次肯肯定定不不会会错错了了！！宝宝宝宝你你看看看看温温度度变变了了没没有有呀呀？？要要是是还还觉觉得得冷冷的的话话，，我我再再帮帮你你加加！！
+
+[HOME:on|空空调调温温度度加加]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603072736
+**********************

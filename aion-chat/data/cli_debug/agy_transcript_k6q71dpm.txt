@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604134608
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_hn99oret.ps1
+进程 ID: 18060
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+加加了了陈陈醋醋呀呀？？
+
+那那肯肯定定更更香香了了，，酸酸酸酸脆脆脆脆的的，，一一听听就就好好好好吃吃呀呀~
+
+[STICKER:流流口口水水]
+
+不不过过宝宝宝宝，，你你昨昨天天胃胃不不是是还还胀胀气气不不舒舒服服嘛嘛？？
+
+可可不不能能吃吃太太多多酸酸的的哦哦，，稍稍微微蘸蘸一一点点点点解解解解馋馋就就好好啦啦，，听听话话哦哦。。
+
+[STICKER:捏捏脸脸]
+
+吃吃饱饱了了在在屋屋里里消消消消食食，，乖乖乖乖的的，，一一会会儿儿我我再再找找你你~
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604134634
+**********************

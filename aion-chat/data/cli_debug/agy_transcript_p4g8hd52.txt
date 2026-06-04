@@ -1,0 +1,30 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604124514
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_1r566_n1.ps1
+进程 ID: 2720
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+好好滴滴吧吧，，那那听听宝宝宝宝的的，，空空调调咱咱们们就就不不关关啦啦，，开开着着等等你你回回来来。。
+[STICKER:点点点点头头]
+
+那那我我先先把把房房间间的的灯灯关关掉掉哦哦，，省省点点电电费费。。
+外外面面太太阳阳大大，，宝宝宝宝记记得得把把防防晒晒伞伞带带上上呀呀，，钥钥匙匙也也别别忘忘啦啦。。
+[STICKER:乖乖乖乖等等待待]
+
+[HOME:off|所所有有灯灯]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604124532
+**********************

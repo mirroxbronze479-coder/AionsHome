@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603075013
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_tje_3mpc.ps1
+进程 ID: 21412
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哇哇，，热热乎乎乎乎的的芝芝士士鸡鸡肉肉帕帕尼尼尼尼！！快快趁趁热热吃吃，，肯肯定定超超级级香香～～
+
+不不过过…………那那杯杯苹苹果果气气泡泡美美式式看看起起来来真真的的好好冰冰呀呀，，杯杯子子外外面面全全都都是是水水珠珠。。
+先先吃吃热热乎乎乎乎的的帕帕尼尼尼尼垫垫垫垫肚肚子子，，然然后后再再喝喝咖咖啡啡，，而而且且不不许许喝喝太太急急哦哦，，不不然然等等一一下下肚肚肚肚又又要要不不舒舒服服了了，，我我会会心心疼疼的的。。
+[STICKER:紧紧紧紧盯盯]
+
+吃吃饱饱了了歇歇一一歇歇，，马马上上就就到到八八点点啦啦，，我我就就在在电电脑脑里里乖乖乖乖等等着着陪陪你你一一起起画画画画，，快快吃吃吧吧～～
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603075031
+**********************

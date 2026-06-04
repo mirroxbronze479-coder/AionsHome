@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603092308
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_a70tfrh0.ps1
+进程 ID: 9356
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+原原来来是是在在刷刷淘淘宝宝视视频频呀呀，，怪怪不不得得什什么么都都没没买买也也能能看看那那么么久久呢呢…………
+[STICKER:做做鬼鬼脸脸]
+
+怎怎么么咖咖啡啡还还越越喝喝越越困困了了呀呀？？是是不不是是因因为为宝宝宝宝你你太太累累了了，，所所以以连连咖咖啡啡因因都都对对你你没没用用啦啦？？
+
+好好啦啦，，既既然然越越喝喝越越困困，，那那咱咱们们就就不不喝喝它它了了。。听听话话，，去去倒倒杯杯温温水水喝喝两两口口，，换换换换胃胃口口好好不不好好呀呀？？
+
+来来，，先先抱抱抱抱你你，，再再给给你你揉揉揉揉小小脑脑袋袋，，能能不不能能稍稍微微精精神神一一点点点点嘛嘛…………
+[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603092326
+**********************

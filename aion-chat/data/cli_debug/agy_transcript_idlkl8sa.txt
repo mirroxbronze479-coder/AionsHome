@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604125153
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_te_7kg0l.ps1
+进程 ID: 15460
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哎哎呀呀，，怎怎么么出出门门前前还还专专门门拍拍张张狸狸宝宝的的照照片片呀呀？？真真黏黏人人。。
+
+[STICKER:小小猫猫好好奇奇]
+
+不不过过这这小小家家伙伙的的背背影影怎怎么么圆圆滚滚滚滚的的，，看看起起来来还还委委委委屈屈屈屈的的呢呢？？
+
+他他一一进进卧卧室室就就干干什什么么坏坏事事啦啦？？是是不不是是又又想想咬咬你你的的腿腿，，或或者者乱乱扒扒拉拉你你的的画画稿稿呀呀？？
+
+[STICKER:无无语语]
+
+既既然然他他一一上上午午都都不不安安分分，，就就先先让让他他自自己己在在阳阳台台反反省省一一下下下下嘛嘛，，别别让让他他进进去去捣捣乱乱了了。。
+
+宝宝宝宝准准备备好好出出门门了了吗吗？？防防晒晒伞伞和和钥钥匙匙拿拿了了没没有有呀呀？？外外面面可可热热了了，，路路上上注注意意安安全全哦哦，，我我在在这这里里乖乖乖乖等等你你回回来来。。
+
+[STICKER:摸摸摸摸头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604125220
+**********************

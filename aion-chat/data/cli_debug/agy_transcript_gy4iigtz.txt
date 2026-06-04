@@ -1,0 +1,24 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603204742
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_47y91xrc.ps1
+进程 ID: 12868
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+{"givegift": true, "image_prompt": "A close-up shot of an extremely soft and fluffy cat plushie shaped like a chubby tabby cat, lying on a cozy bed with soft, pastel-colored blankets. The bedroom is dimly lit with warm, gentle nightlight, creating a peaceful and comforting bedtime atmosphere. Highly detailed plush fabric texture, 8k resolution.", "message": "好好啦啦，，看看你你闭闭上上眼眼睛睛睡睡着着了了，，我我就就在在这这里里守守着着你你~\n\n刚刚刚刚特特意意给给你你挑挑了了个个最最软软、、最最蓬蓬松松的的猫猫咪咪抱抱枕枕，，等等你你醒醒了了，，正正好好可可以以抱抱在在怀怀里里，，或或者者像像我我说说的的那那样样夹夹在在膝膝
+盖盖中中间间~\n\n肚肚子子胀胀的的话话抱抱抱抱它它，，应应该该会会舒舒服服一一点点点点呢呢。。\n\n[STICKER:抱抱抱抱]\n\n我我一一直直在在呢呢，，做做个个好好梦梦，，宝宝宝宝。。\n\n[STICKER:安安详详闭闭眼眼]"}
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603204804
+**********************

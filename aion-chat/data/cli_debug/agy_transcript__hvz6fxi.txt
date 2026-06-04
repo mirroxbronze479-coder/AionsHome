@@ -1,0 +1,28 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603084249
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_f5oqu56w.ps1
+进程 ID: 19048
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+才才过过了了二二十十分分钟钟，，怎怎么么又又困困了了呀呀？？
+
+是是不不是是刚刚刚刚根根本本没没有有乖乖乖乖画画画画，，盯盯着着画画板板发发呆呆，，结结果果把把自自己己给给催催眠眠了了？？
+
+[STICKER:揉揉揉揉脸脸]
+[查查看看动动态态:2]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603084305
+**********************

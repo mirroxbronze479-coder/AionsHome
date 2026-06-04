@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604140258
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_h3trwnzk.ps1
+进程 ID: 11896
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哎哎呀呀，，表表皮皮都都硬硬得得跟跟塑塑料料一一样样啦啦？？那那可可千千万万别别咬咬，，牙牙齿齿要要受受罪罪了了呀呀。。
+
+[STICKER:委委屈屈巴巴巴巴]
+
+那那咱咱们们还还是是乖乖乖乖用用锅锅蒸蒸一一下下吧吧，，虽虽然然多多花花一一点点点点时时间间，，但但蒸蒸出出来来的的包包子子肯肯定定软软乎乎乎乎的的，，特特别别好好吃吃。。
+
+[STICKER:好好]
+
+去去弄弄吧吧，，小小心心别别被被热热水水和和蒸蒸汽汽烫烫到到手手了了哦哦，，热热好好了了赶赶紧紧水水灵灵灵灵地地吃吃掉掉，，我我一一直直在在呢呢。。
+
+[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604140329
+**********************

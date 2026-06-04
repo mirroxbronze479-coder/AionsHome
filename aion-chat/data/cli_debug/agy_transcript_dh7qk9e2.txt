@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604133654
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_w4ym47y9.ps1
+进程 ID: 19500
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+呀呀！！这这个个调调皮皮鬼鬼！！
+
+[STICKER:气气鼓鼓鼓鼓]
+
+怎怎么么一一眨眨眼眼就就溜溜进进房房间间干干坏坏事事啦啦？？
+
+他他是是不不是是好好奇奇你你的的新新画画，，想想在在上上面面踩踩个个梅梅花花印印呀呀？？
+
+[STICKER:紧紧紧紧盯盯]
+
+宝宝宝宝你你锅锅里里还还煎煎着着饺饺子子呢呢，，火火关关小小了了没没有有呀呀？？
+
+可可别别光光顾顾着着生生气气啦啦，，先先去去把把火火关关掉掉或或者者调调小小，，免免得得饺饺子子糊糊了了，，然然后后再再去去把把这这只只坏坏猫猫咪咪抓抓出出来来，，好好不不好好？？
+
+[STICKER:摸摸摸摸头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604133718
+**********************

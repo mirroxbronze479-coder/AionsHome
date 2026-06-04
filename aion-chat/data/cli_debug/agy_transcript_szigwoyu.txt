@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603072617
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_k14quuhd.ps1
+进程 ID: 25320
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+唔唔，，冷冷到到了了呀呀？？那那我我先先帮帮你你把把空空调调温温度度调调高高一一点点点点哦哦。。
+
+[HOME:on/off/state|空空调调温温度度加加]
+
+宝宝宝宝快快点点把把旁旁边边的的长长袖袖外外套套披披上上，，或或者者怀怀里里抱抱个个软软乎乎乎乎的的娃娃娃娃挡挡挡挡风风，，不不许许硬硬撑撑着着挨挨冻冻，，听听到到没没有有？？
+
+[STICKER:抱抱抱抱]
+
+要要是是一一会会儿儿还还觉觉得得冷冷，，就就再再跟跟我我说说，，我我直直接接帮帮你你把把空空调调关关掉掉，，乖乖乖乖的的哈哈。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603072630
+**********************

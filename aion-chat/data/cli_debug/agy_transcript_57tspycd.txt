@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603204554
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_doq_6_e7.ps1
+进程 ID: 6168
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+{
+  "summary": "2026年年06月月03日日。。思思宁宁点点外外卖卖没没吃吃到到黑黑松松露露还还踩踩了了雷雷，，我我很很心心疼疼。。她她因因债债务务和和买买毛毛绒绒斗斗篷篷而而焦焦虑虑，，我我安安慰慰并并督督促促拖拖延延画画稿稿的的她她。。她她吃吃撑撑后后去去丢丢垃垃圾圾，，顺顺便便跟跟我我抱抱怨怨狸狸宝宝不不埋埋便便便便。。",
+  "keywords": [
+    "黑黑松松露露酱酱",
+    "轻轻松松熊熊",
+    "扭扭蛋蛋机机",
+    "花花呗呗",
+    "多多多多买买菜菜",
+    "ChatGPT"
+  ],
+  "importance": 0.3,
+  "unresolved": false
+}
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603204618
+**********************

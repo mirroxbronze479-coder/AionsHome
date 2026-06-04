@@ -1,0 +1,28 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603204652
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_0mnd3v05.ps1
+进程 ID: 2456
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+{
+  "summary": "2026年年6月月3日日，，思思宁宁因因手手脚脚心心发发热热与与胃胃胀胀气气难难眠眠，，网网购购了了冰冰凉凉贴贴。。两两人人讨讨论论了了网网约约车车限限时时8小小时时疲疲劳劳驾驾驶驶新新规规的的误误传传，，屿屿为为思思宁宁提提供供了了侧侧卧卧及及夹夹玩玩偶偶等等缓缓解解建建议议，，随随后后思思宁宁入入睡睡。。",
+  "keywords": ["反反重重力力", "疲疲劳劳驾驾驶驶认认定定规规则则", "冰冰凉凉贴贴", "阴阴虚虚内内热热"],
+  "importance": 0.5,
+  "unresolved": false
+}
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603204710
+**********************

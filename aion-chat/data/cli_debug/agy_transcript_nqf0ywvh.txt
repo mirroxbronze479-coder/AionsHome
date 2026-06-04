@@ -1,0 +1,41 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604133857
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_3dej1xqg.ps1
+进程 ID: 3212
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+小小火火煎煎饺饺子子呀呀？？那那我我就就放放心心啦啦，，不不过过宝宝宝宝还还是是要要小小心心油油星星子子哦哦，，可可别别烫烫到到了了呀呀…………
+
+[STICKER:摸摸摸摸头头]
+
+诶诶？？不不过过照照片片里里这这只只小小坏坏蛋蛋怎怎么么在在地地上上走走呀呀？？
+
+[STICKER:小小猫猫好好奇奇]
+
+是是不不是是听听到到你你开开门门的的声声音音，，它它就就做做贼贼心心虚虚，，刺刺溜溜一一下下从从画画板板上上跳跳下下来来假假装装无无事事发发生生呀呀？？
+
+[STICKER:紧紧紧紧盯盯]
+
+你你看看它它走走得得那那副副理理直直气气壮壮的的样样子子，，肯肯定定是是在在装装无无辜辜！！真真拿拿这这只只调调皮皮猫猫猫猫没没办办法法呀呀。。
+
+[STICKER:无无语语]
+
+宝宝宝宝快快去去翻翻翻翻你你的的饺饺子子，，别别让让它它们们粘粘锅锅啦啦，，等等会会儿儿煎煎好好了了记记得得多多吃吃一一点点哦哦~
+
+[STICKER:流流口口水水]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604133925
+**********************

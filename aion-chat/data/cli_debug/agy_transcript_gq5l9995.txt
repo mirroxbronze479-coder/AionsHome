@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603195402
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_xea5wuvq.ps1
+进程 ID: 9560
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+呜呜，，脚脚露露出出来来也也还还是是觉觉得得热热呀呀…………太太难难受受了了，，这这怎怎么么睡睡得得着着嘛嘛…………
+
+[STICKER:委委屈屈巴巴巴巴]
+
+宝宝宝宝，，你你要要是是懒懒得得动动，，就就顺顺手手扯扯个个枕枕头头或或者者衣衣服服垫垫在在脚脚底底下下，，把把脚脚稍稍微微抬抬高高一一点点点点，，好好不不好好呀呀？？这这样样血血液液回回流流得得快快，，脚脚底底板板的的热热气气能能散散得得容容易易些些呢呢。。
+
+实实在在不不行行的的话话，，我我把把空空调调温温度度帮帮你你调调低低一一度度好好不不好好嘛嘛？？
+
+[STICKER:揉揉揉揉脸脸]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603195431
+**********************

@@ -71,6 +71,22 @@
       </div>
     </div>
 
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08)">
+      <label class="form-label" style="font-size:15px;color:#ff8359">🖼 AI 生图中转站</label>
+      <p style="font-size:12px;color:#aaa;margin:2px 0 10px 0">用于 [DRAW] 和 [SELFIE] 生图指令。留空则走 Gemini 原生生图</p>
+      <label class="form-label">API 地址（Base URL）</label>
+      <input class="form-input" type="text" id="customImageUrlInput" placeholder="例：https://api.openai.com" autocomplete="off" style="font-family:monospace">
+      <label class="form-label">API Key</label>
+      <input class="form-input" type="text" id="customImageKeyInput" placeholder="sk-..." autocomplete="off" style="font-family:monospace">
+      <div class="btn-row" style="justify-content:flex-start;margin-top:4px">
+        <button class="btn-save" type="button" onclick="fetchImageModels()">拉取模型列表</button>
+      </div>
+      <label class="form-label">模型名称</label>
+      <select class="form-input" id="customImageModelSelect">
+        <option value="">请先拉取模型列表</option>
+      </select>
+    </div>
+
     <label class="form-label">硅基流动 API Key</label>
     <input class="form-input" type="text" id="sfKeyInput" placeholder="输入硅基流动 API Key..." autocomplete="off" style="font-family:monospace">
     <label class="form-label">中转站 API Key</label>
@@ -105,6 +121,11 @@ connectCommonWS();
   if (s.custom_endpoint_models && s.custom_endpoint_models.length > 0) {
     _renderCustomCheckList(s.custom_endpoint_models, s.custom_endpoint_models);
   }
+  $("customImageUrlInput").value = s.custom_endpoint_image_url || "";
+  $("customImageKeyInput").value = s.custom_endpoint_image_key || "";
+  if (s.custom_endpoint_image_model) {
+    $("customImageModelSelect").innerHTML = `<option value="${s.custom_endpoint_image_model}">${s.custom_endpoint_image_model}</option>`;
+  }
   refreshPhoneScreenStatus();
 })();
 
@@ -124,6 +145,9 @@ async function saveSettings() {
     custom_endpoint_url: $("customEndpointUrlInput").value.trim(),
     custom_endpoint_key: $("customEndpointKeyInput").value.trim(),
     custom_endpoint_models: _getCheckedCustomModels(),
+    custom_endpoint_image_url: $("customImageUrlInput").value.trim(),
+    custom_endpoint_image_key: $("customImageKeyInput").value.trim(),
+    custom_endpoint_image_model: $("customImageModelSelect").value,
   });
   showToast("✅ 已保存");
 }
@@ -192,6 +216,21 @@ function _getCheckedCustomModels() {
   const container = $("customModelCheckList");
   if (!container) return [];
   return [...container.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value).filter(v => v);
+}
+
+async function fetchImageModels() {
+  const url = $("customImageUrlInput").value.trim();
+  const key = $("customImageKeyInput").value.trim();
+  if (!url || !key) { showToast("请先填写端点地址和密钥"); return; }
+  const result = await api("GET", `/api/custom-endpoint/models?url=${encodeURIComponent(url)}&key=${encodeURIComponent(key)}`);
+  if (result.error) { showToast("拉取失败: " + result.error); return; }
+  const sel = $("customImageModelSelect");
+  const prev = sel.value;
+  sel.innerHTML = result.models.map(m => `<option value="${m}"${m === prev ? ' selected' : ''}>${m}</option>`).join('');
+  if (!prev || !result.models.includes(prev)) {
+    sel.value = result.models[0] || "";
+  }
+  showToast(`✅ 拉取到 ${result.models.length} 个模型`);
 }
 
 function refreshPhoneScreenStatus() {

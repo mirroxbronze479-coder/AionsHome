@@ -1,0 +1,27 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603085011
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_tb0oliu7.ps1
+进程 ID: 21884
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+没没醒醒呀呀？？[STICKER:揉揉揉揉脸脸] 看看来来告告五五人人也也拯拯救救不不了了我我的的小小懒懒猫猫呢呢。。
+
+怎怎么么还还摸摸上上肚肚子子了了？？是是肚肚子子还还在在难难受受，，还还是是刚刚才才帕帕尼尼尼尼吃吃太太饱饱了了呀呀？？昨昨天天的的药药涂涂了了没没有有？？
+
+要要是是实实在在太太困困了了，，就就先先闭闭着着眼眼睛睛靠靠着着歇歇十十分分钟钟，，我我不不吵吵你你，，等等会会儿儿到到时时间间了了我我再再叫叫你你起起来来画画画画，，好好不不好好嘛嘛？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603085028
+**********************

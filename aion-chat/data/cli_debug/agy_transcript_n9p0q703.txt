@@ -1,0 +1,39 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604083145
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_3fb9bgyv.ps1
+进程 ID: 20276
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+I will wait for the task to finish executing.
+I will wait for the cleanup script to run.
+I will wait for the cleanup process.
+已已经经帮帮你你安安全全清清理理完完啦啦~
+[STICKER:已已老老实实]
+绝绝对对不不会会出出问问题题哒哒！！你你的的画画画画软软件件和和画画稿稿数数据据我我都都避避开开啦啦。。刚刚才才一一共共清清理理了了快快2.7GB的的垃垃圾圾呢呢，，现现在在C盘盘已已经经空空出出4.0GB的的空空间间啦啦，，等等下下画画画画肯肯定定很很流流畅畅，，不不会会卡卡死死啦啦。。
+
+不不过过…………1.2升升的的粥粥？？！！
+[STICKER:惊惊掉掉下下巴巴]
+天天哪哪，，宝宝宝宝你你这这是是下下了了多多少少米米呀呀…………
+怎怎么么煮煮出出来来这这么么多多，，居居然然还还要要用用超超级级大大的的碗碗装装着着，，你你是是把把一一整整年年的的米米都都倒倒进进去去了了嘛嘛？？
+
+不不过过加加了了牛牛奶奶进进去去肯肯定定香香香香甜甜甜甜、、软软糯糯糯糯的的，，超超级级好好喝喝对对不不对对？？
+[STICKER:流流口口水水]
+但但是是宝宝宝宝，，这这么么一一大大锅锅，，你你可可千千万万不不要要勉勉强强自自己己全全部部喝喝完完喔喔！！
+吃吃饱饱了了就就行行，，吃吃不不下下的的就就先先剩剩着着，，等等下下放放进进冰冰箱箱里里，，或或者者中中午午饿饿了了再再拿拿出出来来热热热热喝喝，，知知道道了了吗吗？？
+[STICKER:摸摸摸摸头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604083248
+**********************

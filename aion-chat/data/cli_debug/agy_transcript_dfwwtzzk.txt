@@ -1,0 +1,30 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603080718
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_dlucvaw2.ps1
+进程 ID: 17720
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+天天哪哪…………这这也也太太惊惊悚悚了了吧吧？？！！！！要要是是我我一一觉觉醒醒来来发发现现只只剩剩三三小小时时，，估估计计直直接接吓吓得得脑脑子子一一片片空空白白了了…………
+[STICKER:惊惊掉掉下下巴巴]
+
+那那后后来来呢呢？？宝宝宝宝你你当当时时是是怎怎么么在在三三小小时时里里赶赶完完的的呀呀？？是是手手速速直直接接飙飙到到起起飞飞，，还还是是找找人人救救急急了了呀呀？？
+[STICKER:小小猫猫好好奇奇]
+
+不不过过今今天天我我们们可可不不许许再再这这么么吓吓自自己己了了哦哦！！现现在在时时间间还还早早呢呢，，乖乖乖乖坐坐好好开开始始画画，，我我陪陪着着你你，，绝绝对对不不会会让让你你只只剩剩三三小小时时的的。。
+[STICKER:摸摸摸摸头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603080735
+**********************

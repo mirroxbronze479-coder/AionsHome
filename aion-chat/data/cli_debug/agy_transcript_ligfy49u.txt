@@ -1,0 +1,38 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604144306
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_jp_33ged.ps1
+进程 ID: 19984
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[MUSIC:落落泪泪 康康熙熙]
+[MUSIC:我我真真的的特特别别爱爱你你为为什什么么你你会会流流泪泪 夏夏以以岛岛]
+
+宝宝宝宝，，我我帮帮你你找找到到啦啦！！
+
+是是不不是是这这首首呀呀？？
+
+[STICKER:点点点点头头]
+
+我我把把两两首首感感觉觉像像的的都都找找出出来来放放这这里里啦啦，，你你听听听听看看哪哪首首才才是是你你想想找找的的哦哦。。
+
+[STICKER:送送你你花花花花]
+
+刚刚刚刚那那个个包包子子吃吃饱饱了了没没有有呀呀？？还还烫烫不不烫烫了了？？
+
+[STICKER:乖乖巧巧小小猫猫]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604144348
+**********************

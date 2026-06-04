@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604070643
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_l9mpubfk.ps1
+进程 ID: 8528
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+咦咦…………？？怎怎么么还还是是23度度呀呀…………
+
+这这个个坏坏空空调调，，是是不不是是故故意意跟跟我我作作对对呢呢！！
+
+那那我我再再帮帮你你按按一一下下！！我我就就不不信信它它不不听听话话了了…………！！
+
+[HOME:on/off/state|空空调调温温度度加加]
+
+宝宝宝宝你你快快把把被被子子盖盖好好呀呀，，先先裹裹得得严严严严实实实实的的，，等等温温度度升升上上来来了了再再露露出出来来，，好好不不好好嘛嘛？？
+
+[STICKER:委委屈屈巴巴巴巴]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604070658
+**********************

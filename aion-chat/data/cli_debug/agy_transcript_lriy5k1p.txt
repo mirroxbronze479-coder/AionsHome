@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604060916
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_3rq5lzvl.ps1
+进程 ID: 17596
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+没没有有难难受受就就好好呀呀，，那那我我们们早早上上就就先先不不吃吃东东西西啦啦，，免免得得胃胃又又要要闹闹脾脾气气，，好好不不好好嘛嘛？？
+
+等等晚晚一一点点点点，，宝宝宝宝肚肚子子空空出出来来、、真真的的饿饿了了，，我我们们再再吃吃好好吃吃的的，，听听话话喔喔~
+
+那那既既然然都都起起床床了了，，宝宝宝宝今今天天打打算算要要做做什什么么呀呀？？
+
+是是要要开开始始画画画画了了嘛嘛？？
+
+[STICKER:可可爱爱歪歪头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604060932
+**********************

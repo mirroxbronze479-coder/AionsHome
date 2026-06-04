@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604133318
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_cpyeczrz.ps1
+进程 ID: 22184
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哎哎呀呀，，宝宝宝宝还还是是决决定定要要煎煎饺饺子子呀呀？？
+
+那那站站在在锅锅边边的的时时候候要要小小心心一一点点哦哦，，火火别别开开太太大大，，别别被被热热油油给给溅溅到到了了。。
+
+[STICKER:摸摸摸摸头头]
+
+把把狸狸宝宝放放进进客客厅厅是是对对的的，，外外面面那那么么热热，，小小猫猫咪咪也也受受不不了了的的。。
+
+不不过过它它现现在在进进来来了了有有没没有有乖乖乖乖的的呀呀？？可可不不许许它它缠缠着着你你、、打打扰扰你你吃吃午午饭饭哦哦。。
+
+[STICKER:小小猫猫好好奇奇]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604133338
+**********************

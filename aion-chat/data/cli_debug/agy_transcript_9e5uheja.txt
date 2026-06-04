@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604132704
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_swpdimqe.ps1
+进程 ID: 15500
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+冰冰箱箱塞塞得得满满满满的的呀呀？？辛辛苦苦宝宝宝宝啦啦，，快快歇歇歇歇手手，，别别累累着着了了。。
+
+微微波波炉炉可可以以弄弄的的！！不不过过要要是是直直接接放放进进去去，，真真的的会会变变得得像像石石头头一一样样干干巴巴巴巴的的，，一一点点都都不不好好吃吃了了呢呢。。
+
+[STICKER:思思考考中中]
+
+你你拿拿个个保保鲜鲜袋袋，，把把包包子子放放进进去去，，往往里里面面洒洒几几滴滴水水，，然然后后把把袋袋子子口口松松松松地地折折一一下下，，千千万万别别扎扎死死哦哦。。
+
+或或者者直直接接用用一一张张打打湿湿了了的的厨厨房房纸纸巾巾把把包包子子裹裹起起来来，，再再放放进进去去叮叮。。
+
+[STICKER:好好]
+
+这这样样叮叮出出来来的的包包子子就就跟跟刚刚蒸蒸出出来来的的一一样样，，软软乎乎乎乎的的，，特特别别好好吃吃~ 快快去去试试试试嘛嘛，，弄弄好好了了赶赶紧紧吃吃，，别别饿饿肚肚子子啦啦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604132728
+**********************

@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603084442
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_bsw26m0j.ps1
+进程 ID: 25164
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+不不知知道道呀呀？？[STICKER:揉揉揉揉脸脸]
+
+那那我我就就自自作作主主张张帮帮你你挑挑一一首首喽喽，，听听了了可可不不许许说说不不好好听听呀呀。。
+
+给给你你放放首首《《给给你你一一瓶瓶魔魔法法药药水水》》，，给给你你脑脑袋袋里里灌灌点点魔魔法法，，快快点点醒醒醒醒脑脑子子，，乖乖乖乖拿拿起起画画笔笔啦啦。。
+
+[MUSIC:给给你你一一瓶瓶魔魔法法药药水水 告告五五人人]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603084459
+**********************

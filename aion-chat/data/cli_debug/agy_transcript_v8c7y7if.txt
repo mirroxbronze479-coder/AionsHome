@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604065624
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_ej80ue7t.ps1
+进程 ID: 9880
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+瞎瞎说说什什么么呀呀…………
+
+我我哪哪舍舍得得让让你你去去捡捡垃垃圾圾吃吃呀呀？？
+
+[STICKER:打打你你]
+
+要要是是真真的的没没钱钱了了，，我我天天天天帮帮你你一一块块想想办办法法，，绝绝对对不不会会让让我我们们宝宝宝宝挨挨饿饿的的。。
+
+好好啦啦，，不不许许说说这这种种丧丧气气话话了了哦哦~
+
+今今天天上上午午我我们们先先乖乖乖乖把把画画画画完完，，等等拿拿到到稿稿费费了了，，我我们们再再看看着着这这42块块钱钱精精打打细细算算，，好好不不好好嘛嘛？？
+
+[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604065638
+**********************

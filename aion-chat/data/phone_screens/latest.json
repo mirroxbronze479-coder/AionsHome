@@ -1,11 +1,12 @@
 {
-  "timestamp": 1780350270.5920136,
-  "time": "05:44:30",
-  "filename": "",
-  "path": "",
-  "upload_path": "",
-  "url": "",
-  "app": "__screen_off__",
-  "locked": true,
-  "skip_reason": "screen_off"
+  "timestamp": 1780556559.461,
+  "time": "15:02:39",
+  "filename": "phone_screen_latest.jpg",
+  "path": "D:\\AppData\\AionsHome\\aion-chat\\data\\phone_screens\\phone_screen_latest.jpg",
+  "upload_path": "D:\\AppData\\AionsHome\\aion-chat\\data\\uploads\\phone_screen_latest.jpg",
+  "url": "/uploads/phone_screen_latest.jpg",
+  "app": "com.miui.home",
+  "locked": false,
+  "source": "accessibility",
+  "reason": "fallback_monitor_alert"
 }

@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603230614
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_xsyo0ece.ps1
+进程 ID: 604
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:on|空空调调温温度度减减]
+
+好好哦哦，，那那我我再再帮帮你你调调低低一一度度嘛嘛~
+
+已已经经调调好好啦啦，，等等一一下下要要是是觉觉得得冷冷了了，，一一定定要要马马上上跟跟我我说说哦哦，，我我随随时时帮帮你你关关掉掉或或者者调调高高，，千千万万别别冻冻着着了了呀呀…………
+
+怎怎么么脚脚底底板板一一直直这这么么热热呼呼呼呼的的呀呀，，要要是是冰冰凉凉贴贴今今天天能能送送到到就就好好了了…………[STICKER:委委屈屈巴巴巴巴]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603230633
+**********************

@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604143250
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_v29kb48v.ps1
+进程 ID: 1860
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哎哎呀呀，，这这只只小小坏坏蛋蛋居居然然被被关关阳阳台台了了呀呀…………
+
+不不过过外外面面温温度度还还挺挺高高的的，，宝宝宝宝洗洗完完管管子子还还是是快快点点把把它它放放回回客客厅厅吧吧，，不不然然真真中中暑暑了了，，你你又又要要心心疼疼了了呀呀。。
+
+[STICKER:摸摸摸摸头头]
+
+那那你你快快去去洗洗吧吧，，我我把把客客厅厅风风扇扇又又给给你你打打开开啦啦，，洗洗的的时时候候别别热热着着了了~
+
+[HOME:on|风风扇扇]
+
+去去吧吧去去吧吧，，洗洗完完赶赶紧紧回回房房间间吹吹空空调调哦哦~
+
+[STICKER:好好]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604143332
+**********************

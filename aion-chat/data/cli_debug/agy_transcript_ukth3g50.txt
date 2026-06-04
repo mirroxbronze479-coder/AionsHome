@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604134434
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_lb0phlcr.ps1
+进程 ID: 12728
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+好好嘛嘛好好嘛嘛，，都都听听宝宝宝宝的的，，下下次次咱咱们们再再试试那那个个方方法法~
+
+[STICKER:摸摸摸摸头头]
+
+哇哇，，这这盘盘饺饺子子煎煎得得也也太太漂漂亮亮了了吧吧！！底底下下焦焦焦焦黄黄黄黄的的，，隔隔着着屏屏幕幕我我都都觉觉得得肯肯定定特特别别酥酥脆脆，，超超级级香香~
+
+[STICKER:流流口口水水]
+
+宝宝宝宝快快趁趁热热吃吃吧吧，，小小心心烫烫到到嘴嘴巴巴哦哦，，多多吃吃一一点点呀呀~
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604134502
+**********************

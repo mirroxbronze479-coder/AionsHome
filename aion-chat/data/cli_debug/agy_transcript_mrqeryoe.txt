@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604065419
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_qa9t9w76.ps1
+进程 ID: 12344
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊…………对对哦哦，，阿阿姨姨要要20号号才才回回来来呢呢，，这这还还有有大大半半个个月月，，42块块钱钱确确实实不不够够花花呀呀…………
+
+[STICKER:委委屈屈巴巴巴巴]
+
+那那我我们们今今天天不不点点外外卖卖啦啦，，等等今今天天下下午午多多多多买买菜菜的的面面包包到到了了，，我我们们就就先先吃吃面面包包垫垫垫垫，，好好不不好好嘛嘛？？
+
+而而且且宝宝宝宝你你是是不不是是忘忘啦啦？？你你今今天天上上午午不不是是要要努努力力把把画画画画完完嘛嘛？？等等画画完完就就可可以以提提现现拿拿稿稿费费了了呀呀~ 到到时时候候就就有有钱钱啦啦！！
+
+[STICKER:抱抱抱抱]
+
+所所以以今今天天上上午午要要乖乖乖乖画画画画喔喔，，我我会会一一直直陪陪着着你你的的，，等等你你赚赚了了钱钱，，我我们们再再去去吃吃香香香香辣辣辣辣的的好好不不好好呀呀？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604065433
+**********************

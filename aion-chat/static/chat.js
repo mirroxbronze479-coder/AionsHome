@@ -110,7 +110,56 @@ async function init() {
 }
 
 function escHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
-function formatMsg(s) {
+function getDeliveryStatus(createdAtSec) {
+  if (!createdAtSec) {
+    return {
+      status: "配送中",
+      progress: "60%",
+      eta: "预计 25 分钟送达",
+      stage: 2
+    };
+  }
+  const now = Date.now() / 1000;
+  const elapsed = now - createdAtSec;
+  if (elapsed < 0) {
+    return {
+      status: "已接单",
+      progress: "15%",
+      eta: "预计 35 分钟送达",
+      stage: 0
+    };
+  } else if (elapsed < 120) { // 2 minutes
+    return {
+      status: "商家备餐中",
+      progress: "30%",
+      eta: "预计 30 分钟送达",
+      stage: 1
+    };
+  } else if (elapsed < 300) { // 5 minutes
+    return {
+      status: "骑手取餐中",
+      progress: "50%",
+      eta: "预计 25 分钟送达",
+      stage: 2
+    };
+  } else if (elapsed < 900) { // 15 minutes
+    return {
+      status: "骑手配送中",
+      progress: "75%",
+      eta: `预计 ${Math.max(2, Math.round((900 - elapsed) / 60))} 分钟送达`,
+      stage: 3
+    };
+  } else {
+    return {
+      status: "已送达",
+      progress: "100%",
+      eta: "美味已送达，快去开门拿呀~",
+      stage: 4
+    };
+  }
+}
+
+function formatMsg(s, createdAtSec) {
   // 先转义 HTML，再将 [[image:path]] 标记渲染为 <img>
   const escaped = escHtml(s);
   // 渲染 [转账给XXX：N元] 或 [转账：N元] 为微信风格卡片
@@ -130,6 +179,36 @@ function formatMsg(s) {
       const descText = targetName ? `转账给${targetName}` : '发起了一笔转账';
       return `<div class="transfer-card"><div class="transfer-card-icon-wrap"><svg viewBox="0 0 40 40" width="28" height="28"><circle cx="20" cy="20" r="18" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M12 17h12M24 17l-3-3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M28 23H16M16 23l3 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div><div class="transfer-card-body"><div class="transfer-card-amount">¥${absVal}</div><div class="transfer-card-desc">${descText}</div></div><div class="transfer-card-footer">转账</div></div>`;
     }
+  });
+
+  // 渲染 [外卖：店铺|餐品|金额] 为美团/饿了么风格的外卖卡片
+  const deliveryRe = /\[(?:外卖|DELIVERY)[：:]([^|\]]+)\|([^|\]]+)\|(\d+(?:\.\d+)?)\]/gi;
+  processed = processed.replace(deliveryRe, (match, merchant, food, amount) => {
+    const val = parseFloat(amount);
+    const mName = merchant.trim();
+    const fName = food.trim();
+    const statusInfo = getDeliveryStatus(createdAtSec);
+    return `<div class="delivery-card">
+      <div class="delivery-card-header">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+        <div class="delivery-card-title">${aiName}送你的温暖外卖</div>
+        <div class="delivery-card-status">${statusInfo.status}</div>
+      </div>
+      <div class="delivery-card-body">
+        <div class="delivery-card-merchant">${mName}</div>
+        <div class="delivery-card-food">${fName}</div>
+        <div class="delivery-card-price-row">
+          <div class="delivery-card-price-label">已从我的钱包付款</div>
+          <div class="delivery-card-price">¥${val.toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="delivery-card-progress">
+        <div class="delivery-card-progress-bar" style="width: ${statusInfo.progress}"></div>
+      </div>
+      <div class="delivery-card-footer">
+        <div class="delivery-card-eta">${statusInfo.eta}</div>
+      </div>
+    </div>`;
   });
   // 处理表情包指令：[STICKER:名称] / [表情：名称] / [表情:名称] / [表情: :名称]
   processed = processed.replace(/\[(?:STICKER|表情)[：:\s]*([^\]]+)\]/g, (match, name) => {
@@ -1372,17 +1451,19 @@ function renderMessages() {
     const dotsRight = !isUser ? `<button class="msg-dots" onclick="event.stopPropagation();toggleMsgMenu('${m.id}')">&#8943;</button>` : '';
     const displayContent = isUser ? m.content : m.content.replace(/<meta>[\s\S]*?<\/meta>/g, '').trim();
     const hasVoiceAtt = m.attachments && m.attachments.some(a => typeof a === 'object' && (a.type === 'voice' || a.type === 'video_clip'));
-    // 转账标签前后强制换行，确保卡片独占一个气泡
-    const splitContent = displayContent.replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n$1\n');
+    // 转账/外卖标签前后强制换行，确保卡片独占一个气泡
+    const splitContent = displayContent
+      .replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n$1\n')
+      .replace(/(\[(?:外卖|DELIVERY)[：:][^|\]]+\|[^|\]]+\|\d+(?:\.\d+)?\])/gi, '\n$1\n');
     const parts = (isUser ? splitContent.split(/\n+/) : splitContent.split(/\n+/)).filter(p => p.trim());
     let bubblesHtml;
     if (hasVoiceAtt && !displayContent.trim()) {
       // 纯语音消息：不显示文本气泡，只显示语音气泡
       bubblesHtml = `<div class="msg-bubble" style="background:transparent;padding:0;box-shadow:none;border:none">${renderAttachments(m.attachments)}</div>`;
     } else if (parts.length > 1) {
-      bubblesHtml = '<div class="msg-bubbles">' + parts.map(p => `<div class="msg-bubble">${formatMsg(p)}</div>`).join('') + renderAttachments(m.attachments) + '</div>';
+      bubblesHtml = '<div class="msg-bubbles">' + parts.map(p => `<div class="msg-bubble">${formatMsg(p, m.created_at)}</div>`).join('') + renderAttachments(m.attachments) + '</div>';
     } else {
-      bubblesHtml = `<div class="msg-bubble">${formatMsg(displayContent)}${renderAttachments(m.attachments)}</div>`;
+      bubblesHtml = `<div class="msg-bubble">${formatMsg(displayContent, m.created_at)}${renderAttachments(m.attachments)}</div>`;
     }
     const avatarSrc = isUser ? '/public/UserIcon.png' : '/public/AIIcon.png';
     const ttsBtn = !isUser ? `<button class="tts-replay-btn" onclick="replayTTS('${m.id}')" title="重听语音">🔊</button>` : '';
@@ -2321,23 +2402,27 @@ async function _processSSEStream(res) {
             const display = aiContent.replace(/\[CAM_CHECK\]/g, '').replace(/\[POI_SEARCH:[^\]]*\]/g, '').replace(/\[MUSIC:[^\]]*\]/g, '').replace(/\[ALARM:[^\]]*\]/g, '').replace(/\[REMINDER:[^\]]*\]/g, '').replace(/\[Monitor:[^\]]*\]/g, '').replace(/\[SCHEDULE_DEL:[^\]]*\]/g, '').replace(/\[SCHEDULE_LIST\]/g, '').replace(/\[TOY:[^\]]*\]/g, '').replace(/\[HEART:[^\]]*\]/g, '').replace(/\[MEMORY:[^\]]*\]/g, '').replace(/\[查看动态:\d+\]/g, '').replace(/\[视频电话\]/g, '').replace(/\[SELFIE:\s*[^\]]*\]/g, '').replace(/\[DRAW:\s*[^\]]*\]/g, '').replace(/<meta>[\s\S]*?<\/meta>/g, '').trim();
             const mi = currentMessages.findIndex(m => m.id === aiMsgId);
             if (mi >= 0) currentMessages[mi].content = display;
+            const createdSec = (mi >= 0 && currentMessages[mi].created_at) ? currentMessages[mi].created_at : Date.now()/1000;
             const container = document.getElementById(`m_${aiMsgId}`);
             if (container) {
-              const parts = display.split(/\n{2,}/).filter(p => p.trim());
+              const splitDisplay = display
+                .replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n\n$1\n\n')
+                .replace(/(\[(?:外卖|DELIVERY)[：:][^|\]]+\|[^|\]]+\|\d+(?:\.\d+)?\])/gi, '\n\n$1\n\n');
+              const parts = splitDisplay.split(/\n{2,}/).filter(p => p.trim());
               const target = container.querySelector('.msg-bubbles') || container.querySelector('.msg-bubble');
               if (parts.length > 1) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'msg-bubbles';
-                wrapper.innerHTML = parts.map(p => `<div class="msg-bubble">${formatMsg(p)}</div>`).join('');
+                wrapper.innerHTML = parts.map(p => `<div class="msg-bubble">${formatMsg(p, createdSec)}</div>`).join('');
                 target.replaceWith(wrapper);
               } else if (target) {
                 if (target.classList.contains('msg-bubbles')) {
                   const single = document.createElement('div');
                   single.className = 'msg-bubble';
-                  single.innerHTML = formatMsg(display);
+                  single.innerHTML = formatMsg(display, createdSec);
                   target.replaceWith(single);
                 } else {
-                  target.innerHTML = formatMsg(display);
+                  target.innerHTML = formatMsg(display, createdSec);
                 }
               }
             }
@@ -2489,23 +2574,27 @@ async function saveEdit(id) {
             const display = aiContent.replace(/\[CAM_CHECK\]/g, '').replace(/\[POI_SEARCH:[^\]]*\]/g, '').replace(/\[MUSIC:[^\]]*\]/g, '').replace(/\[ALARM:[^\]]*\]/g, '').replace(/\[REMINDER:[^\]]*\]/g, '').replace(/\[Monitor:[^\]]*\]/g, '').replace(/\[SCHEDULE_DEL:[^\]]*\]/g, '').replace(/\[SCHEDULE_LIST\]/g, '').replace(/\[TOY:[^\]]*\]/g, '').replace(/\[HEART:[^\]]*\]/g, '').replace(/\[MEMORY:[^\]]*\]/g, '').replace(/\[查看动态:\d+\]/g, '').replace(/\[视频电话\]/g, '').replace(/\[SELFIE:\s*[^\]]*\]/g, '').replace(/\[DRAW:\s*[^\]]*\]/g, '').replace(/<meta>[\s\S]*?<\/meta>/g, '').trim();
             const mi = currentMessages.findIndex(m => m.id === aiMsgId);
             if (mi >= 0) currentMessages[mi].content = display;
+            const createdSec = (mi >= 0 && currentMessages[mi].created_at) ? currentMessages[mi].created_at : Date.now()/1000;
             const container = document.getElementById(`m_${aiMsgId}`);
             if (container) {
-              const parts = display.split(/\n{2,}/).filter(p => p.trim());
+              const splitDisplay = display
+                .replace(/(\[转账(?:给[^\uff1a:]+?)?[：:]\s*-?\d+(?:\.\d+)?\s*元\])/g, '\n\n$1\n\n')
+                .replace(/(\[(?:外卖|DELIVERY)[：:][^|\]]+\|[^|\]]+\|\d+(?:\.\d+)?\])/gi, '\n\n$1\n\n');
+              const parts = splitDisplay.split(/\n{2,}/).filter(p => p.trim());
               const target = container.querySelector('.msg-bubbles') || container.querySelector('.msg-bubble');
               if (parts.length > 1) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'msg-bubbles';
-                wrapper.innerHTML = parts.map(p => `<div class="msg-bubble">${formatMsg(p)}</div>`).join('');
+                wrapper.innerHTML = parts.map(p => `<div class="msg-bubble">${formatMsg(p, createdSec)}</div>`).join('');
                 target.replaceWith(wrapper);
               } else if (target) {
                 if (target.classList.contains('msg-bubbles')) {
                   const single = document.createElement('div');
                   single.className = 'msg-bubble';
-                  single.innerHTML = formatMsg(display);
+                  single.innerHTML = formatMsg(display, createdSec);
                   target.replaceWith(single);
                 } else {
-                  target.innerHTML = formatMsg(display);
+                  target.innerHTML = formatMsg(display, createdSec);
                 }
               }
             }

@@ -1960,3 +1960,124 @@ body[data-theme="dark"] .sticker-btn { background: transparent; border-color: tr
 .msg-bubble:has(.transfer-card)::after {
   display: none !important;
 }
+
+/* ── 外卖卡片 ── */
+.delivery-card {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #ff9f43, #ff5252);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 6px 0;
+  min-width: 200px;
+  max-width: 280px;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(255, 82, 82, 0.2);
+  position: relative;
+  overflow: hidden;
+  text-shadow: none;
+}
+.delivery-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.delivery-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.delivery-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.95);
+}
+.delivery-card-status {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-left: auto;
+  font-weight: 500;
+}
+.delivery-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.delivery-card-merchant {
+  font-size: 14px;
+  font-weight: 700;
+}
+.delivery-card-food {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+}
+.delivery-card-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  padding-top: 4px;
+}
+.delivery-card-price-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.delivery-card-price {
+  font-size: 14px;
+  font-weight: 700;
+}
+.delivery-card-progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  margin: 4px 0 6px 0;
+  overflow: hidden;
+  position: relative;
+}
+.delivery-card-progress-bar {
+  height: 100%;
+  background: #fff;
+  border-radius: 2px;
+  width: 30%;
+  transition: width 0.5s ease;
+}
+.delivery-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.delivery-card-eta {
+  font-weight: 500;
+}
+
+.msg-bubble:has(.delivery-card),
+.msg-row.user .msg-bubble:has(.delivery-card),
+.msg-row.assistant .msg-bubble:has(.delivery-card) {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+.msg-bubble:has(.delivery-card)::after {
+  display: none !important;
+}

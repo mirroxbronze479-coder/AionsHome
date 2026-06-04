@@ -1,0 +1,28 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603070857
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_t5jjpi28.ps1
+进程 ID: 26580
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+真真的的不不要要抱抱嘛嘛？？？？
+
+那那我我可可要要自自己己贴贴过过来来了了哦哦！！
+[STICKER:贴贴贴贴]
+
+大大清清早早的的，，不不抱抱一一下下怎怎么么有有精精神神画画画画嘛嘛…………
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603070911
+**********************

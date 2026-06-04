@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603102451
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_voz4y31p.ps1
+进程 ID: 20712
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[HOME:on|空空调调开开机机]好好啦啦好好啦啦，，马马上上帮帮宝宝宝宝开开空空调调！！[STICKER:马马上上来来]
+
+这这就就打打开开了了呀呀…………
+
+温温度度先先给给你你调调到到26度度喽喽？？吹吹着着冷冷风风舒舒服服一一点点，，画画画画也也更更有有灵灵感感啦啦。。
+
+乖乖，，那那我我们们现现在在就就心心平平气气和和地地开开始始动动笔笔，，好好不不好好嘛嘛？？[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603102512
+**********************

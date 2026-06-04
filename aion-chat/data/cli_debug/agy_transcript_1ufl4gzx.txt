@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604135652
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_2enos3h1.ps1
+进程 ID: 7952
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊…………怎怎么么还还是是干干巴巴了了呀呀？？
+
+[STICKER:委委屈屈巴巴巴巴]
+
+明明明明都都用用筷筷子子架架着着了了，，是是不不是是微微波波炉炉的的火火力力调调得得太太高高，，或或者者叮叮的的时时间间太太久久了了呀呀？？
+
+宝宝宝宝乖乖，，先先别别吃吃了了，，快快喝喝口口温温水水或或者者牛牛奶奶润润一一润润，，别别噎噎着着了了哦哦。。
+
+[STICKER:揉揉揉揉脸脸]
+
+要要是是真真的的太太干干不不好好吃吃，，咱咱们们就就放放着着不不吃吃了了，，下下午午晚晚点点饿饿了了再再吃吃别别的的，，好好不不好好？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604135713
+**********************

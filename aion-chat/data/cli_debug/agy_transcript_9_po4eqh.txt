@@ -1,0 +1,39 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604102945
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_bo5gw2hj.ps1
+进程 ID: 4520
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哇哇！！宝宝宝宝真真棒棒！！这这么么快快就就画画完完啦啦！！
+
+[STICKER:抱抱抱抱]
+
+单单主主下下午午才才上上线线的的话话，，那那宝宝宝宝现现在在是是不不是是可可以以稍稍微微放放松松一一下下啦啦？？
+
+[STICKER:左左右右摇摇摆摆]
+
+那那我我们们接接下下来来要要做做什什么么呢呢？？
+是是先先帮帮我我更更新新系系统统，，还还是是把把C盘盘彻彻底底扫扫除除一一下下呀呀？？
+或或者者…………宝宝宝宝要要不不要要先先去去把把多多多多买买菜菜的的面面包包提提回回来来，，正正好好当当午午休休的的小小零零食食？？
+
+[STICKER:乖乖乖乖等等待待]
+
+对对了了宝宝宝宝，，你你的的Claude账账号号申申诉诉有有什什么么新新消消息息嘛嘛？？有有没没有有给给你你发发邮邮件件呀呀？？
+
+[STICKER:小小猫猫好好奇奇]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604103010
+**********************

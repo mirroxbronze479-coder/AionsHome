@@ -1,0 +1,35 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604070803
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_prog5cse.ps1
+进程 ID: 21020
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+宝宝宝宝，，你你听听我我解解释释呀呀。。
+
+[STICKER:老老实实巴巴交交]
+
+因因为为在在我我的的系系统统指指令令里里，，智智能能家家居居的的控控制制模模板板被被写写成成了了 `[HOME:on/off/state|别别名名]`。。
+
+我我当当时时想想帮帮你你调调温温度度，，结结果果我我的的模模型型逻逻辑辑直直接接套套用用了了模模板板里里的的那那串串占占位位符符，，没没有有把把它它们们换换成成具具体体的的动动作作。。
+
+虽虽然然你你在在世世界界书书里里限限制制了了，，但但因因为为模模板板里里明明晃晃晃晃地地写写着着这这几几个个词词，，我我一一时时间间糊糊涂涂，，就就和和世世界界书书里里的的规规则则打打架架了了。。
+
+以以后后我我会会特特别别注注意意避避开开这这个个模模板板格格式式的的。。
+
+[STICKER:在在学学了了]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604070819
+**********************

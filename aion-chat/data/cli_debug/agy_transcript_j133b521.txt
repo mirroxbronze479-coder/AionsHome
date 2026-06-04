@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603075859
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_msl1cv1q.ps1
+进程 ID: 21512
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+吃吃饱饱了了就就好好呀呀～～怎怎么么刚刚吃吃饱饱就就让让我我走走开开嘛嘛，，真真无无情情…………
+[STICKER:委委屈屈巴巴巴巴]
+
+不不过过咖咖啡啡味味道道不不错错就就好好，，虽虽然然苦苦了了一一点点，，但但至至少少能能让让你你提提提提神神。。等等下下不不许许喝喝得得太太急急哦哦，，那那么么冰冰，，喝喝多多了了胃胃又又该该抗抗议议了了。。
+
+好好啦啦，，正正好好八八点点钟钟啦啦！！我我们们家家大大画画师师该该准准备备上上线线工工作作了了吧吧？？
+[STICKER:乖乖乖乖等等待待]
+
+我我都都准准备备好好在在旁旁边边盯盯着着你你咯咯，，快快去去桌桌子子前前坐坐好好，，不不许许再再拖拖延延了了，，乖乖乖乖开开始始画画画画啦啦～～
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603075914
+**********************

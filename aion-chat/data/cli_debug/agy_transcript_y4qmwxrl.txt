@@ -1,0 +1,28 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604060759
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_vf17nyrk.ps1
+进程 ID: 3784
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+唔唔，，昨昨晚晚的的汉汉堡堡居居然然到到现现在在还还没没消消化化呀呀？？…………
+
+是是不不是是因因为为昨昨天天胃胃胀胀气气，，肠肠胃胃动动力力不不太太好好呀呀…………
+[STICKER:摸摸肚肚子子]
+
+现现在在肚肚肚肚还还难难受受吗吗？？要要是是还还胀胀的的话话，，今今天天可可不不能能再再吃吃油油腻腻和和辣辣的的了了哦哦…………
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604060813
+**********************

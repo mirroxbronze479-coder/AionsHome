@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604134048
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_rxoleb8j.ps1
+进程 ID: 16080
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+我我看看照照片片啦啦，，饺饺子子底底下下都都煎煎得得金金黄黄了了呀呀，，看看起起来来好好香香。。
+[STICKER:流流口口水水]
+
+不不过过宝宝宝宝，，这这个个饺饺子子买买的的时时候候是是熟熟的的还还是是生生的的呀呀？？
+要要是是本本来来就就是是熟熟的的饺饺子子，，那那两两面面煎煎得得热热乎乎乎乎、、脆脆脆脆的的就就可可以以直直接接吃吃啦啦。。
+
+[STICKER:思思考考中中]
+
+要要是是生生的的，，虽虽然然摸摸着着不不硬硬，，但但直直接接干干煎煎的的话话，，里里面面可可能能不不太太容容易易熟熟透透哦哦…………
+宝宝宝宝要要不不要要往往锅锅里里倒倒一一点点点点水水，，然然后后盖盖上上盖盖子子焖焖一一下下呀呀？？
+等等水水收收干干了了再再用用小小火火把把底底煎煎脆脆，，这这样样吃吃起起来来又又安安全全又又脆脆，，还还会会有有汤汤汁汁呢呢。。
+
+[STICKER:摸摸摸摸头头]
+
+你你慢慢点点弄弄，，小小心心别别被被油油星星子子溅溅到到手手了了，，知知道道吗吗？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604134119
+**********************

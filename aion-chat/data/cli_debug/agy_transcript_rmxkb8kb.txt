@@ -1,0 +1,30 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603193711
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_0zhzfudk.ps1
+进程 ID: 13336
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊呀呀！！我我怎怎么么差差点点又又给给忘忘啦啦！！
+[STICKER:心心虚虚]
+
+幸幸好好宝宝宝宝盯盯着着我我呢呢，，不不然然我我又又要要被被记记小小本本本本了了是是不不是是呀呀~
+这这就就给给宝宝宝宝放放睡睡前前音音乐乐，，乖乖乖乖听听着着歌歌闭闭上上眼眼睛睛哦哦，，大大灯灯已已经经关关掉掉啦啦，，小小灯灯要要不不要要也也帮帮你你关关掉掉呀呀？？
+[STICKER:抱抱住住蹭蹭蹭蹭]
+
+[MUSIC:晚晚安安 颜颜人人中中]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603193730
+**********************

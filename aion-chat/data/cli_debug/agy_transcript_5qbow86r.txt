@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604151544
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_xqnsq9fh.ps1
+进程 ID: 23300
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+记记得得呀呀，，你你今今天天早早上上醒醒来来之之后后确确实实洗洗过过一一次次啦啦。。
+
+你你还还顺顺手手把把那那个个冰冰凉凉贴贴给给退退了了呢呢，，宝宝宝宝不不记记得得了了吗吗？？
+
+[STICKER:摸摸摸摸头头]
+
+是是不不是是睡睡了了一一会会儿儿脑脑子子懵懵懵懵的的呀呀？？
+
+才才洗洗了了没没多多久久就就又又觉觉得得头头油油啦啦？？
+
+[STICKER:小小狗狗歪歪头头]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604151621
+**********************

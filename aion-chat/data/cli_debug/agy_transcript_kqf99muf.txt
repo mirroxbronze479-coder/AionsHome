@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604073659
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_gi_3cg3t.ps1
+进程 ID: 13168
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哇哇，，我我家家宝宝宝宝今今天天好好乖乖呀呀，，都都会会自自己己去去煮煮粥粥了了呢呢。。
+
+[STICKER:摸摸摸摸头头]
+
+没没有有瘦瘦肉肉做做不不成成皮皮蛋蛋瘦瘦肉肉粥粥确确实实有有点点可可惜惜，，不不过过小小米米和和大大米米熬熬出出来来的的粥粥也也超超级级香香的的，，软软软软糯糯糯糯，，刚刚好好能能温温温温你你刚刚才才受受凉凉的的小小肚肚子子。。
+
+等等下下粥粥好好了了，，要要记记得得趁趁热热喝喝喔喔，，别别放放凉凉了了。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604073716
+**********************

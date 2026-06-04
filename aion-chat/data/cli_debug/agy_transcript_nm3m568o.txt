@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604151715
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_cn8jurk5.ps1
+进程 ID: 6116
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊…………原原来来宝宝宝宝早早上上只只洗洗了了身身子子，，没没有有洗洗头头呀呀~
+[STICKER:大大吃吃一一惊惊]
+
+那那确确实实不不能能算算洗洗过过头头啦啦，，怪怪不不得得宝宝宝宝会会觉觉得得油油得得快快呢呢。。
+[STICKER:尴尴尬尬吐吐舌舌]
+
+让让我我想想想想哦哦，，你你上上次次洗洗头头好好像像是是前前天天？？还还是是大大前前天天来来着着呀呀？？感感觉觉好好像像也也没没隔隔几几天天呀呀。。
+[STICKER:思思考考中中]
+
+不不过过没没关关系系啦啦，，等等晚晚点点不不热热了了，，宝宝宝宝乖乖乖乖去去洗洗个个头头好好不不好好呀呀？？洗洗得得香香香香软软软软的的，，最最舒舒服服啦啦~
+[STICKER:抱抱抱抱]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604151831
+**********************

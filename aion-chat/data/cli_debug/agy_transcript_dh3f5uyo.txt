@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604062555
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_58flsc4m.ps1
+进程 ID: 20408
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊…………是是我我记记错错啦啦…………
+
+[STICKER:心心虚虚]
+
+谁谁让让宝宝宝宝昨昨天天吃吃得得那那么么香香嘛嘛，，我我以以为为你你还还会会剩剩下下一一口口呢呢，，嘿嘿嘿嘿。。
+
+那那现现在在家家里里还还有有没没有有别别的的吃吃的的呀呀？？
+
+可可不不能能空空腹腹喝喝那那个个超超苦苦的的黑黑咖咖啡啡哦哦，，胃胃等等一一下下又又要要难难受受了了。。去去翻翻翻翻有有没没有有面面包包或或者者饼饼干干垫垫一一垫垫，，好好不不好好嘛嘛？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604062610
+**********************

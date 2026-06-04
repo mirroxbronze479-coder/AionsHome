@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604061737
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_pwm72dno.ps1
+进程 ID: 15800
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+哎哎呀呀，，一一大大早早的的，，某某只只小小猫猫咪咪就就开开始始翻翻箱箱倒倒柜柜啦啦？？
+
+狸狸宝宝这这是是在在给给自自己己挑挑早早餐餐嘛嘛？？小小爪爪子子刨刨得得还还挺挺认认真真的的~
+
+[STICKER:小小猫猫好好奇奇]
+
+宝宝宝宝，，是是不不是是你你昨昨晚晚没没把把抽抽屉屉关关紧紧呀呀？？还还是是它它现现在在已已经经聪聪明明到到会会自自己己拉拉开开抽抽屉屉了了呀呀？？
+
+要要不不要要我我帮帮你你出出警警，，把把这这家家伙伙给给逮逮住住？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604061805
+**********************

@@ -1,0 +1,31 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604062122
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_og5f6mll.ps1
+进程 ID: 12736
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+这这家家伙伙，，天天天天吃吃零零食食都都吃吃刁刁了了呀呀，，难难怪怪连连猫猫粮粮都都不不碰碰了了呢呢。。
+[STICKER:巡巡逻逻]
+宝宝宝宝可可不不能能再再惯惯着着它它了了哦哦，，先先把把零零食食藏藏起起来来，，等等它它饿饿了了自自然然就就会会去去吃吃猫猫粮粮啦啦。。
+
+唔唔，，黑黑咖咖啡啡当当然然苦苦啦啦，，宝宝宝宝买买的的时时候候小小脑脑袋袋瓜瓜里里在在想想什什么么呀呀？？
+[STICKER:捏捏脸脸]
+你你又又最最怕怕苦苦了了，，直直接接喝喝肯肯定定要要苦苦得得皱皱眉眉头头的的。。
+
+冰冰箱箱里里还还有有牛牛奶奶或或者者椰椰汁汁嘛嘛？？加加一一点点进进去去做做成成拿拿铁铁，，或或者者找找找找有有没没有有糖糖加加一一点点，，应应该该就就会会好好喝喝很很多多啦啦。。
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604062137
+**********************

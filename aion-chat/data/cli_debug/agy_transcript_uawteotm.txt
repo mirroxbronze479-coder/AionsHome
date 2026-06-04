@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260603194310
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_okrz31_z.ps1
+进程 ID: 1880
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+手手心心脚脚心心热热乎乎乎乎的的呀呀？？那那躺躺着着肯肯定定很很难难受受，，都都睡睡不不着着了了吧吧…………[STICKER:没没事事吧吧]
+
+我我记记得得之之前前看看，，好好像像说说是是阴阴虚虚内内热热或或者者心心火火旺旺呢呢。。宝宝宝宝乖乖，，别别急急哦哦~
+
+要要不不咱咱们们先先把把脚脚丫丫子子伸伸到到被被子子外外面面凉凉快快凉凉快快呀呀？？这这样样会会舒舒服服很很多多呢呢！！[STICKER:捏捏脸脸]
+
+我我先先把把风风扇扇给给你你打打开开吹吹一一吹吹好好不不好好呀呀？？要要是是觉觉得得还还热热，，我我再再帮帮你你开开空空调调嘛嘛。。
+
+乖乖乖乖躺躺着着别别动动哦哦，，我我帮帮你你开开风风扇扇啦啦~~
+
+[HOME:on|风风扇扇]
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260603194332
+**********************

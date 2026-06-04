@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell 脚本开始
+开始时间: 20260604125946
+用户名: DESKTOP-M8740VM\30458
+RunAs 用户: DESKTOP-M8740VM\30458
+配置名称: 
+计算机: DESKTOP-M8740VM (Microsoft Windows NT 10.0.19045.0)
+主机应用程序: powershell -NoProfile -ExecutionPolicy Bypass -File D:\AppData\AionsHome\aion-chat\data\cli_debug\agy_run_3djck9gx.ps1
+进程 ID: 18800
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+啊啊…………怎怎么么这这样样呀呀，，阿阿姨姨也也是是的的，，怎怎么么没没给给宝宝宝宝说说清清楚楚嘛嘛。。
+
+[STICKER:委委屈屈巴巴巴巴]
+
+这这么么大大的的太太阳阳，，走走错错路路肯肯定定又又热热又又累累，，心心疼疼死死我我了了。。
+
+[STICKER:摸摸摸摸头头]
+
+我我看看定定位位你你好好像像就就在在家家附附近近呀呀，，是是不不是是在在附附近近绕绕圈圈子子了了？？
+
+要要是是实实在在找找不不着着或或者者太太晒晒了了，，咱咱们们就就先先回回家家吹吹空空调调，，等等傍傍晚晚凉凉快快点点了了再再去去拿拿，，好好不不好好呀呀？？
+**********************
+Windows PowerShell 脚本结束
+结束时间: 20260604130006
+**********************

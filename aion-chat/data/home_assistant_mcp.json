@@ -1,6 +1,6 @@
 {
     "ha_url":  "http://127.0.0.1:8123",
-    "ha_token":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmMTg2ZDgxMTI1OGQ0NmU3YjcxNzkzOTEwNDdhOWYyOSIsImlhdCI6MTc4MDA1MjQ4NSwiZXhwIjoyMDk1NDEyNDg1fQ.UNKywhOFS8rDeBTrlxb7eMd1tOUhdZjzwinB7riFlzE",
+    "ha_token":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwNWQwOWU1MTQzZjQ0NTA5Yjg4YmZkNzZhN2VkZmQ5MCIsImlhdCI6MTc4MDQxNTY0NCwiZXhwIjoyMDk1Nzc1NjQ0fQ.U4zW63t9kIKXsEVF6eDFk30DdGKQfK7h8pcnMz3wI1U",
     "dry_run":  false,
     "allowed_domains":  [
                             "light",
